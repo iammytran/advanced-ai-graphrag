@@ -36,7 +36,7 @@ END
 
 ### 1. Clone Repository
 ```bash
-cd c:\DaiHoc\SDH\ML\RAG_Chatbot
+https://github.com/iammytran/advanced-ai-graphrag.git
 ```
 
 ### 2. Tạo Virtual Environment (tuỳ chọn)
