@@ -117,7 +117,7 @@ Provide evaluation in JSON format:
                 )
 
                 # Extract JSON content and clean markdown
-                json_str = self._extract_json_from_response(response.content[0]["text"])
+                json_str = self._extract_json_from_response(response.content)
                 result = json.loads(json_str)
                 return result
                 
@@ -192,7 +192,7 @@ Provide evaluation in JSON format:
                 )
 
                 # Extract JSON content and clean markdown
-                json_str = self._extract_json_from_response(response.content[0]["text"])
+                json_str = self._extract_json_from_response(response.content)
                 result = json.loads(json_str)
                 return result
                 
@@ -269,7 +269,7 @@ Provide evaluation in JSON format:
                 )
 
                 # Extract JSON content and clean markdown
-                json_str = self._extract_json_from_response(response.content[0]["text"])
+                json_str = self._extract_json_from_response(response.content)
                 result = json.loads(json_str)
                 return result
                 

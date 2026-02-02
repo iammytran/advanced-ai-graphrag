@@ -81,7 +81,7 @@ Please provide a comprehensive and accurate answer based on the context. If the 
                     {"context": context_text, "question": question}
                 )
 
-                return response.content[0]["text"]
+                return response.content
                 
             except Exception as e:
                 retry_count += 1
@@ -122,7 +122,7 @@ confidence: how confident you are in this assessment"""
             import json
 
             # Extract JSON content and clean markdown
-            json_str = self._extract_json_from_response(response.content[0]["text"])
+            json_str = self._extract_json_from_response(response.content)
             result = json.loads(json_str)
             return result
         except Exception as e:

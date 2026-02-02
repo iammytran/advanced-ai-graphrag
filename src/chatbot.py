@@ -174,7 +174,7 @@ class RAGChatbot:
             )
             chain = prompt | self.llm_manager.llm
             response = chain.invoke({"question": state["question"]})
-            answer = response.content[0]["text"]
+            answer = response.content
 
         state["generated_answer"] = answer
         print(f"   Answer: {answer[:200]}...")
