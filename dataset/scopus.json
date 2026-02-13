@@ -1,0 +1,45 @@
+[
+    {
+        "id": 1,
+        "sources": [
+            {
+                "Nghị định 144/2021/NĐ-CP": "https://thuvienphapluat.vn/van-ban/Vi-pham-hanh-chinh/Nghi-dinh-144-2021-ND-CP-xu-phat-vi-pham-hanh-chinh-linh-vuc-an-ninh-an-toan-xa-hoi-425471.aspx"
+            },
+            {
+                "Bộ luật hình sự 2015": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Bo-luat-hinh-su-2015-296661.aspx"
+            }
+        ]
+    },
+    {
+        "id": 2,
+        "sources": [
+            {
+                "Bộ luật hình sự 2015": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Bo-luat-hinh-su-2015-296661.aspx"
+            }
+        ]
+    },
+    {
+        "id": 3,
+        "sources": [
+            {
+                "Nghị quyết số 04/2025/NQ-HĐTP": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Nghi-quyet-04-2025-NQ-HDTP-huong-dan-ap-dung-cac-tinh-tiet-giam-nhe-trach-nhiem-hinh-su-679023.aspx"
+            }
+        ]
+    },
+    {
+        "id": 4,
+        "sources": [
+            {
+                "Bộ luật hình sự 2015": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Bo-luat-hinh-su-2015-296661.aspx"
+            }
+        ]
+    },
+    {
+        "id": 5,
+        "source": [
+            {
+                "Bộ luật hình sự 2015": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Bo-luat-hinh-su-2015-296661.aspx"
+            }
+        ]
+    }
+]
