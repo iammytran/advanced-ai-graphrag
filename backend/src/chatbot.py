@@ -93,6 +93,11 @@ class RAGChatbot:
         if documents:
             all_docs = [doc for doc, score in documents]
             relevant_docs = all_docs
+            # Print content of documents
+            for i, doc in enumerate(all_docs, 1):
+                print(f"---Doc {i}:\n---")
+                print(doc.page_content)
+                print("\n")
             print(f"   Retrieved {len(documents)} documents")
 
             # # Evaluate each document individually
