@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { sendMessage, getSuggestedQuestions } from './services/mockApi'
+import { getSuggestedQuestions, sendMessage } from './services/backendApi'
 
 function App() {
     // State

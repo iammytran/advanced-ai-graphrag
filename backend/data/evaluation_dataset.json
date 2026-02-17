@@ -1,0 +1,37 @@
+[
+    {
+        "question": "What is the primary function of an Artificial Neural Network (ANN)?",
+        "expected_answer": "An Artificial Neural Network (ANN) simulates the way the human brain processes information. Its primary function is to recognize patterns, learn from data, and solve complex problems such as classification and regression.",
+        "reference_contexts": [
+            "Artificial Neural Networks (ANNs) are computational models inspired by the human brain."
+        ]
+    },
+    {
+        "question": "How does XGBoost improve over standard Gradient Boosting?",
+        "expected_answer": "XGBoost improves over standard Gradient Boosting by introducing regularization (L1 and L2) to prevent overfitting, using a more efficient tree-pruning algorithm, and supporting parallel processing for faster training.",
+        "reference_contexts": [
+            "XGBoost is an optimized distributed gradient boosting library designed to be highly efficient, flexible and portable."
+        ]
+    },
+    {
+        "question": "What is the purpose of RAG in chatbots?",
+        "expected_answer": "RAG (Retrieval-Augmented Generation) enhances chatbot responses by retrieving relevant information from a knowledge base and using it to ground the LLM's answer, improving accuracy and reducing hallucinations.",
+        "reference_contexts": [
+            "Retrieval-Augmented Generation (RAG) combines retrieval and generation to provide more accurate answers."
+        ]
+    },
+    {
+        "question": "Explain the difference between L1 and L2 regularization.",
+        "expected_answer": "L1 regularization (Lasso) adds the absolute value of coefficients as a penalty term to the loss function, which can lead to sparse models (feature selection). L2 regularization (Ridge) adds the squared magnitude of coefficients, which shrinks coefficients but keeps them non-zero.",
+        "reference_contexts": [
+            "L1 regularization adds a penalty equal to the absolute value of the magnitude of coefficients. L2 regularization adds a penalty equal to the square of the magnitude of coefficients."
+        ]
+    },
+    {
+        "question": "What is SMOTE used for?",
+        "expected_answer": "SMOTE (Synthetic Minority Over-sampling Technique) is used to address class imbalance in datasets by synthesizing new examples for the minority class based on existing samples.",
+        "reference_contexts": [
+            "SMOTE works by selecting examples that are close in the feature space, drawing a line between the examples in the feature space and drawing a new sample at a point along that line."
+        ]
+    }
+]
