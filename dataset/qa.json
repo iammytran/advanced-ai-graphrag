@@ -47,5 +47,159 @@
     "references": [
       "Điều 351 Bộ luật Hình sự 2015"
     ]
+  },
+  {
+    "id": 6,
+    "original_question": "Trường hợp nào tội cho vay nặng lãi bị xử lý hình sự?",
+    "reframed_question": "Tôi vay tiền với lãi suất 5%/tháng thì có bị xử lý hình sự không?",
+    "answer": "Theo Điều 468 Bộ luật Dân sự năm 2015: Lãi suất vay do các bên thỏa thuận. Trường hợp các bên có thỏa thuận về lãi suất thì lãi suất theo thỏa thuận không được vượt quá 20%/năm của khoản tiền vay, trừ trường hợp luật khác có liên quan quy định khác. Căn cứ tình hình thực tế và theo đề xuất của Chính phủ, Ủy ban thường vụ Quốc hội quyết định điều chỉnh mức lãi suất nói trên và báo cáo Quốc hội tại kỳ họp gần nhất. Trường hợp lãi suất theo thỏa thuận vượt quá lãi suất giới hạn được quy định tại khoản này thì mức lãi suất vượt quá không có hiệu lực. Như vậy, lãi suất cho vay thông thường được cho phép là 20%/năm. Tuy nhiên, không phải cứ cho vay quá mức lãi trên bị xử lý hình sự. Theo Điều 201 Bộ luật hình sự 2015 quy định về tội cho vay lãi nặng trong giao dịch dân sự như sau: Người nào trong giao dịch dân sự mà cho vay với lãi suất gấp 05 lần trở lên của mức lãi suất cao nhất quy định trong Bộ luật dân sự, thu lợi bất chính từ 30.000.000 đồng đến dưới 100.000.000 đồng hoặc đã bị xử phạt vi phạm hành chính về hành vi này hoặc đã bị kết án về tội này, chưa được xóa án tích mà còn vi phạm, thì bị phạt tiền từ 50.000.000 đồng đến 200.000.000 đồng hoặc phạt cải tạo không giam giữ đến 03 năm. Trường hợp của bạn, vay với lãi suất 5%/tháng, tương đương 60%/năm, thấp hơn mức quy định nên trường hợp này không xử lý hình sự được, trừ khi người đó đã từng bị xử phạt hành chính hoặc kết án về tội này, chưa được xóa án tích mà vẫn tiếp tục vi phạm.",
+    "references": [
+      "Điều 468 Bộ luật Dân sự 2015",
+      "Điều 201 Bộ luật hình sự 2015"
+    ]
+  },
+  {
+    "id": 7,
+    "original_question": "Một người trộm cắp nhiều lần trong một tháng thì có bị coi là phạm tội có tính chất chuyên nghiệp không?",
+    "reframed_question": "Như thế nào được coi là phạm tội có tính chất chuyên nghiệp? Ví dụ một người trộm cắp nhiều lần trong một tháng thì có bị coi là phạm tội có tính chất chuyên nghiệp không?",
+    "answer": "Theo quy định tại khoản 2, Điều 4 Nghị quyết số 04/2025/NQ-HĐTP của Hội đồng thẩm phán Tòa án Nhân dân tối cao thì tình tiết “phạm tội có tính chất chuyên nghiệp” được hiểu như sau: “Phạm tội có tính chất chuyên nghiệp” quy định tại điểm b khoản 1 Điều 52 của Bộ luật Hình sự là trường hợp người phạm tội thực hiện hành vi phạm tội từ 05 lần trở lên (không phân biệt đã bị truy cứu trách nhiệm hình sự hay chưa bị truy cứu trách nhiệm hình sự, mà chưa hết thời hiệu truy cứu trách nhiệm hình sự hoặc chưa được xóa án tích) và người phạm tội lấy khoản lợi bất chính thu được từ việc phạm tội làm nguồn thu nhập. Như vậy, nếu chỉ dựa vào việc “một người trộm cắp nhiều lần trong một tháng” thì chưa thể khẳng định người đó sẽ bị coi là phạm tội có tính chất chuyên nghiệp được mà phải đi kèm tính tiết số lần trộm cắp cấu thành tội trộm cắp từ 5 lần trở lên và người phạm tội lấy khoản lợi bất chính thu được từ việc phạm tội làm nguồn thu nhập thì mới có thể bị coi là phạm tội có tính chất chuyên nghiệp. Thiếu một trong các yếu tố này thì chưa bị coi là phạm tội có tính chất chuyên nghiệp.",
+    "references": [
+      "Khoản 2, Điều 4 Nghị quyết số 04/2025/NQ-HĐTP"
+    ]
+  },
+  {
+    "id": 8,
+    "original_question": "Như thế nào là dùng thủ đoạn tinh vi, xảo quyệt để phạm tội?",
+    "reframed_question": "Tổ chức đường dây đánh bạc trực tuyến có được xem là dùng thủ đoạn tinh vi, xảo quyệt để phạm tội?",
+    "answer": "Theo quy định tại khoản 12, Điều 4 Nghị quyết số 04/2025/NQ-HĐTP của Hội đồng thẩm phán Tòa án Nhân dân tối cao thì tình tiết “Dùng thủ đoạn tinh vi, xảo quyệt để phạm tội” được hiểu như sau: a) Dùng thủ đoạn tinh vi để phạm tội là trường hợp khi phạm tội, người phạm tội sử dụng những cách thức, phương thức thực hiện khôn khéo, phức tạp, kín đáo nhằm mục đích che giấu cho hành vi phạm tội của mình làm cho nạn nhân hoặc những người khác khó nhận ra hoặc phát hiện ra; b) Dùng thủ đoạn xảo quyệt để phạm tội là trường hợp người phạm tội sử dụng thủ đoạn dối trá, gian xảo một cách tinh vi, sử dụng công nghệ cao để thực hiện hành vi phạm tội, che giấu tội phạm, đổ tội cho người khác, tiêu hủy chứng cứ nhằm gây khó khăn cho việc phát hiện, điều tra, xử lý tội phạm. Như vậy, nếu tổ chức một đường dây đánh bạc trực tuyến quy mô lớn, xây dựng một hệ thống công nghệ phức tạp, tạo ra một trang web có tính bảo mật cao, khó bị phát hiện và sử dụng nhiều tài khoản ngân hàng khác nhau và nhờ người thân đứng tên để nhận và chuyển tiền từ việc tổ chức đánh bạc thì sẽ được coi là dùng thủ đoạn tinh vi, xảo quyệt để phạm tội.",
+    "references": [
+      "Khoản 12, Điều 4 Nghị quyết số 04/2025/NQ-HĐTP"
+    ]
+  },
+  {
+    "id": 9,
+    "original_question": "Người mang thai đang được hoãn thi hành án tiếp tục phạm tội thì xử lý thế nào?",
+    "reframed_question": "Tôi có người bạn phạm tội buôn bán trái phép chất ma túy, phạt tù 5 năm. Vào thời điểm đó bạn tôi đang mang thai 4 tháng cho nên được hoãn chấp hành án phạt tù. Tuy nhiên, trong thời gian được hoãn chấp hành án phạt tù thì bạn của tôi lại tiếp tục buôn bán trái phép chất ma túy. Vậy xin hỏi, người mang thai đang được hoãn thi hành án tiếp tục phạm tội thì xử lý thế nào?",
+    "answer": "Tại khoản 2, Điều 67 Bộ Luật Hình sự 2015 có quy định về việc tiếp tục phạm tội khi đang được hoãn thi hành án như sau: “Trong thời gian được hoãn chấp hành hình phạt tù, nếu người được hoãn chấp hành hình phạt lại thực hiện hành vi phạm tội mới, thì Tòa án buộc người đó phải chấp hành hình phạt trước và tổng hợp với hình phạt của bản án mới theo quy định tại Điều 56 của Bộ Luật Hình sự 2015”. Ngoài ra, có thể áp dụng biện pháp ngăn chặn Tạm giam theo khoản 4 Điều 119 Bộ Luật Tố tụng Hình sự 2015 quy định đối với bị can, bị cáo là phụ nữ có thai hoặc đang nuôi con dưới 36 tháng tuổi, là người già yếu, người bị bệnh nặng mà có nơi cư trú và lý lịch rõ ràng thì không tạm giam mà áp dụng biện pháp ngăn chặn khác, trừ các trường hợp: - Bỏ trốn và bị bắt theo quyết định truy nã; - Tiếp tục phạm tội; - Có hành vi mua chuộc, cưỡng ép, xúi giục người khác khai báo gian dối, cung cấp tài liệu sai sự thật; tiêu hủy, giả mạo chứng cứ, tài liệu, đồ vật của vụ án, tẩu tán tài sản liên quan đến vụ án; đe dọa, khống chế, trả thù người làm chứng, bị hại, người tố giác tội phạm hoặc người thân thích của những người này; - Bị can, bị cáo về tội xâm phạm an ninh quốc gia và có đủ căn cứ xác định nếu không tạm giam đối với họ thì sẽ gây nguy hại đến an ninh quốc gia.",
+    "references": [
+      "Khoản 2, Điều 67 Bộ Luật Hình sự 2015",
+      "Điều 56 của Bộ Luật Hình sự 2015",
+      "Khoản 4 Điều 119 Bộ Luật Tố tụng Hình sự 2015"
+    ]
+  },
+  {
+    "id": 10,
+    "original_question": "Giết người nhằm lấy vợ của người đó có bị coi là phạm tội vì động cơ đê hèn hay không?",
+    "reframed_question": "Tôi đọc báo thấy có trường hợp một người đàn ông nọ đã giết một người đàn ông khác với mục đích là để lấy vợ của người đàn ông đó. Vậy, với trường hợp này có coi là phạm tội vì động cơ đê hèn hay không?",
+    "answer": "Theo quy định tại khoản 6, Điều 4 Nghị quyết số 04/2025/NQ-HĐTP của Hội đồng thẩm phán Tòa án Nhân dân tối cao thì tình tiết “phạm tội vì động cơ đê hèn” được hiểu như sau: “Phạm tội vì động cơ đê hèn” quy định tại điểm đ khoản 1 Điều 52 của Bộ luật Hình sự là trường hợp người phạm tội thực hiện hành vi phạm tội để trả thù hoặc phạm tội để trốn tránh trách nhiệm của bản thân; phạm tội đối với người mà mình mang ơn hoặc những hành vi phạm tội khác thể hiện sự bội bạc, phản trắc. Như vậy, việc một người đàn ông giết một người đàn ông khác với mục đích để lấy vợ của người đó sẽ được xem là phạm tội vì động cơ đê hèn.",
+    "references": [
+      "Khoản 6, Điều 4 Nghị quyết số 04/2025/NQ-HĐTP",
+      "Điểm đ khoản 1 Điều 52 của Bộ luật Hình sự 2015"
+    ]
+  },
+  {
+    "id": 11,
+    "original_question": "Người phạm tội có từ 3 con nhỏ trở lên sẽ được coi là một tình tiết giảm nhẹ trách nhiệm hình sự?",
+    "reframed_question": "Tôi nghe nói, cứ người phạm tội có từ 3 con nhỏ trở lên thì sẽ được áp dụng tình tiết giảm nhẹ trách nhiệm hình sự. Xin hỏi điều này có đúng không ạ?",
+    "answer": "Theo quy định tại khoản 9, Điều 3 Nghị quyết số 04/2025/NQ-HĐTP của Hội đồng thẩm phán Tòa án Nhân dân tối cao thì tình tiết “Người phạm tội có từ 03 con nhỏ trở lên đều dưới 15 tuổi” được quy định như sau: Người phạm tội có từ 03 con nhỏ trở lên đều dưới 15 tuổi hoặc có con bị khuyết tật nặng trở lên, bị bệnh hiểm nghèo mà vợ, chồng không có công ăn việc làm, gia đình khó khăn được chính quyền địa phương xác nhận. Như vậy, không phải là người phạm tội cứ có từ 03 con nhỏ trở lên thì sẽ được coi là tình tiết giảm nhẹ trách nhiệm hình sự, mà phải đi kèm theo đủ các điều kiện những người con nhỏ đó đều phải dưới 15 tuổi và vợ hoặc chồng của người đó không có công ăn việc làm, gia đình khó khăn được chính quyền địa phương xác nhận.",
+    "references": [
+      "Khoản 9, Điều 3 Nghị quyết số 04/2025/NQ-HĐTP"
+    ]
+  },
+  {
+    "id": 12,
+    "original_question": "Như thế nào là cố tình thực hiện tội phạm đến cùng?",
+    "reframed_question": "Bạn tôi và người ta vì va chạm giao thông dẫn đến xô xát. Người ta đã chống trả, chạy thoát nhưng bạn tôi tiếp tục truy đuổi và dùng dao đâm làm người ta tử vong thì có bị xem là cố tình thực hiện tội phạm đến cùng?",
+    "answer": "Theo quy định tại khoản 6, Điều 4 Nghị quyết số 04/2025/NQ-HĐTP của Hội đồng thẩm phán Tòa án Nhân dân tối cao thì tình tiết “cố tình thực hiện tội phạm đến cùng” được hiểu như sau: “Cố tình thực hiện tội phạm đến cùng” quy định tại điểm e khoản 1 Điều 52 của Bộ luật Hình sự là trường hợp người phạm tội quyết tâm thực hiện bằng được ý định phạm tội và hành vi phạm tội, mặc dù có sự can ngăn của người khác hoặc có những trở ngại khác trong quá trình thực hiện tội phạm. Cũng có thể áp dụng tình tiết tăng nặng trách nhiệm hình sự này nếu mục đích của người phạm tội không đạt nhưng chứng minh được người phạm tội tìm mọi cách để thực hiện được tội phạm hoặc đạt được mục đích phạm tội của mình. Trường hợp người phạm tội có sự lưỡng lự, không dứt khoát thực hiện tội phạm thì không áp dụng tình tiết này. Trường hợp này, bạn của bạn bị áp dụng tình tiết tăng nặng trách nhiệm hình sự quy định tại điểm e khoản 1 Điều 52 của Bộ luật Hình sự là cố tình thực hiện tội phạm đến cùng.",
+    "references": [
+      "Khoản 6, Điều 4 Nghị quyết số 04/2025/NQ-HĐTP",
+      "Điểm e khoản 1 Điều 52 của Bộ luật Hình sự 2015"
+    ]
+  },
+  {
+    "id": 13,
+    "original_question": "Được gia hạn tạm giam tối đa bao nhiêu lần để tiến hành điều tra?",
+    "reframed_question": "Đối với các tội phạm có tính chất phức tạp, thì việc tạm giam điều tra được gia hạn tối đa bao nhiêu lần?",
+    "answer": "Căn cứ từ khoản 1 đến khoản 6 Điều 173 Bộ luật Tố tụng hình sự 2015 quy định về thời hạn tạm giam để điều tra như sau: 1. Thời hạn tạm giam bị can để điều tra không quá 02 tháng đối với tội phạm ít nghiêm trọng, không quá 03 tháng đối với tội phạm nghiêm trọng, không quá 04 tháng đối với tội phạm rất nghiêm trọng và tội phạm đặc biệt nghiêm trọng. 2. Trường hợp vụ án có nhiều tình tiết phức tạp, xét cần phải có thời gian dài hơn cho việc điều tra và không có căn cứ để thay đổi hoặc hủy bỏ biện pháp tạm giam thì chậm nhất là 10 ngày trước khi hết thời hạn tạm giam, Cơ quan điều tra phải có văn bản đề nghị Viện kiểm sát gia hạn tạm giam. Việc gia hạn tạm giam được quy định như sau: a) Đối với tội phạm ít nghiêm trọng có thể được gia hạn tạm giam một lần không quá 01 tháng; b) Đối với tội phạm nghiêm trọng có thể được gia hạn tạm giam một lần không quá 02 tháng; c) Đối với tội phạm rất nghiêm trọng có thể được gia hạn tạm giam một lần không quá 03 tháng; d) Đối với tội phạm đặc biệt nghiêm trọng có thể được gia hạn tạm giam hai lần, mỗi lần không quá 04 tháng. … 5. Trường hợp cần thiết đối với tội xâm phạm an ninh quốc gia thì Viện trưởng Viện kiểm sát nhân dân tối cao có quyền gia hạn thêm một lần không quá 04 tháng. Trường hợp thời hạn gia hạn tạm giam quy định tại khoản này đã hết mà chưa thể kết thúc việc điều tra và không có căn cứ để thay đổi hoặc hủy bỏ biện pháp tạm giam thì Viện trưởng Viện kiểm sát nhân dân tối cao có quyền gia hạn thêm một lần nhưng không quá 01 tháng đối với tội phạm nghiêm trọng, không quá 02 tháng đối với tội phạm rất nghiêm trọng, không quá 04 tháng đối với tội phạm đặc biệt nghiêm trọng. Trường hợp đặc biệt đối với tội phạm đặc biệt nghiêm trọng xâm phạm an ninh quốc gia mà không có căn cứ để hủy bỏ biện pháp tạm giam thì Viện trưởng Viện kiểm sát nhân dân tối cao quyết định việc tạm giam cho đến khi kết thúc việc điều tra. 6. Trường hợp cần thiết đối với tội phạm đặc biệt nghiêm trọng không phải là tội xâm phạm an ninh quốc gia và không có căn cứ để thay đổi hoặc hủy bỏ biện pháp tạm giam thì Viện trưởng Viện kiểm sát nhân dân tối cao có quyền gia hạn thêm một lần nhưng không quá 04 tháng; trường hợp đặc biệt không có căn cứ để hủy bỏ biện pháp tạm giam thì Viện trưởng Viện kiểm sát nhân dân tối cao quyết định việc tạm giam cho đến khi kết thúc việc điều tra,... Như vậy, tùy theo từng vụ án sẽ có những lần gia hạn tạm giam khác nhau. Với những vụ án có nhiều tình tiết phức tạp thuộc tội xâm phạm an ninh quốc gia là tội phạm đặc biệt nghiêm trọng thì được gia hạn tạm giam tối đa bốn lần để điều tra. Trong trường hợp đặc biệt không có căn cứ để hủy bỏ biện pháp tạm giam thì Viện trưởng Viện kiểm sát nhân dân tối cao quyết định việc tạm giam cho đến khi kết thúc việc điều tra, nghĩa là có thể gia hạn tạm giam thêm nữa. Những trường hợp còn lại, số lần được gia hạn tạm giam để điều tra theo các quy định trên.",
+    "references": [
+      "Khoản 1 đến khoản 6 Điều 173 Bộ luật Tố tụng hình sự 2015"
+    ]
+  },
+  {
+    "id": 14,
+    "original_question": "Đang hưởng án treo có được thay đổi nơi cư trú không?",
+    "reframed_question": "Hiện tại, tôi đang phải chấp hành án treo 2 năm tại xã A, huyện B. Tuy nhiên, tôi mới chấp hành án treo được 3 tháng thì có nhu cầu chuyển sang nơi cư trú mới ở xã C, huyện D. Vậy trong trường hợp trên, tôi có được phép chuyển nơi cư trú không?",
+    "answer": "Người được hưởng án treo được xem xét, giải quyết thay đổi nơi cư trú nếu đảm bảo các yêu cầu quy định tại Điều 3 Thông tư 64/2019/TT-BCA: Người chấp hành án được xem xét, giải quyết thay đổi nơi cư trú nếu đảm bảo các yêu cầu sau: 1. Bảo đảm các yêu cầu theo quy định của pháp luật về cư trú. 2. Có lý do chính đáng mà phải thay đổi nơi cư trú, thuộc một trong các trường hợp sau: a) Đang sinh sống cùng gia đình mà gia đình chuyển cư trú sang nơi khác; b) Chuyển đến nơi cư trú với vợ hoặc chồng sau khi kết hôn; chuyển nơi cư trú khác sau khi ly hôn; c) Chuyển đến nơi cư trú cùng cha, mẹ, ông, bà, con để thực hiện nghĩa vụ chăm sóc, nuôi dưỡng trong trường hợp cha, mẹ, ông, bà, con bị bệnh hiểm nghèo mà không có người khác chăm sóc, nuôi dưỡng hoặc trường hợp già yếu không nơi nương tựa; d) Chuyển đến nơi cư trú khác để đảm bảo việc công tác, học tập; đ) Không còn nơi cư trú vì bị giải tỏa, thiên tai, hỏa hoạn, địch họa; e) Buộc phải bán nhà để khắc phục hậu quả hoặc đảm bảo cuộc sống; g) Vì lý do dịch bệnh hoặc đảm bảo yêu cầu về quốc phòng an ninh; h) Các trường hợp khác do Cơ quan quản lý thi hành án hình sự thuộc Bộ Công an quyết định. 3. Nơi cư trú chuyển đến phải có địa chỉ cụ thể, rõ ràng, ổn định lâu dài. 4. Việc giải quyết thay đổi nơi cư trú của người chấp hành án phải đảm bảo không làm ảnh hưởng đến an ninh, trật tự; đảm bảo yêu cầu của công tác quản lý, giám sát, giáo dục người chấp hành án và việc ổn định cuộc sống, hòa nhập cộng đồng của người chấp hành án. Như vậy, nếu đảm bảo các yêu cầu trên, bạn có thể viết đơn xin thay đổi nơi cư trú hoặc đề nghị công an cấp xã hướng dẫn và nộp cho Công an cấp xã. Đơn xin thay đổi nơi cư trú phải nêu rõ lý do thay đổi nơi cư trú.",
+    "references": [
+      "Điều 3 Thông tư 64/2019/TT-BCA"
+    ]
+  },
+  {
+    "id": 15,
+    "original_question": "Giết người đốt xác phi tang phạm tội gì?",
+    "reframed_question": "Trường hợp vay tiền nhưng không trả được nợ nên giết người đốt xác phi tang phải chịu trách nhiệm về tội giết người hay tội xâm phạm thi thể, mồ mả hay cả hai tội?",
+    "answer": "Hành vi đốt xác phi tang là hành vi giết người được quy định tại khoản 1 Điều 123 Bộ luật hình sự năm 2015. Mức án phạt cao nhất của tội giết người là tử hình. Ngoài ra, nếu sau khi đốt xác, bạn lại có hành vi mang tử thi của bị hại đi, hoặc có hành động chặt, xẻ các bộ phận khác trên cơ thể tử thi thì hành vi này có dấu hiệu của Tội xâm phạm thi thể, mồ mả, hài cốt theo quy định tại Điều 319 Bộ luật Hình sự năm 2015. Cụ thể: “1. Người nào đào, phá mồ mả, chiếm đoạt những đồ vật để ở trong mộ, trên mộ hoặc có hành vi khác xâm phạm thi thể, mồ mả, hài cốt, thì bị phạt cải tạo không giam giữ đến 02 năm hoặc phạt tù từ 03 tháng đến 02 năm.”. Mức hình phạt cao nhất của tội này lên đến 7 năm tù.",
+    "references": [
+      "Khoản 1, Điều 123 Bộ luật hình sự 2015",
+      "Điều 319 Bộ luật Hình sự 2015"
+    ]
+  },
+  {
+    "id": 16,
+    "original_question": "Hành vi ngoại tình có thể bị truy cứu trách nhiệm hình sự không?",
+    "reframed_question": "Chồng tôi thường xuyên không ở nhà và ngủ ở khách sạn với chị A. Vậy trong trường hợp này, tôi có thể yêu cầu cơ quan nhà nước khởi tố hình sự chồng tôi về tội vi phạm chế độ hôn nhân một vợ một chồng không?",
+    "answer": "Việc khởi tố hình sự phải căn cứ vào các yếu tố cấu thành tội phạm được quy định tại Bộ luật Hình sự năm 2015, cũng như Bộ luật Tố tụng hình sự năm 2015. Đối với hành vi vi phạm chế độ hôn nhân một vợ một chồng hiện nay được quy định tại Điều 182 Bộ luật Hình sự năm 2015: 1. Người nào đang có vợ, có chồng mà kết hôn hoặc chung sống như vợ chồng với người khác hoặc người chưa có vợ, chưa có chồng mà kết hôn hoặc chung sống như vợ chồng với người mà mình biết rõ là đang có chồng, có vợ thuộc một trong các trường hợp sau đây, thì bị phạt cảnh cáo, phạt cải tạo không giam giữ đến 01 năm hoặc phạt tù từ 03 tháng đến 01 năm: a) Làm cho quan hệ hôn nhân của một hoặc hai bên dẫn đến ly hôn; b) Đã bị xử phạt vi phạm hành chính về hành vi này mà còn vi phạm. 2. Phạm tội thuộc một trong các trường hợp sau đây, thì bị phạt tù từ 06 tháng đến 03 năm: a) Làm cho vợ, chồng hoặc con của một trong hai bên tự sát; b) Đã có quyết định của Tòa án hủy việc kết hôn hoặc buộc phải chấm dứt việc chung sống như vợ chồng trái với chế độ một vợ, một chồng mà vẫn duy trì quan hệ đó. Như vậy, để có thể khởi tố hình sự chồng của bạn thì phải chứng minh được họ sống with nhau như vợ chồng và thuộc 1 trong 2 trường hợp quy định tại điểm a,b khoản 1 nêu trên. Khi 2 người này chỉ có hành vi thường xuyên ngủ với nhau ở khách sạn thì khó có thể nói rằng họ sống với nhau như vợ chồng. Trường hợp này chưa có dấu hiệu của tội phạm hình sự theo quy định tại Điều 182 Bộ luật Hình sự năm 2015.",
+    "references": [
+      "Điều 182 Bộ luật Hình sự 2015"
+    ]
+  },
+  {
+    "id": 17,
+    "original_question": "Mua dâm người 15 tuổi bị xử lý như thế nào?",
+    "reframed_question": "Bạn tôi mua dâm người 15 tuổi với giá 15 triệu, khi đang quan hệ thì bị cơ quan công an bắt. Vậy trong trường hợp trên bạn tôi có phải chịu cùng một lúc hai tội là tội mua dâm người dưới 18 tuổi và tội giao cấu người từ 13 đến dưới 16 tuổi không?",
+    "answer": "khoản 1 và khoản 2 Điều 3 Pháp lệnh Pháp lệnh phòng, chống mại dâm năm 2003 quy định như sau: “1. Bán dâm là hành vi giao cấu của một người với người khác để được trả tiền hoặc lợi ích vật chất khác. 2. Mua dâm là hành vi của người dùng tiền hoặc lợi ích vật chất khác trả cho người bán dâm để được giao cấu.” Trường hợp này có yếu tố mua bán dâm vì bạn của bạn đã thực hiện hành vi thanh toán tiền để nhằm giao cấu với A. Và A được xác định là người bán dâm vì đã nhận tiền và đồng ý vào nhà nghỉ để thực hiện hành vi mua bán dâm với bạn của bạn. Căn cứ quy định tại Điều 329 Bộ luật Hình sự 2015 “Điều 329. Tội mua dâm người dưới 18 tuổi 2. Phạm tội thuộc một trong các trường hợp sau đây, thì bị phạt tù từ 03 năm đến 07 năm: a) Mua dâm 02 lần trở lên; b) Mua dâm người từ đủ 13 tuổi đến dưới 16 tuổi; c) Gây tổn hại cho sức khỏe của nạn nhân mà tỷ lệ tổn thương cơ thể từ 31% đến 60%. 4. Người phạm tội còn bị phạt tiền từ 10.000.000 đồng đến 50.000.000 đồng.” Như vậy, nếu người đủ 18 tuổi trở lên thực hiện hành vi mua dâm người từ đủ 13 tuổi đến dưới 16 tuổi thì sẽ có thể bị phạt tù từ 03 đến 07 năm. Còn nếu A không phải là người bán dâm thì bạn của bạn có thể bị truy cứu trách nhiệm hình sự về tội giao cấu hoặc thực hiện hành vi quan hệ tình dục khác with người từ đủ 13 tuổi đến dưới 16 tuổi theo Điều 145 Bộ luật hình sự 2015.",
+    "references": [
+      "Khoản 1 và khoản 2 Điều 3 Pháp lệnh phòng, chống mại dâm năm 2003",
+      "Điều 329 Bộ luật Hình sự 2015",
+      "Điều 145 Bộ luật hình sự 2015"
+    ]
+  },
+  {
+    "id": 18,
+    "original_question": "Làm giả chứng thư bảo lãnh của ngân hàng sẽ bị xử lý thế nào?",
+    "reframed_question": "Doanh nghiệp tư nhân C do bạn tôi làm chủ có trúng thầu dự án xây dựng khu nhà tập thể A. Bạn tôi làm giả chứng thư bảo lãnh của ngân hàng X để công ty B tin tưởng và ký hợp đồng mua bán vật liệu xây dựng. Công ty B phát hiện chứng thư bảo lãnh của ngân hàng là giả và trình báo với cơ quan công an. Vậy trong trường hợp trên, bạn tôi sẽ bị xử lý hình sự về tội gì?",
+    "answer": "Nếu như việc làm giả chứng thư này để lừa dối, tạo lòng tin để Công ty B ký hợp đồng sau đó thực hiện việc chiếm đoạt số tiền đó thì bạn của bạn sẽ bị truy tố về “Tội lừa đảo chiếm đoạt tài sản” theo quy định tại Điều 174, Bộ luật Hình sự năm 2015. Còn lại, trường hợp bạn của bạn chỉ vì muốn tạo lòng tin để đối tác ký hợp đồng mua bán vật liệu xây dựng và sau này vẫn có ý thức thực hiện đúng hợp đồng mà không có ý đồ chiếm đoạt thì bạn của bạn vẫn phải chịu trách nhiệm hình sự về “Tội làm giả con dấu, tài liệu của cơ quan, tổ chức; tội sử dụng con dấu hoặc tài liệu giả của cơ quan, tổ chức” tại Điều 341 Bộ luật Hình sự 2015, cụ thể quy định như sau: “Người nào làm giả con dấu, tài liệu hoặc giấy tờ khác của cơ quan, tổ chức hoặc sử dụng con dấu, tài liệu hoặc giấy tờ giả thực hiện hành vi trái pháp luật, thì bị phạt tiền từ 30.000.000 đồng đến 100.000.000 đồng, phạt cải tạo không giam giữ đến 03 năm hoặc phạt tù từ 06 tháng đến 07 năm”. Trường hợp thu lợi lớn và số lượng giấy tờ bị làm giả nhiều thì bạn có thể bị truy cứu theo khung hình phạt tại khoản 2 hoặc khoản 3 với mức phạt lên tới 07 năm tù giam. Ngoài trách nhiệm hình sự, bạn của bạn còn phải chịu trách nhiệm dân sự nếu gây thiệt hại cho Ngân hàng hoặc cho đối tác là Công ty B (có thể là thiệt hại về vật chất hoặc về uy tín doanh nghiệp,...)",
+    "references": [
+      "Điều 174 Bộ luật Hình sự 2015",
+      "Điều 341 Bộ luật Hình sự 2015"
+    ]
+  },
+  {
+    "id": 19,
+    "original_question": "Sa thải người lao động trái pháp luật có bị xử lý hình sự không?",
+    "reframed_question": "Năm 2015, tôi có ký kết hợp đồng lao động với công ty A hợp đồng lao động không xác định thời hạn. Ngày 4/8/2021, Công ty A tiến hành sa thải tôi với lý do tôi vắng mặt liên tục 5 ngày không có lý do chính đáng. Thời điểm đó, tôi cũng đang mang thai được tháng thứ 4. Vậy trong trường hợp trên công ty tiến hành sa thải tôi là trái quy định của pháp luật và có phải chịu trách nhiệm hình sự về tội sa thải người lao động trái pháp luật không?",
+    "answer": "Liên quan đến vấn đề này, điểm d Khoản 4 Điều 122 Bộ luật Lao động 2019 quy định như sau: “Không được xử lý kỷ luật lao động đối với người lao động đang trong thời gian sau đây: Người lao động nữ mang thai; người lao động nghỉ thai sản, nuôi con dưới 12 tháng tuổi.” Như vậy, việc công ty bạn sa thải bạn khi bạn đang mang thai là trái với quy định pháp luật nêu trên. Để xác định hành vi sa thải trái pháp luật của người sử dụng lao động có bị xử lý hình sự hay không, cần xem xét hành vi này có đủ yếu tố cấu thành Tội buộc công chức, viên chức thôi việc hoặc sa thải người lao động trái pháp luật quy định tại Điều 162 Bộ luật Hình sự 2015 hay không. Điều 162 Bộ luật Hình sự 2015 quy định như sau: “1. Người nào vì vụ lợi hoặc động cơ cá nhân khác mà thực hiện một trong các hành vi sau đây gây hậu quả nghiêm trọng, thì bị phạt tiền từ 10.000.000 đồng đến 100.000.000 đồng, phạt cải tạo không giam giữ đến 01 năm hoặc phạt tù từ 03 tháng đến 01 năm: a) Ra quyết định buộc thôi việc trái pháp luật đối với công chức, viên chức; b) Sa thải trái pháp luật đối với người lao động; c) Cưỡng ép, đe dọa buộc công chức, viên chức, người lao động phải thôi việc.” Theo quy định trên, người nào vì vụ lợi hoặc động cơ cá nhân khác mà thực hiện hành vi sa thải người lao động, gây hậu quả nghiêm trọng thì bị xử lý hình sự với hình thức phạt tiền từ 10.000.000 đồng đến 100.000.000 đồng, phạt cải tạo không giam giữ đến 01 năm hoặc phạt tù từ 03 tháng đến 01 năm. Như vậy, nếu hành vi sa thải này được thực hiện vì vụ lợi hoặc động cơ cá nhân khác và gây hậu quả nghiêm trọng thì mới bị xử lý hình sự.",
+    "references": [
+      "Điểm d Khoản 4 Điều 122 Bộ luật Lao động 2019",
+      "Điều 162 Bộ luật Hình sự 2015"
+    ]
+  },
+  {
+     "id": 20,
+    "original_question": "Giúp người khác tự tử có phạm tội không? Hành vi giúp người khác tự tử bị phạt thế nào?",
+    "reframed_question": "Giúp người khác tự tử có phạm tội không? Hành vi giúp người khác tự tử bị phạt thế nào?",
+    "answer": "Theo Điều 131 Bộ luật Hình sự 2015 quy định tội xúi giục hoặc giúp người khác tự sát như sau: 1. Người nào thực hiện một trong các hành vi sau đây, thì bị phạt cải tạo không giam giữ đến 03 năm hoặc phạt tù từ 06 tháng đến 03 năm: a) Kích động, dụ dỗ, thúc đẩy người khác tự tước đoạt tính mạng của họ; b) Tạo điều kiện vật chất hoặc tinh thần cho người khác tự tước đoạt tính mạng của họ. 2. Phạm tội làm 02 người trở lên tự sát, thì bị phạt tù từ 02 năm đến 07 năm. Như vậy, hành vi giúp người khác tự tử bằng cách tạo điều kiện vật chất hoặc tinh thần cho người khác tự tước đoạt tính mạng của họ thì phạm tội xúi giục hoặc giúp người khác tự sát. Hình phạt của tội xúi giục hoặc giúp người khác tự sát là cải tạo không giam giữ đến 03 năm hoặc phạt tù từ 06 tháng đến 07 năm.",
+    "references": [
+      "Điều 131 Bộ luật Hình sự 2015"
+    ]
+  },
+  {
+     "id": 21,
+    "original_question": "Vô tình khiến tăm cố định bánh kem đâm làm mù mắt bạn thì có bị truy cứu trách nhiệm hình sự không?",
+    "reframed_question": "Gần đây em có nghe tin một người bạn chơi với em hồi cấp ba vừa bị mù một bên mắt do trong lúc tổ chức sinh nhật bạn của bạn ấy có ấn đầu bạn ấy vào bánh kem. Cho em hỏi, nếu vô tình khiến tăm bánh kem đâm làm mù mắt bạn thì có bị truy cứu trách nhiệm hình sự như thế nào?",
+    "answer": "Điều 138 Bộ luật Hình sự 2015 quy định về tội vô ý gây thương tích hoặc gây tổn hại cho sức khỏe của người khác như sau: 1. Người nào vô ý gây thương tích hoặc gây tổn hại cho sức khỏe của người khác mà tỷ lệ tổn thương cơ thể từ 31% đến 60%, thì bị phạt cảnh cáo, phạt tiền từ 5.000.000 đồng đến 20.000.000 đồng hoặc phạt cải tạo không giam giữ đến 01 năm. 2. Phạm tội thuộc một trong các trường hợp sau đây, thì bị phạt cải tạo không giam giữ từ 01 năm đến 02 năm hoặc phạt tù từ 03 tháng đến 02 năm: a) Đối với 02 người trở lên mà tỷ lệ tổn thương cơ thể của mỗi người từ 31% đến 60%; b) Gây thương tích hoặc gây tổn hại cho sức khỏe của người khác mà tỷ lệ tổn thương cơ thể 61% trở lên. 3. Phạm tội đối với 02 người trở lên mà tỷ lệ tổn thương cơ thể của mỗi người 61% trở lên, thì bị phạt cải tạo không giam giữ từ 02 năm đến 03 năm hoặc phạt tù từ 01 năm đến 03 năm. Pháp luật quy định người nào vô ý gây thương tích hoặc gây tổn hại cho sức khỏe của người khác mà tỷ lệ tổn thương cơ thể từ 31% trở lên thì bị truy cứu trách nhiệm hình sự về tội vô ý gây thương tích hoặc gây tổn hại cho sức khỏe của người khác và áp dụng hình phạt cảnh cáo, phạt tiền từ 5.000.000 đồng đến 20.000.000 đồng, phạt cải tạo không giam giữ đến 01 năm hoặc bị phạt tù từ 03 tháng đến đến 03 năm. Như vậy, việc vô tình khiến tăm cố định bánh kem đâm mù mắt bạn sẽ bị truy cứu trách nhiệm hình sự về tội vô ý gây thương tích hoặc gây tổn hại cho sức khỏe của người khác, và còn tùy thuộc vào tỷ lệ thương tổn cơ thể của người đó là bao nhiêu thì sẽ áp dụng mức phạt tiền phù hợp.",
+    "references": [
+      "Điều 138 Bộ luật Hình sự 2015"
+    ]
   }
 ]
