@@ -16,7 +16,7 @@ def load_initial_documents():
     """Load initial documents if vector store is empty"""
     pdf_dir = "dataset/pdf"
     documents = []
-    loader = PyPDFLoader("../dataset/pdf/100_2015_QH13_296661.pdf")
+    loader = PyPDFLoader("./dataset/pdf/100_2015_QH13_296661.pdf")
     documents = loader.load()
 
     # if os.path.exists(pdf_dir):
