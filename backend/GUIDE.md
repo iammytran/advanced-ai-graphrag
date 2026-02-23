@@ -45,9 +45,14 @@ python -m venv venv
 venv\Scripts\activate  # Windows
 ```
 
+```bash
+python -m venv venv
+source venv/bin/activate #Ubuntu
+```
+
 ### 3. Cài Đặt Dependencies
 ```bash
-pip install -r requirements.txt
+pip install -r backend/requirement.txt
 ```
 
 ### 4. Cấu Hình Environment

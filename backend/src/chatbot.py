@@ -1,332 +1,104 @@
-"""RAG Chatbot using LangGraph"""
+from typing import Annotated, TypedDict
 
-import json
-from typing import Any, Dict, List, TypedDict
-
-from config.config import ENABLE_EVALUATION, EVALUATION_THRESHOLD
-from langchain_core.documents import Document
+from langchain.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.messages import BaseMessage
+from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
-from src.conversation_history import ConversationHistoryManager
-from src.evaluation import EvaluationManager
-from src.llm import LLMManager
-from src.vector_db import VectorDBManager
+from langgraph.graph.message import add_messages
+
+from backend.config.config import OPENAI_MODEL, TEMPERATURE
+from backend.src.prompts import AGENT_SYSTEM_PROMPT
+from backend.tools.rag import rag_retrieval
 
 
-class ChatbotState(TypedDict):
-    """State for the chatbot graph"""
-
-    question: str
-    evaluation_result: Dict[str, Any]
-    retrieved_documents: List[Document]
-    generated_answer: str
-    evaluation_metrics: Dict[str, Any]
-    final_output: Dict[str, Any]
-    conversation_history: "ConversationHistoryManager"
-    options: Dict[str, Any]
+class State(TypedDict):
+    messages: Annotated[list[BaseMessage], add_messages]
 
 
-class RAGChatbot:
-    """RAG Chatbot using LangGraph"""
+class Chatbot:
 
     def __init__(self):
-        """Initialize the RAG Chatbot"""
-        self.vector_db = VectorDBManager()
-        self.llm_manager = LLMManager()
-        self.evaluator = EvaluationManager()
-        self.conversation_history = ConversationHistoryManager()
-        self.workflow = self._build_workflow()
-
-    def _build_workflow(self):
-        """Build the LangGraph workflow"""
-        workflow = StateGraph(ChatbotState)
-
-        # Add nodes
-        workflow.add_node("input", self._input_node)
-        workflow.add_node("evaluate_question", self._evaluate_question_node)
-        workflow.add_node("generate_answer", self._generate_answer_node)
-        # workflow.add_node("evaluate_answer", self._evaluate_answer_node)
-        workflow.add_node("output", self._output_node)
-
-        # Add edges
-        workflow.add_edge(START, "input")
-        workflow.add_edge("input", "evaluate_question")
-        # After evaluating retrieved documents, branch to generate or output
-        workflow.add_conditional_edges(
-            "evaluate_question",
-            self._should_retrieve_documents,
-            {
-                "relevant": "generate_answer",
-                "not_relevant": "output",
-            },
+        self.message_history: list[BaseMessage] = []
+        self.graph = self.build_graph()
+        tools = [rag_retrieval]
+        self.llm = ChatOpenAI(
+            max_completion_tokens=5000,
+            base_url="https://openrouter.ai/api/v1",
+            model=OPENAI_MODEL,
+            temperature=TEMPERATURE,
         )
+        self.model_with_tools = self.llm.bind_tools(tools)
 
-        # if ENABLE_EVALUATION:
-        #     workflow.add_edge("generate_answer", "evaluate_answer")
-        #     workflow.add_edge("evaluate_answer", "output")
-        # else:
-        workflow.add_edge("generate_answer", "output")
+    # GRAPH NODES
+    ## LOGIC NODE
+    def LogicNode(self, state: State) -> State:
+        messages = state["messages"]
 
-        workflow.add_edge("output", END)
+        if not isinstance(messages[0], SystemMessage):
+            messages = [SystemMessage(content=AGENT_SYSTEM_PROMPT)] + messages
 
-        return workflow.compile()
+        response = self.model_with_tools.invoke(messages)
 
-    def _input_node(self, state: ChatbotState) -> ChatbotState:
-        """Input node - process the question"""
-        print(f"\n📝 INPUT: {state['question']}")
-        state["conversation_history"].add_message(
-            role="user",
-            content=state["question"],
-            metadata={"type": "question", "options": state.get("options", {})},
-        )
-        return state
+        if hasattr(response, "tool_calls") and response.tool_calls:
+            state["messages"].append(response)
 
-    def _evaluate_question_node(self, state: ChatbotState) -> ChatbotState:
-        """Retrieve top-k documents then evaluate each document's relevance individually"""
-        print("\n🔍 RETRIEVING TOP-K DOCUMENTS FOR EVALUATION...")
+            for tool_call in response.tool_calls:
+                tool_name = tool_call.get("name")
+                tool_input = tool_call.get("args", {})
 
-        # Retrieve documents first
-        documents = self.vector_db.retrieve_documents(state["question"])
-        all_docs = []
-        relevant_docs = []
-        eval_results = []
+                if tool_name == "rag_retrieval":
+                    tool_result = rag_retrieval.invoke(tool_input)
 
-        if documents:
-            all_docs = [doc for doc, score in documents]
-            relevant_docs = all_docs
-            # Print content of documents
-            for i, doc in enumerate(all_docs, 1):
-                print(f"---Doc {i}:\n---")
-                print(doc.page_content)
-                print("\n")
-            print(f"   Retrieved {len(documents)} documents")
-
-            # # Evaluate each document individually
-            # print("\n   Evaluating each document for relevance...")
-            # for i, doc in enumerate(all_docs, 1):
-            #     doc_eval = self.evaluator.evaluate_document(state["question"], doc)
-            #     eval_results.append({
-            #         "document": doc,
-            #         "evaluation": doc_eval
-            #     })
-
-            #     is_relevant = doc_eval.get("is_relevant", False)
-            #     relevance_score = doc_eval.get("relevance_score", 0.0)
-
-            #     status = "✓" if is_relevant else "✗"
-            #     print(f"   {status} Doc {i}: {relevance_score:.2f} - {doc.page_content[:60]}...")
-            #     if is_relevant:
-            #         relevant_docs.append(doc)
-
-            # Store all evaluation results
-            state["evaluation_result"] = {
-                "total_retrieved": len(all_docs),
-                "total_relevant": len(relevant_docs),
-                "document_evaluations": eval_results,
-                "is_relevant": len(relevant_docs) > 0,
-            }
-            state["retrieved_documents"] = relevant_docs
-
-            print(
-                f"\n   Summary: {len(relevant_docs)}/{len(all_docs)} documents are relevant"
-            )
-        else:
-            state["retrieved_documents"] = []
-            state["evaluation_result"] = {
-                "total_retrieved": 0,
-                "total_relevant": 0,
-                "document_evaluations": [],
-                "is_relevant": False,
-            }
-            print("   No documents retrieved")
-
-        return state
-
-    def _should_retrieve_documents(self, state: ChatbotState) -> str:
-        """Determine whether we have relevant documents to generate answer from"""
-        is_relevant = state["evaluation_result"].get("is_relevant", False)
-        total_relevant = state["evaluation_result"].get("total_relevant", 0)
-        return "relevant" if is_relevant and total_relevant > 0 else "not_relevant"
-
-    def _retrieve_documents_node(self, state: ChatbotState) -> ChatbotState:
-        """Retrieve documents from vector DB"""
-        print("\n📚 RETRIEVING DOCUMENTS...")
-        documents = self.vector_db.retrieve_documents(state["question"])
-
-        if documents:
-            state["retrieved_documents"] = [doc for doc, score in documents]
-            print(f"   Found {len(documents)} relevant documents")
-            for i, (doc, score) in enumerate(documents, 1):
-                print(f"   {i}. Score: {score:.3f} - {doc.page_content[:80]}...")
-        else:
-            state["retrieved_documents"] = []
-            print("   No documents found")
-
-        return state
-
-    def _generate_answer_node(self, state: ChatbotState) -> ChatbotState:
-        """Generate answer using LLM"""
-        print("\n🤖 GENERATING ANSWER...")
-
-        documents = state.get("retrieved_documents", [])
-        options = state.get("options", {})
-
-        if documents:
-            answer = self.llm_manager.generate_response(
-                state["question"], documents, options
-            )
-        else:
-            # Generate answer without context
-            from langchain_core.prompts import ChatPromptTemplate
-
-            prompt_str = "Answer this question: {question}"
-
-            # Apply persona/tone if provided
-            if options:
-                character = options.get("character")
-                tone = options.get("toneValue")
-
-                parts = []
-                if character:
-                    parts.append(f"You are a {character}.")
-                if tone:
-                    parts.append(
-                        f"Use a tone level of {tone}/100 (where 0 is casual, 100 is formal)."
+                    tool_message = ToolMessage(
+                        content=tool_result,
+                        tool_call_id=tool_call.get("id", ""),
+                        name=tool_name,
                     )
+                    state["messages"].append(tool_message)
 
-                if parts:
-                    prompt_str = " ".join(parts) + "\n\n" + prompt_str
-
-            prompt = ChatPromptTemplate.from_template(prompt_str)
-            chain = prompt | self.llm_manager.llm
-            response = chain.invoke({"question": state["question"]})
-            answer = response.content
-
-        state["generated_answer"] = answer
-        print(f"   Answer: {answer[:200]}...")
+            final_response = self.model_with_tools.invoke(state["messages"])
+            state["messages"].append(final_response)
+        else:
+            state["messages"].append(response)
 
         return state
 
-    def _evaluate_answer_node(self, state: ChatbotState) -> ChatbotState:
-        """Evaluate the generated answer"""
-        print("\n✅ EVALUATING ANSWER...")
-
-        evaluation = self.evaluator.evaluate_answer(
-            state["question"],
-            state["generated_answer"],
-            state.get("retrieved_documents", []),
-        )
-
-        state["evaluation_metrics"] = evaluation
-
-        overall_score = evaluation.get("overall_score", 0.5)
-        is_high_quality = evaluation.get("is_high_quality", False)
-
-        print(f"   Overall Score: {overall_score:.2f}")
-        print(f"   Quality: {'✓ High' if is_high_quality else '✗ Needs Improvement'}")
-        print(f"   Feedback: {evaluation.get('feedback', 'N/A')}")
-
+    # INPUT NODE
+    def InputNode(self, state: State) -> State:
+        question = state["messages"][-1].content
+        print(f"\n📝 INPUT: {question}")
         return state
 
-    def _output_node(self, state: ChatbotState) -> ChatbotState:
-        """Output node - prepare final response"""
-        print("\n🎯 FINAL OUTPUT")
-        # If there is no generated answer (e.g., retrieval was not relevant),
-        # return a safe default and include retrieval evaluation
-        answer = (
-            state.get("generated_answer")
-            or "I don't know based on available documents."
-        )
+    # GRAPH BUILDING
+    def build_graph(self) -> StateGraph:
+        graph = StateGraph(State)
+        # Add nodes
+        graph.add_node("input_node", self.InputNode)
+        graph.add_node("process", self.LogicNode)
+        # Add edges
+        graph.add_edge(START, "input_node")
+        graph.add_edge("input_node", "process")
+        graph.add_edge("process", END)
+        return graph.compile()
 
-        # Prefer evaluation_metrics (from answer eval) otherwise include retrieval evaluation
-        evaluation = state.get("evaluation_metrics") or state.get("evaluation_result")
+    # CHAT
+    def chat(self, user_input: str) -> str:
+        human_message = HumanMessage(content=user_input)
+        self.message_history.append(human_message)
 
-        state["final_output"] = {
-            "question": state["question"],
-            "answer": answer,
-            "retrieved_documents": state.get("retrieved_documents", []),
-            "evaluation": evaluation,
-        }
+        state = State(messages=self.message_history)
 
-        # Save to conversation history
-        state["conversation_history"].add_message(
-            role="assistant",
-            content=answer,
-            metadata={
-                "type": "answer",
-                "documents_used": len(state.get("retrieved_documents", [])),
-                "evaluation": evaluation,
-            },
-        )
+        output_state = self.graph.invoke(state)
 
-        return state
+        self.message_history = output_state["messages"]
 
-    def run(self, question: str, options: Dict[str, Any] = None) -> Dict[str, Any]:
-        """Run the chatbot on a question"""
-        print("\n" + "=" * 60)
-        print("🚀 RAG CHATBOT WORKFLOW STARTED")
-        print("=" * 60)
+        for message in reversed(self.message_history):
+            if isinstance(message, AIMessage):
+                return message.content
 
-        initial_state: ChatbotState = {
-            "question": question,
-            "options": options or {},
-            "evaluation_result": {},
-            "retrieved_documents": [],
-            "generated_answer": "",
-            "evaluation_metrics": {},
-            "final_output": {},
-            "conversation_history": self.conversation_history,
-        }
+        return "No response generated"
 
-        result = self.workflow.invoke(initial_state)
 
-        print("\n" + "=" * 60)
-        print("✅ WORKFLOW COMPLETED")
-        print("=" * 60)
-
-        return result["final_output"]
-
-    def save_conversation(self, filename: str = None) -> str:
-        """Save conversation history to file
-
-        Args:
-            filename: Optional filename (without extension)
-
-        Returns:
-            Path to saved file
-        """
-        return self.conversation_history.save_to_file(filename)
-
-    def save_conversation_text(self, filename: str = None) -> str:
-        """Save conversation history as readable text
-
-        Args:
-            filename: Optional filename (without extension)
-
-        Returns:
-            Path to saved file
-        """
-        return self.conversation_history.save_to_text(filename)
-
-    def get_conversation_history(self) -> List[Dict[str, Any]]:
-        """Get the conversation history
-
-        Returns:
-            List of messages
-        """
-        return self.conversation_history.get_history()
-
-    def get_conversation_statistics(self) -> Dict[str, Any]:
-        """Get statistics about the conversation
-
-        Returns:
-            Dictionary with statistics
-        """
-        return self.conversation_history.get_statistics()
-
-    def print_conversation(self, max_messages: int = None):
-        """Print the conversation history
-
-        Args:
-            max_messages: Maximum number of messages to print
-        """
-        self.conversation_history.print_history(max_messages)
+if __name__ == "__main__":
+    chatbot = Chatbot()
+    print(chatbot.chat("đánh bài phạt bao nhiêu tiền?"))
