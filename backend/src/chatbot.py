@@ -69,7 +69,7 @@ class Chatbot:
         output_state = self.graph.invoke(state)
 
         self.message_history = output_state["messages"]
-        
+
         for message in reversed(self.message_history):
             if isinstance(message, AIMessage):
                 return message.content
