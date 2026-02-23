@@ -47,9 +47,3 @@ python main.py
 }
 
 ```
-
-```
-
-Would you like me to help draft a template for your `.env` file to include alongside these setup instructions?
-
-```
