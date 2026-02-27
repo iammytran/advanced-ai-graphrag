@@ -4,24 +4,39 @@ Final Project for class Advanced AI
 ## Setup and Run LangGraph
 
 ### Run Example
-1. **Install Dependencies**: Install the necessary requirements:
+1. **Set Up the Environment**: 
+Navigate to the `backend` directory and create a virtual environment (recommended) to isolate the project's dependencies:
 ```bash
-pip install -r .\backend\requirement.txt
+cd backend
+python -m venv venv
+
+# Activate the virtual environment
+# On macOS/Linux:
+source .venv/bin/activate
+# On Windows (PowerShell):
+.\.venv\Scripts\Activate.ps1
+# On Windows (Command Prompt):
+.venv\Scripts\activate.bat
 ```
 
-2. **Indexing RAG**: Run the following command to import chunks into the vector database:
+2. **Install Dependencies**: Install the necessary requirements:
 ```bash
-python -m backend.tools.rag
+pip install -r requirement.txt
 ```
 
 3. **Configuration**: Create a `.env` file with the required environment variables.
 
-4. **Run LangGraph Example**: Execute the chatbot flow using the following command:
+4. **Indexing RAG**: Run the following command to import chunks into the vector database:
 ```bash
-python -m backend.src.chatbot
+python -m tools.rag
 ```
 
+5. **Run LangGraph Example**: Execute the chatbot flow using the following command:
+```bash
+python -m src.chatbot
+```
 
+---
 
 ### Run Backend
 

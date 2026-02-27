@@ -7,13 +7,12 @@ import sys
 
 sys.path.append(str(BASE_DIR.parent))
 
+from config.config import EMBEDDING_MODEL
 from langchain.tools import tool
 from langchain_chroma import Chroma
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-
-from backend.config.config import EMBEDDING_MODEL
 
 embeddings = OpenAIEmbeddings(
     base_url="https://openrouter.ai/api/v1",

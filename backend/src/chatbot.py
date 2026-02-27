@@ -1,14 +1,13 @@
 from typing import Annotated, TypedDict
 
+from config.config import OPENAI_MODEL, TEMPERATURE
 from langchain.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.messages import BaseMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
-
-from backend.config.config import OPENAI_MODEL, TEMPERATURE
-from backend.src.prompts import AGENT_SYSTEM_PROMPT
-from backend.tools.rag import rag_retrieval
+from src.prompts import AGENT_SYSTEM_PROMPT
+from tools.rag import rag_retrieval
 
 
 class State(TypedDict):
@@ -22,7 +21,7 @@ class Chatbot:
         self.graph = self.build_graph()
         tools = [rag_retrieval]
         self.llm = ChatOpenAI(
-            max_completion_tokens=5000,
+            max_completion_tokens=2000,
             base_url="https://openrouter.ai/api/v1",
             model=OPENAI_MODEL,
             temperature=TEMPERATURE,
@@ -82,7 +81,7 @@ class Chatbot:
         return graph.compile()
 
     # CHAT
-    def chat(self, user_input: str) -> str:
+    def chat(self, user_input: str, options: dict) -> dict:
         human_message = HumanMessage(content=user_input)
         self.message_history.append(human_message)
 
@@ -92,13 +91,26 @@ class Chatbot:
 
         self.message_history = output_state["messages"]
 
-        for message in reversed(self.message_history):
-            if isinstance(message, AIMessage):
-                return message.content
+        answer = "No response generated"
+        retrieved_documents = ""
 
-        return "No response generated"
+        # Find the final answer from AI
+        for message in reversed(self.message_history):
+            if isinstance(message, AIMessage) and message.content:
+                answer = message.content
+                break
+
+        # Find retrieved documents from recent Tool messages
+        for message in reversed(self.message_history):
+            if isinstance(message, HumanMessage) and message.content == user_input:
+                break  # Stop search when reaching the current user question
+            if isinstance(message, ToolMessage) and message.name == "rag_retrieval":
+                retrieved_documents = message.content
+                break
+
+        return {"answer": answer, "retrieved_documents": retrieved_documents}
 
 
 if __name__ == "__main__":
     chatbot = Chatbot()
-    print(chatbot.chat("đánh bài phạt bao nhiêu tiền?"))
+    print(chatbot.chat("đánh bài phạt bao nhiêu tiền?", {})["answer"])
