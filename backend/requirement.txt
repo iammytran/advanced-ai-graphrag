@@ -1,47 +1,22 @@
-# --- Core & GPU Infrastructure ---
-torch
-accelerate
-bitsandbytes
-vllm
-
-# --- AI & Embedding Engines ---
-sentence-transformers
-transformers
-sentencepiece
-
-# --- Vector DB & Search ---
-faiss-cpu
-langchain-chroma
-graspologic
-nltk
-
-# --- LangChain Framework ---
-langchain
-langchain-core
-langchain-community
-langgraph
-langchain-text-splitters
-
-# --- Model Providers (APIs) ---
-openai
-langchain-openai
-langchain-google-genai
-google-generativeai
-langchain-huggingface
-
-# --- Document Processing ---
-pypdf
-PyMuPDF
-python-docx
-pymupdf-layout
-pymupdf4llm
-markitdown
-markitdown[all]
-
-# --- Base Utilities ---
-python-dotenv
-numpy
-requests
-pydantic
-fastapi
-uvicorn
+langchain>=0.1.0
+langchain-core>=0.1.0
+langgraph>=0.0.30
+python-dotenv>=1.0.0
+faiss-cpu>=1.7.4
+openai>=1.0.0
+langchain-openai>=0.1.0
+langchain-google-genai>=0.0.10
+langchain-community>=0.0.30
+pydantic>=2.0.0
+google-generativeai>=0.3.0
+pypdf>=6.7.0
+fastapi>=0.100.0
+uvicorn>=0.20.0
+langchain-text-splitters>=0.0.1
+requests>=2.31.0
+numpy>=1.24.0
+langchain-chroma>=1.1.0
+graspologic>=4.3.3
+nltk=>3.9.3
+PyMuPDF=>1.27.1
+python-docx=>1.2.0
