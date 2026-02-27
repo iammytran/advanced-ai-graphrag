@@ -1,8 +1,8 @@
 import re
+import uuid
 
 import pandas as pd
 from tqdm import tqdm
-import uuid
 
 from backend.tools.graph_rag.read_file import ingest_documents_to_df
 
