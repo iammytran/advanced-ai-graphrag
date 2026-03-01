@@ -311,7 +311,7 @@ async def extract_entities(text_units: pd.DataFrame,
 
         # 3. Generate output cho toàn bộ batch
         outputs = model.generate(
-            input_ids=inputs.input_ids,
+            inputs,
             attention_mask=inputs.attention_mask,
             max_new_tokens=1024, # Tăng lên để chứa đủ output
             use_cache=True,
