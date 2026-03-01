@@ -307,14 +307,14 @@ async def extract_entities(text_units: pd.DataFrame,
             return_dict=True,  # <--- BẮT BUỘC PHẢI CÓ DÒNG NÀY
             padding=True,
             truncation=True,
-            max_length=4096,
+            # max_length=4096,
         ).to("cuda")
 
         # 3. Generate output cho toàn bộ batch
         outputs = model.generate(
             input_ids=inputs.input_ids,
             attention_mask=inputs.attention_mask,
-            max_new_tokens=4096, # Tăng lên để chứa đủ output
+            # max_new_tokens=4096, # Tăng lên để chứa đủ output
             use_cache=True,
             pad_token_id=tokenizer.pad_token_id   # Nên thêm để đảm bảo an toàn
         )
