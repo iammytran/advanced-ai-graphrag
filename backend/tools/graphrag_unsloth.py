@@ -316,21 +316,27 @@ async def extract_entities(text_units: pd.DataFrame,
         tokenizer.pad_token = tokenizer.eos_token
         tokenizer.padding_side = "left" # Quan trọng cho inference để model không bị "confused"
 
+        # SỬA Ở ĐÂY: Thêm return_dict=True
         inputs = tokenizer.apply_chat_template(
             messages,
             tokenize = True,
             add_generation_prompt = True,
             return_tensors = "pt",
+            return_dict = True, # <--- Bắt buộc phải có để lấy được attention_mask
             padding = True, 
             truncation = True, 
             max_length = 2048,
         ).to("cuda")
 
-        outputs = model.generate(input_ids = inputs, 
-                                 max_new_tokens = 1000, 
-                                 use_cache = True,
-                                 attention_mask = inputs.attention_mask, # TRUYỀN THÊM DÒNG NÀY
-                                )
+        # SỬA Ở ĐÂY: Truyền inputs.input_ids và inputs.attention_mask
+        outputs = model.generate(
+            input_ids = inputs.input_ids, 
+            attention_mask = inputs.attention_mask,
+            max_new_tokens = 1000, 
+            use_cache = True,
+            pad_token_id = tokenizer.pad_token_id
+        )
+        
         response = tokenizer.batch_decode(outputs)
         
         # Tách phần nội dung trả về từ AI
