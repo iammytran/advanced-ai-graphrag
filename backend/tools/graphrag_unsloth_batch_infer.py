@@ -304,6 +304,7 @@ async def extract_entities(text_units: pd.DataFrame,
             tokenize=True,
             add_generation_prompt=True,
             return_tensors="pt",
+            return_dict=True,  # <--- BẮT BUỘC PHẢI CÓ DÒNG NÀY
             padding=True,
             truncation=True,
             max_length=2048,
@@ -315,6 +316,7 @@ async def extract_entities(text_units: pd.DataFrame,
             attention_mask=inputs.attention_mask,
             max_new_tokens=1024, # Tăng lên để chứa đủ output
             use_cache=True,
+            pad_token_id=tokenizer.pad_token_id   # Nên thêm để đảm bảo an toàn
         )
 
         # 4. Decode và tách riêng từng response
