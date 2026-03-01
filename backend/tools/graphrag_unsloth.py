@@ -208,7 +208,7 @@ def chunk(text: str,
 
 def vietnamese_legal_chunk(
     legal_df: pd.DataFrame,
-    chunk_size: int = 1000,
+    chunk_size: int = 4096,
     chunk_overlap: int = 150,
     encoding_name: str = "cl100k_base"
 ) -> pd.DataFrame:
@@ -336,7 +336,7 @@ async def extract_entities(text_units: pd.DataFrame,
             use_cache = True,
             pad_token_id = tokenizer.pad_token_id
         )
-        
+
         response = tokenizer.batch_decode(outputs)
         
         # Tách phần nội dung trả về từ AI
