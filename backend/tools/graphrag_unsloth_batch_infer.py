@@ -307,14 +307,14 @@ async def extract_entities(text_units: pd.DataFrame,
             return_dict=True,  # <--- BẮT BUỘC PHẢI CÓ DÒNG NÀY
             padding=True,
             truncation=True,
-            max_length=2048,
+            max_length=4096,
         ).to("cuda")
 
         # 3. Generate output cho toàn bộ batch
         outputs = model.generate(
             input_ids=inputs.input_ids,
             attention_mask=inputs.attention_mask,
-            max_new_tokens=2048, # Tăng lên để chứa đủ output
+            max_new_tokens=4096, # Tăng lên để chứa đủ output
             use_cache=True,
             pad_token_id=tokenizer.pad_token_id   # Nên thêm để đảm bảo an toàn
         )
@@ -334,16 +334,22 @@ async def extract_entities(text_units: pd.DataFrame,
         
         for seg in segments:
             seg = seg.strip()
-            if not seg: continue
             
+            # --- BƯỚC 1: SKIP CÁC DÒNG RÁC ---
+            # Loại bỏ các dòng trống, chỉ có dấu ngoặc hoặc quá ngắn không thể chứa dữ liệu
+            if not seg or seg in ["()", "(", ")"] or len(seg) < 10: 
+                continue
+                
             try:
                 # Loại bỏ dấu ngoặc đơn và tách phần tử
-                parts = seg.strip("() ").split("<|>")
+                # Dùng strip("() ") để xóa sạch ngoặc ở 2 đầu
+                clean_seg = seg.strip("() ")
+                parts = clean_seg.split("<|>")
                 
-                # Chuẩn hóa tag (loại bỏ dấu nháy kép nếu có)
+                # Chuẩn hóa tag
                 tag = parts[0].replace('"', '').strip().lower()
 
-                # Kiểm tra thực thể (cần ít nhất 4 phần tử: tag, name, type, desc)
+                # Kiểm tra thực thể
                 if tag == "entity" and len(parts) >= 4:
                     entities.append({
                         "name": parts[1].strip(),
@@ -351,7 +357,7 @@ async def extract_entities(text_units: pd.DataFrame,
                         "description": parts[3].strip()
                     })
                     
-                # Kiểm tra quan hệ (cần ít nhất 5 phần tử: tag, src, tgt, desc, weight)
+                # Kiểm tra quan hệ
                 elif tag == "relationship" and len(parts) >= 5:
                     relationships.append({
                         "source": parts[1].strip(),
@@ -360,7 +366,9 @@ async def extract_entities(text_units: pd.DataFrame,
                         "weight": float(parts[4].strip()) if parts[4].strip().replace('.','',1).isdigit() else 1.0
                     })
                 else:
-                    print(f"⚠️ Bỏ qua dòng lỗi định dạng: {seg}")
+                    # Chỉ in lỗi nếu nó thực sự trông giống một dòng dữ liệu bị hỏng
+                    if len(parts) > 1:
+                        print(f"⚠️ Bỏ qua dòng lỗi định dạng (Thiếu cột): {seg}")
             except (IndexError, ValueError) as e:
                 print(f"⚠️ Lỗi parsing dòng: '{seg}'. Lỗi: {e}")
                 
