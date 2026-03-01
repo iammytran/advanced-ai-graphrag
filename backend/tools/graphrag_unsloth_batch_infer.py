@@ -278,7 +278,7 @@ async def extract_entities(text_units: pd.DataFrame,
 
     model, tokenizer = FastLanguageModel.from_pretrained(
         model_name = model_name,
-        max_seq_length = 2048,
+        # max_seq_length = 2048,
         load_in_4bit = True,
     )
     FastLanguageModel.for_inference(model)
