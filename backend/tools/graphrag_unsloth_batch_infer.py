@@ -272,7 +272,7 @@ async def extract_entities(text_units: pd.DataFrame,
     model_name: str = "unsloth/qwen2.5-7b-instruct-bnb-4bit",
     prompt_template: str = GRAPH_PROMPT,
     entity_types: List[str] = None, # Sẽ được lấy từ prompt
-    batch_size: int = 32, # Số lượng chunk xử lý trong một batch
+    batch_size: int = 8, # Số lượng chunk xử lý trong một batch
     num_threads: int = 1, # Không cần nhiều thread vì đã batch
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
 
