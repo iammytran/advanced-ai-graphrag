@@ -857,14 +857,11 @@ async def main():
     #df_chunks = chunk(raw_text, chunk_size=50, chunk_overlap=10)
     print(f"df_chunks: {df_chunks_final}")
 
-    # Gọi hàm trích xuất (Sử dụng hàm standalone mà chúng ta đã thảo luận)
+    # Gọi hàm trích xuất
     entities, relationships = await extract_entities(
         text_units=df_chunks_final,
         text_column="text",
         id_column="id",
-        model_name="gemini-1.5-flash",
-        prompt_template="Extract entities and relationships...",
-        entity_types=["person", "organization"]
     )
     
     # print(f"entities: {entities}")
