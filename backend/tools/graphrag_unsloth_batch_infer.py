@@ -314,7 +314,7 @@ async def extract_entities(text_units: pd.DataFrame,
         outputs = model.generate(
             input_ids=inputs.input_ids,
             attention_mask=inputs.attention_mask,
-            max_new_tokens=1024, # Tăng lên để chứa đủ output
+            max_new_tokens=2048, # Tăng lên để chứa đủ output
             use_cache=True,
             pad_token_id=tokenizer.pad_token_id   # Nên thêm để đảm bảo an toàn
         )
