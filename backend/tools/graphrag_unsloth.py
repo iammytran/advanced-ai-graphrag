@@ -320,7 +320,9 @@ async def extract_entities(text_units: pd.DataFrame,
             return_tensors = "pt",
         ).to("cuda")
 
-        outputs = model.generate(input_ids = inputs, max_new_tokens = 1000)
+        outputs = model.generate(input_ids = inputs, 
+                                 max_new_tokens = 1000, 
+                                 use_cache = True)
         response = tokenizer.batch_decode(outputs)
         
         # Tách phần nội dung trả về từ AI
