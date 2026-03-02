@@ -39,6 +39,8 @@ ENTITY_TYPES = (
     "HÀNH VI VI PHẠM, HẬU QUẢ PHÁP LÝ, ĐIỀU KIỆN ÁP DỤNG, THỜI HẠN/THỜI HIỆU"
 )
 
+MAX_SEQ_LENGTH = 8192
+
 GRAPH_PROMPT = f"""
 -MỤC TIÊU-
 Bạn là một chuyên gia phân tích hệ thống pháp luật Việt Nam. Văn bản cung cấp là NỘI DUNG CỦA MỘT ĐIỀU KHOẢN LUẬT.
@@ -286,7 +288,7 @@ async def extract_entities(text_units: pd.DataFrame,
 
     model, tokenizer = FastLanguageModel.from_pretrained(
         model_name = model_name,
-        max_seq_length = 16384,
+        max_seq_length = MAX_SEQ_LENGTH,
         load_in_4bit = True,
     )
     FastLanguageModel.for_inference(model)
@@ -315,14 +317,14 @@ async def extract_entities(text_units: pd.DataFrame,
             return_dict=True,  # <--- BẮT BUỘC PHẢI CÓ DÒNG NÀY
             padding=True,
             truncation=True,
-            max_length=16384,
+            max_length=MAX_SEQ_LENGTH,
         ).to("cuda")
 
         # 3. Generate output cho toàn bộ batch
         outputs = model.generate(
             input_ids=inputs.input_ids,
             attention_mask=inputs.attention_mask,
-            max_new_tokens=16384, # Tăng lên để chứa đủ output
+            max_new_tokens=MAX_SEQ_LENGTH, # Tăng lên để chứa đủ output
             use_cache=True,
             pad_token_id=tokenizer.pad_token_id   # Nên thêm để đảm bảo an toàn
         )
