@@ -910,7 +910,7 @@ async def main():
     # Gọi hàm trích xuất (Sử dụng hàm standalone mà chúng ta đã thảo luận)
     entities, relationships = await extract_entities(
         text_units=final_df,
-        text_column="text",
+        text_column="chunk",
         id_column="id",
     )
 
