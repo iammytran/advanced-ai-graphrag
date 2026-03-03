@@ -23,3 +23,5 @@ python-docx>=1.1.0
 pymupdf-layout>=0.0.1
 markitdown>=0.0.1
 unsloth
+pymupdf4llm
+markitdown[all]
