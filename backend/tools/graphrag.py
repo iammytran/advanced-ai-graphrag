@@ -20,12 +20,12 @@ import pickle
 import graspologic_native as gn
 import html
 from collections import defaultdict
-
 from typing import List, Optional, Any, Callable, Tuple
 from graspologic.partition import hierarchical_leiden
 import uuid
-
 from dotenv import load_dotenv
+from unsloth import FastLanguageModel
+import torch
 
 # 1. Nạp các biến từ tệp .env
 load_dotenv()
@@ -33,7 +33,7 @@ load_dotenv()
 Communities = list[tuple[int, int, int, list[str]]]
 
 # Định nghĩa danh sách các loại thực thể phù hợp với Luật
-ENTITY_TYPES = "CƠ QUAN PHÁP LUẬT, VĂN BẢN QUY PHẠM, ĐIỀU KHOẢN, HÀNH VI CẤM, NGHĨA VỤ, QUYỀN HẠN, ĐỐI TƯỢNG ÁP DỤNG"
+ENTITY_TYPES = "VĂN BẢN QUY PHẠM, ĐIỀU KHOẢN, HÀNH VI CẤM, NGHĨA VỤ, QUYỀN HẠN, ĐỐI TƯỢNG ÁP DỤNG"
 
 GRAPH_PROMPT = f"""
 -MỤC TIÊU-
@@ -710,7 +710,7 @@ import asyncio
 import json
 import os
 
-async def generate_hierarchical_community_reports(
+async def  generate_hierarchical_community_reports(
     community_results: dict, # Kết quả từ _compute_leiden_communities
     community_hierarchy: dict, # Mapping cha-con
     entities_df: pd.DataFrame,
@@ -814,10 +814,124 @@ async def generate_hierarchical_community_reports(
 
     return final_reports
 
+async def generate_hierarchical_community_reports_unsloth(
+    community_results: dict,
+    community_hierarchy: dict,
+    entities_df: pd.DataFrame,
+    model,
+    tokenizer,
+    max_new_tokens=1024
+):
+    # 1. Cấu trúc lại dữ liệu (giữ nguyên logic cũ)
+    communities_list = []
+    for level, nodes_map in community_results.items():
+        clusters = {}
+        for node, cluster_id in nodes_map.items():
+            if cluster_id not in clusters: clusters[cluster_id] = []
+            clusters[cluster_id].append(node)
+        for cluster_id, nodes in clusters.items():
+            communities_list.append({
+                "level": level,
+                "community_id": cluster_id,
+                "nodes": nodes
+            })
+
+    sorted_levels = sorted(community_results.keys(), reverse=True)
+    final_reports = []
+    report_cache = {} # Lưu report của con để làm input cho cha
+    
+    # Chuyển model sang chế độ Inference
+    FastLanguageModel.for_inference(model)
+
+    for current_level in sorted_levels:
+        print(f"--- Đang tóm tắt Level {current_level} bằng Unsloth ---")
+        level_comms = [c for c in communities_list if c['level'] == current_level]
+        
+        # Vì tính chất phân cấp (Cha cần report của Con), 
+        # ta vẫn phải chạy xong từng Level trước khi lên Level tiếp theo.
+        
+        # Chia nhỏ level_comms thành các batches để tận dụng VRAM
+        batch_size = 8 if "A100" in torch.cuda.get_device_name() else 4
+        
+        for i in range(0, len(level_comms), batch_size):
+            batch = level_comms[i : i + batch_size]
+            prompts = []
+            
+            for comm in batch:
+                level = comm['level']
+                nodes = comm['nodes']
+                
+                # Xây dựng Context
+                if level == max(sorted_levels):
+                    relevant_entities = entities_df[entities_df['name'].isin(nodes)]
+                    context = "DANH SÁCH ĐIỀU LUẬT & NỘI DUNG:\n"
+                    context += "\n".join([f"- {row['name']}: {row['description']}" for _, row in relevant_entities.iterrows()])
+                else:
+                    sub_reports = [report_cache[n] for n in nodes if n in report_cache]
+                    context = "TÓM TẮT CÁC CỤM CON THUỘC NHÓM NÀY:\n"
+                    context += "\n---\n".join(list(set(sub_reports)))
+
+                # Tạo Prompt theo format của Llama-3/Qwen
+                full_prompt = f"""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+                Bạn là chuyên gia luật Việt Nam. Hãy viết báo cáo tóm tắt cho nhóm cộng đồng luật sau ở Level {level}.
+                Nhiệm vụ:
+                1. Xác định 'Thông điệp chính' (Main Messages).
+                2. Trích xuất nghĩa vụ, quyền hạn hoặc hành vi bị cấm.
+                3. Kết nối các nội dung thành một hệ thống chặt chẽ.
+                
+                Trả về định dạng:
+                - Tiêu đề: [Chủ đề chính]
+                - Tóm tắt: [Nội dung chi tiết]<|eot_id|><|start_header_id|>user<|end_header_id|>
+                Dữ liệu nguồn:
+                {context}<|message_id|>assistant<|end_header_id|>"""
+                prompts.append(full_prompt)
+
+            # Batch Tokenization
+            inputs = tokenizer(prompts, return_tensors="pt", padding=True).to("cuda")
+            
+            # Batch Generation
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=max_new_tokens,
+                use_cache=True,
+                temperature=0.1, # Thấp để đảm bảo tính pháp lý chính xác
+                pad_token_id=tokenizer.pad_token_id
+            )
+            
+            # Giải mã kết quả
+            generated_texts = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+            
+            for idx, comm in enumerate(batch):
+                # Tách phần trả lời của Assistant (bỏ phần Prompt gốc)
+                raw_output = generated_texts[idx].split("assistant")[-1].strip()
+                
+                report_data = {
+                    "level": comm['level'],
+                    "community": comm['community_id'],
+                    "report": raw_output,
+                    "nodes": comm['nodes']
+                }
+                final_reports.append(report_data)
+                
+                # Cập nhật cache cho level cha
+                for node in comm['nodes']:
+                    report_cache[node] = raw_output
+
+    return final_reports
+
 def save_hierarchical_reports(reports, filename="hierarchical_reports.json"):
     with open(filename, 'w', encoding='utf-8') as f:
         json.dump(reports, f, ensure_ascii=False, indent=4)
     print(f"✅ Đã xuất {len(reports)} báo cáo cộng đồng vào {filename}")
+
+def save_full_graph_context(result, hierarchy, filename="graph_context_old_prompt.json"):
+    full_context = {
+        "community_mapping": result, # {level: {node: cluster_id}}
+        "community_hierarchy": hierarchy # {cluster_id: parent_id}
+    }
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(full_context, f, ensure_ascii=False, indent=4)
+
 
 # Ví dụ cách chạy indexing
 async def main():
@@ -906,7 +1020,16 @@ async def main():
     # nx.draw_networkx_edge_labels(graph, pos, edge_labels=labels)
 
 
-    result, hierarchy = detect_communities_leiden(graph)
+    # result, hierarchy = detect_communities_leiden(graph)
+
+    result, hierarchy = _compute_leiden_communities(relationships_df, max_cluster_size=10, use_lcc=False)
+    print(f"result: {result}")
+    print(f"hierarchy: {hierarchy}")
+    total_communities = len(hierarchy)
+    print(f"Tổng số cộng đồng được tạo ra: {total_communities}")
+    save_full_graph_context(result, hierarchy)
+
+
 
     plt.show()
 
@@ -934,49 +1057,92 @@ if __name__ == '__main__':
     # print(f"df_chunks: {df_chunks_final}")
     # Đường dẫn đến file pkl của bạn
 
-    file_path = "graph.pkl"
-    graph = None
+    # file_path = "graph.pkl"
+    # graph = None
+
+    # # Mở và nạp đối tượng
+    # with open(file_path, "rb") as f:
+    #     graph = pickle.load(f)
+
+    # # Đếm số lượng node không có cạnh nối (degree = 0)
+    # isolated_nodes = [node for node, degree in graph.degree() if degree == 0]
+    # print(f"Số lượng node bị cô lập: {len(isolated_nodes)}")
+
+    # components = list(nx.connected_components(graph))
+    # print(f"Số lượng mảnh rời rạc (Connected Components): {len(components)}")
+
+    # # Xem kích thước của 10 mảnh lớn nhất
+    # component_sizes = sorted([len(c) for c in components], reverse=True)
+    # print(f"Kích thước các mảnh lớn nhất: {component_sizes[:10]}")
+
+    file_path = "relationships.pkl"
+    relationships = None
 
     # Mở và nạp đối tượng
     with open(file_path, "rb") as f:
-        graph = pickle.load(f)
+        relationships = pickle.load(f)
 
-    # Đếm số lượng node không có cạnh nối (degree = 0)
-    isolated_nodes = [node for node, degree in graph.degree() if degree == 0]
-    print(f"Số lượng node bị cô lập: {len(isolated_nodes)}")
+    # Bây giờ bạn có thể sử dụng đối tượng 'obj'
+    # print(type(obj))
+    relationships_df = pd.DataFrame(relationships)
+    # print(relationships_df)
 
-    components = list(nx.connected_components(graph))
-    print(f"Số lượng mảnh rời rạc (Connected Components): {len(components)}")
+    file_path = "entities.pkl"
+    entities = None
+     # Mở và nạp đối tượng
+    with open(file_path, "rb") as f:
+        entities = pickle.load(f)
 
-    # Xem kích thước của 10 mảnh lớn nhất
-    component_sizes = sorted([len(c) for c in components], reverse=True)
-    print(f"Kích thước các mảnh lớn nhất: {component_sizes[:10]}")
+    # Bây giờ bạn có thể sử dụng đối tượng 'obj'
+    # print(type(obj))
+    relationships_df = pd.DataFrame(relationships)
+    entities_df = pd.DataFrame(entities)
+    # print(relationships_df.head())
+    # print(entities_df.head())
 
-    # file_path = "relationships.pkl"
-    # relationships = None
+    # Mở và nạp đối tượng
+    with open(file_path, "rb") as f:
+        entities = pickle.load(f)
+    entities_df = pd.DataFrame(entities)
 
-    # # Mở và nạp đối tượng
-    # with open(file_path, "rb") as f:
-    #     relationships = pickle.load(f)
+    result, hierarchy = _compute_leiden_communities(relationships_df, max_cluster_size=10, use_lcc=False)
+    print(f"result: {result}")
+    print(f"hierarchy: {hierarchy}")
+    total_communities = len(hierarchy)
+    print(f"Tổng số cộng đồng được tạo ra: {total_communities}")
 
-    # # Bây giờ bạn có thể sử dụng đối tượng 'obj'
-    # # print(type(obj))
-    # relationships_df = pd.DataFrame(relationships)
-    # # print(relationships_df)
+    # 1. Cấu hình thông số
+    model_name = "unsloth/meta-llama-3.1-8b-instruct-bnb-4bit"
+    max_seq_length = 8192 # Tăng lên 8k để chứa đủ context tóm tắt phân cấp
 
-    # file_path = "entities.pkl"
-    # entities = None
+    # 2. Load model và tokenizer
+    model, tokenizer = FastLanguageModel.from_pretrained(
+        model_name = model_name,
+        max_seq_length = max_seq_length,
+        load_in_4bit = True, # Giúp chạy nhanh và tiết kiệm VRAM
+    )
 
-    # # Mở và nạp đối tượng
-    # with open(file_path, "rb") as f:
-    #     entities = pickle.load(f)
-    # entities_df = pd.DataFrame(entities)
+    # 3. Tối ưu cho Inference
+    FastLanguageModel.for_inference(model)
 
-    # result, hierarchy = _compute_leiden_communities(relationships_df, max_cluster_size=50, use_lcc=False)
-    # print(f"result: {result}")
-    # print(f"hierarchy: {hierarchy}")
-    # total_communities = len(hierarchy)
-    # print(f"Tổng số cộng đồng được tạo ra: {total_communities}")
+    # 4. Cấu hình Tokenizer để chạy Batch
+    tokenizer.padding_side = "left"
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    reports = asyncio.run(generate_hierarchical_community_reports_unsloth(
+        community_results=result,
+        community_hierarchy=hierarchy,
+        entities_df=entities_df,
+        model=model,
+        tokenizer=tokenizer,
+        max_new_tokens=max_seq_length
+    ))
+    
+    # Lưu kết quả ra file JSON để làm dữ liệu cho HippoRAG
+    import json
+    with open("community_reports.json", "w", encoding="utf-8") as f:
+        json.dump(reports, f, ensure_ascii=False, indent=4)
     # client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
     # reports = asyncio.run(generate_hierarchical_community_reports(
