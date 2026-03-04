@@ -1220,6 +1220,7 @@ if __name__ == '__main__':
         community_results=result,
         community_hierarchy=hierarchy,
         entities_df=entities_df,
+        relationships_df=relationships_df,
         model=model,
         tokenizer=tokenizer,
         max_new_tokens=max_seq_length
