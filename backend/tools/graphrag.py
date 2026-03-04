@@ -26,9 +26,17 @@ import uuid
 from dotenv import load_dotenv
 from unsloth import FastLanguageModel
 import torch
+import logging
+import transformers
 
 # 1. Nạp các biến từ tệp .env
 load_dotenv()
+
+# 1. Tắt log của transformers để tránh cái warning gây crash kia
+transformers.logging.set_verbosity_error()
+
+# 2. Hoặc cấu hình lại logger cơ bản để bỏ qua các tham số thừa
+logging.basicConfig(level=logging.ERROR)
 
 Communities = list[tuple[int, int, int, list[str]]]
 
