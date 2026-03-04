@@ -28,6 +28,7 @@ from unsloth import FastLanguageModel
 import torch
 import logging
 import transformers
+from datetime import datetime
 
 # 1. Nạp các biến từ tệp .env
 load_dotenv()
@@ -1243,7 +1244,7 @@ if __name__ == '__main__':
     # component_sizes = sorted([len(c) for c in components], reverse=True)
     # print(f"Kích thước các mảnh lớn nhất: {component_sizes[:10]}")
 
-    file_path = "relationships.pkl"
+    file_path = "new_prompt_results/relationships.pkl"
     relationships = None
 
     # Mở và nạp đối tượng
@@ -1255,7 +1256,7 @@ if __name__ == '__main__':
     relationships_df = pd.DataFrame(relationships)
     # print(relationships_df)
 
-    file_path = "entities.pkl"
+    file_path = "new_prompt_results/entities.pkl"
     entities = None
      # Mở và nạp đối tượng
     with open(file_path, "rb") as f:
@@ -1276,7 +1277,7 @@ if __name__ == '__main__':
 
     # 1. Cấu hình thông số
     model_name = "unsloth/meta-llama-3.1-8b-instruct-bnb-4bit"
-    max_seq_length = 10000 # Tăng lên 8k để chứa đủ context tóm tắt phân cấp
+    max_seq_length = 8192 # Tăng lên 8k để chứa đủ context tóm tắt phân cấp
     max_new_tokens=2048
 
     # 2. Load model và tokenizer
@@ -1306,7 +1307,8 @@ if __name__ == '__main__':
     
     # Lưu kết quả ra file JSON để làm dữ liệu cho HippoRAG
     import json
-    with open("community_reports.json", "w", encoding="utf-8") as f:
+    formatted_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    with open(f"community_reports_{formatted_time}.json", "w", encoding="utf-8") as f:
         json.dump(reports, f, ensure_ascii=False, indent=4)
     # client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
