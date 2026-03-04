@@ -816,113 +816,179 @@ async def  generate_hierarchical_community_reports(
 
 async def generate_hierarchical_community_reports_unsloth(
     community_results: dict,
-    community_hierarchy: dict,
-    entities_df: pd.DataFrame,
+    community_hierarchy: dict, 
+    entities_df: pd.DataFrame, # Cần có cột 'degree'
+    relationships_df: pd.DataFrame, # Cần có cột 'rank' hoặc 'weight' (Combined Degree)
     model,
     tokenizer,
-    max_new_tokens=1024
+    max_new_tokens=2048,
+    context_window=4096 
 ):
-    # 1. Cấu trúc lại dữ liệu (giữ nguyên logic cũ)
-    communities_list = []
-    for level, nodes_map in community_results.items():
-        clusters = {}
-        for node, cluster_id in nodes_map.items():
-            if cluster_id not in clusters: clusters[cluster_id] = []
-            clusters[cluster_id].append(node)
-        for cluster_id, nodes in clusters.items():
-            communities_list.append({
-                "level": level,
-                "community_id": cluster_id,
-                "nodes": nodes
-            })
-
-    sorted_levels = sorted(community_results.keys(), reverse=True)
-    final_reports = []
-    report_cache = {} # Lưu report của con để làm input cho cha
+    # 1. Đảo ngược Level để chạy từ dưới (Lá) lên trên (Gốc)
+    sorted_levels = sorted([int(k) for k in community_results.keys()], reverse=True)
     
-    # Chuyển model sang chế độ Inference
+    final_reports = []
+    report_cache = {} 
+    
     FastLanguageModel.for_inference(model)
 
     for current_level in sorted_levels:
-        print(f"--- Đang tóm tắt Level {current_level} bằng Unsloth ---")
-        level_comms = [c for c in communities_list if c['level'] == current_level]
+        print(f"--- Đang xử lý Level {current_level} ---")
         
-        # Vì tính chất phân cấp (Cha cần report của Con), 
-        # ta vẫn phải chạy xong từng Level trước khi lên Level tiếp theo.
-        
-        # Chia nhỏ level_comms thành các batches để tận dụng VRAM
-        batch_size = 8 if "A100" in torch.cuda.get_device_name() else 4
+        nodes_in_level = community_results[str(current_level)]
+        clusters = {}
+        for node, cid in nodes_in_level.items():
+            if cid not in clusters: clusters[cid] = []
+            clusters[cid].append(node)
+
+        level_comms = list(clusters.items())
+        batch_size = 4 
         
         for i in range(0, len(level_comms), batch_size):
             batch = level_comms[i : i + batch_size]
             prompts = []
             
-            for comm in batch:
-                level = comm['level']
-                nodes = comm['nodes']
+            for cid, nodes in batch:
+                # --- PHẦN LOGIC ƯU TIÊN THEO ĐỘ QUAN TRỌNG (DEGREE) ---
                 
-                # Xây dựng Context
-                if level == max(sorted_levels):
-                    relevant_entities = entities_df[entities_df['name'].isin(nodes)]
-                    context = "DANH SÁCH ĐIỀU LUẬT & NỘI DUNG:\n"
-                    context += "\n".join([f"- {row['name']}: {row['description']}" for _, row in relevant_entities.iterrows()])
-                else:
-                    sub_reports = [report_cache[n] for n in nodes if n in report_cache]
-                    context = "TÓM TẮT CÁC CỤM CON THUỘC NHÓM NÀY:\n"
-                    context += "\n---\n".join(list(set(sub_reports)))
+                if current_level == max(sorted_levels):
+                    # A. Lọc và Sắp xếp Node theo Degree (Thực thể quan trọng nhất đứng đầu)
+                    relevant_entities = entities_df[entities_df['name'].isin(nodes)].copy()
+                    if 'degree' in relevant_entities.columns:
+                        relevant_entities = relevant_entities.sort_values(by='degree', ascending=False)
+                    
+                    input_text = "THỰC THỂ (Ưu tiên theo độ quan trọng):\n"
+                    input_text += "\n".join([
+                        f"ID:{idx}, {r['name']}: {r['description']}" 
+                        for idx, r in relevant_entities.iterrows()
+                    ])
+                    
+                    # B. Lọc và Sắp xếp Edge theo Combined Degree (Quan hệ quan trọng nhất đứng đầu)
+                    relevant_rel = relationships_df[relationships_df['source'].isin(nodes) | relationships_df['target'].isin(nodes)].copy()
+                    
+                    # Nếu bạn đã tính sẵn cột 'combined_degree' hoặc 'rank' trong lúc indexing
+                    if 'rank' in relevant_rel.columns:
+                        relevant_rel = relevant_rel.sort_values(by='rank', ascending=False)
+                    elif 'weight' in relevant_rel.columns:
+                        relevant_rel = relevant_rel.sort_values(by='weight', ascending=False)
+                        
+                    input_text += "\n\nQUAN HỆ (Ưu tiên theo độ kết nối):\n"
+                    input_text += "\n".join([f"ID:{r['human_readable_id']}, {r['source']} -> {r['target']}: {r['description']}" for _, r in relevant_rel.iterrows()])
 
-                # Tạo Prompt theo format của Llama-3/Qwen
-                full_prompt = f"""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-                Bạn là chuyên gia luật Việt Nam. Hãy viết báo cáo tóm tắt cho nhóm cộng đồng luật sau ở Level {level}.
-                Nhiệm vụ:
-                1. Xác định 'Thông điệp chính' (Main Messages).
-                2. Trích xuất nghĩa vụ, quyền hạn hoặc hành vi bị cấm.
-                3. Kết nối các nội dung thành một hệ thống chặt chẽ.
-                
-                Trả về định dạng:
-                - Tiêu đề: [Chủ đề chính]
-                - Tóm tắt: [Nội dung chi tiết]<|eot_id|><|start_header_id|>user<|end_header_id|>
-                Dữ liệu nguồn:
-                {context}<|message_id|>assistant<|end_header_id|>"""
+                else:
+                    # C. Đối với Level cha: Sắp xếp các cụm con theo độ lớn (Tokens)
+                    sub_comm_ids = [child for child, parent in community_hierarchy.items() if str(parent) == str(cid)]
+                    
+                    # Lấy tóm tắt con và sắp xếp (Cụm con nào dài/quan trọng hơn đưa lên trước)
+                    sub_reports = []
+                    for scid in sub_comm_ids:
+                        if int(scid) in report_cache:
+                            sub_reports.append(report_cache[int(scid)])
+                    
+                    # Sắp xếp theo chiều dài văn bản (một cách proxy cho độ quan trọng ở level cao)
+                    sub_reports.sort(key=len, reverse=True)
+                    
+                    input_text = "BÁO CÁO TÓM TẮT TỪ CÁC CỤM CON (Dữ liệu đã nén):\n"
+                    input_text += "\n---\n".join(sub_reports)
+
+                # D. Kiểm soát Vali (Context Window): Cắt bỏ những phần ít quan trọng ở cuối danh sách
+                tokens = tokenizer.encode(input_text)
+                if len(tokens) > (context_window - 800):
+                    # Chỉ lấy phần đầu (chứa các thực thể/quan hệ có Degree cao nhất đã được sort ở trên)
+                    input_text = tokenizer.decode(tokens[:context_window - 800]) + "\n...(Đã lược bỏ các phần ít quan trọng hơn do vượt dung lượng)..."
+
+                full_prompt =f"""
+Bạn là một trợ lý AI chuyên gia về hệ thống pháp luật Việt Nam, giúp phân tích và khám phá thông tin trong các văn bản quy phạm pháp luật.
+Nhiệm vụ của bạn là trích xuất và đánh giá các thông tin liên quan đến các thực thể (ví dụ: Cơ quan nhà nước, tổ chức, cá nhân) và các quy định trong mạng lưới pháp luật.
+
+# Mục tiêu
+Viết một báo cáo toàn diện về một "cụm pháp lý" (community), dựa trên danh sách các thực thể thuộc cụm đó cũng như các mối quan hệ và các tuyên bố (claims) liên quan. 
+Báo cáo này sẽ được sử dụng để hỗ trợ các nhà hoạch định chính sách, luật sư hoặc người dân hiểu rõ về tác động và nội dung của các quy định. 
+Nội dung báo cáo phải bao quát được: các thực thể chính, sự tuân thủ pháp lý, thẩm quyền, trách nhiệm, các hành vi bị cấm và các chế tài liên quan.
+
+# Cấu trúc báo cáo
+
+Báo cáo phải bao gồm các phần sau:
+
+- TIÊU ĐỀ: Tên của cụm thực thể đại diện cho các nội dung chính - tiêu đề phải ngắn gọn nhưng cụ thể. Nếu có thể, hãy đưa tên các văn bản luật hoặc cơ quan chủ quản vào tiêu đề.
+- TÓM TẮT: Bản tóm tắt điều hành về cấu trúc tổng thể của cụm pháp lý, cách các thực thể/điều khoản liên quan đến nhau và các điểm quan trọng nhất.
+- ĐIỂM ĐÁNH GIÁ TÁC ĐỘNG (IMPACT SEVERITY RATING): Một điểm số thực từ 0-10 đại diện cho mức độ quan trọng hoặc tác động pháp lý của các thực thể/quy định trong cụm. (10 là mức độ quan trọng nhất, ví dụ: các quy định hiến pháp hoặc hình sự nghiêm trọng).
+- GIẢI THÍCH ĐIỂM ĐÁNH GIÁ: Giải thích bằng một câu duy nhất về lý do đưa ra điểm số tác động đó.
+- CÁC PHÁT HIỆN CHI TIẾT: Danh sách từ 5-10 thông tin chuyên sâu (insights) về cụm pháp lý. Mỗi phát hiện cần có một phần tóm tắt ngắn, sau đó là các đoạn văn giải thích chi tiết được căn cứ chính xác theo quy tắc trích dẫn bên dưới. Hãy trình bày một cách toàn diện và chặt chẽ.
+
+Trả về kết quả dưới dạng chuỗi định dạng JSON chuẩn như sau:
+    {{
+        "title": <tieu_de_bao_cao>,
+        "summary": <tom_tat_dieu_hanh>,
+        "rating": <diem_danh_gia_tac_dong>,
+        "rating_explanation": <giai_thich_diem_danh_gia>,
+        "findings": [
+            {{
+                "summary": <tom_tat_phat_hien_1>,
+                "explanation": <giai_thich_chi_tiet_phat_hien_1>
+            }},
+            {{
+                "summary": <tom_tat_phat_hien_2>,
+                "explanation": <giai_thich_chi_tiet_phat_hien_2>
+            }}
+        ]
+    }}
+
+# Quy tắc trích dẫn (Grounding Rules)
+
+Các luận điểm được hỗ trợ bởi dữ liệu phải liệt kê các tham chiếu dữ liệu như sau:
+
+"Đây là một câu ví dụ được hỗ trợ bởi nhiều tham chiếu dữ liệu [Data: <tên bộ dữ liệu> (id bản ghi); <tên bộ dữ liệu> (id bản ghi)]."
+
+Không liệt kê quá 5 ID bản ghi trong một tham chiếu đơn lẻ. Thay vào đó, hãy liệt kê 5 ID liên quan nhất và thêm "+more" để cho biết còn nhiều hơn thế.
+
+Ví dụ:
+"Cơ quan A có thẩm quyền xử phạt đối với hành vi vi phạm về thuế và chịu trách nhiệm trước Chính phủ [Data: Thực thể (5, 7); Quan hệ (23); Tuyên bố (7, 2, 34, 64, 46, +more)]."
+
+Trong đó 1, 5, 7, 23, 2, 34, 46 và 64 đại diện cho ID (không phải index) của bản ghi dữ liệu liên quan.
+
+Tuyệt đối không đưa vào các thông tin không có bằng chứng hỗ trợ từ dữ liệu đầu vào.
+
+Giới hạn tổng độ dài báo cáo trong khoảng {context_window} từ.
+
+# Dữ liệu thực tế
+
+Sử dụng văn bản sau đây để trả lời. Không được tự ý bịa đặt thông tin.
+
+Văn bản:
+{input_text}
+
+Output:"""
                 prompts.append(full_prompt)
 
-            # Batch Tokenization
+            # Thực thi LLM (Batch)
             inputs = tokenizer(prompts, return_tensors="pt", padding=True).to("cuda")
-            
-            # Batch Generation
-            outputs = model.generate(
-                **inputs,
-                max_new_tokens=max_new_tokens,
-                use_cache=True,
-                temperature=0.1, # Thấp để đảm bảo tính pháp lý chính xác
-                pad_token_id=tokenizer.pad_token_id
-            )
-            
-            # Giải mã kết quả
+            outputs = model.generate(**inputs, max_new_tokens=max_new_tokens, temperature=0.1)
             generated_texts = tokenizer.batch_decode(outputs, skip_special_tokens=True)
             
-            for idx, comm in enumerate(batch):
-                # Tách phần trả lời của Assistant (bỏ phần Prompt gốc)
+            for idx, (cid, nodes) in enumerate(batch):
                 raw_output = generated_texts[idx].split("assistant")[-1].strip()
-                
-                report_data = {
-                    "level": comm['level'],
-                    "community": comm['community_id'],
-                    "report": raw_output,
-                    "nodes": comm['nodes']
-                }
-                final_reports.append(report_data)
-                
-                # Cập nhật cache cho level cha
-                for node in comm['nodes']:
-                    report_cache[node] = raw_output
+                try:
+                    data_json = json.loads(raw_output)
+                    summary_for_next_level = data_json.get('summary', raw_output)
+                except:
+                    data_json = raw_output
+                    summary_for_next_level = raw_output
+
+                final_reports.append({
+                    "level": current_level,
+                    "community_id": cid,
+                    "report": data_json,
+                    "nodes": nodes
+                })
+                report_cache[cid] = summary_for_next_level
 
     return final_reports
 
 def save_hierarchical_reports(reports, filename="hierarchical_reports.json"):
     with open(filename, 'w', encoding='utf-8') as f:
         json.dump(reports, f, ensure_ascii=False, indent=4)
-    print(f"✅ Đã xuất {len(reports)} báo cáo cộng đồng vào {filename}")
+#     print(f"✅ Đã xuất {len(reports)} báo cáo cộng đồng vào {filename}")
 
 def save_full_graph_context(result, hierarchy, filename="graph_context_old_prompt.json"):
     full_context = {
@@ -1099,11 +1165,6 @@ if __name__ == '__main__':
     entities_df = pd.DataFrame(entities)
     # print(relationships_df.head())
     # print(entities_df.head())
-
-    # Mở và nạp đối tượng
-    with open(file_path, "rb") as f:
-        entities = pickle.load(f)
-    entities_df = pd.DataFrame(entities)
 
     result, hierarchy = _compute_leiden_communities(relationships_df, max_cluster_size=10, use_lcc=False)
     print(f"result: {result}")
