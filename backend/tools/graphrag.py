@@ -974,6 +974,11 @@ async def generate_hierarchical_community_reports_unsloth(
                     Văn bản:
                     {input_text}
 
+                    # YÊU CẦU QUAN TRỌNG: 
+                    - Chỉ trả về duy nhất một khối JSON hợp lệ.
+                    - Không viết thêm lời chào, không viết phần lưu ý hoặc kết luận sau JSON.
+                    - Dừng lại ngay sau khi đóng ngoặc nhọn }} của JSON.
+
                     Output:"""
                 tokens = tokenizer.encode(full_prompt)
                 print(f"Chiều dài thực tế của Prompt: {len(tokens)} tokens")
@@ -992,16 +997,33 @@ async def generate_hierarchical_community_reports_unsloth(
             generated_texts = tokenizer.batch_decode(outputs, skip_special_tokens=True)
             
             for idx, (cid, nodes) in tqdm(enumerate(batch), total=len(batch), desc="Processing batches of generating summary"):
+                raw_output = generated_texts[idx]
+                clean_json = ""
+                if "Output:" in raw_output:
+                    text = raw_output.split("Output:")[-1]
+            
+                    # Cách 2: Tìm dấu { đầu tiên và dấu } cuối cùng phù hợp
+                    start_idx = text.find('{')
+                    # Chúng ta cần tìm dấu } đóng lại của object chính, 
+                    # nhưng để đơn giản và tránh lấy nhầm phần "lảm nhảm" phía sau:
+                    # Ta tìm dấu } cuối cùng mà vẫn đảm bảo parse được JSON
+                    
+                    # Thử tìm dấu } từ cuối lên
+                    end_idx = text.rfind('}')
+                    
+                    if start_idx != -1 and end_idx != -1:
+                        clean_json = text[start_idx:end_idx+1]
+                        # return json.loads(clean_json)
                 # Tách phần trả lời của Assistant
-                raw_output = generated_texts[idx].split("assistant")[-1].strip()
-                # Tạo tên file theo ID của cụm
-                filename = f"debug_output_cluster_{cid}.txt"
+                # raw_output = generated_texts[idx].split("assistant")[-1].strip()
+                # # Tạo tên file theo ID của cụm
+                # filename = f"debug_output_cluster_{cid}.txt"
                 
-                with open(filename, "w", encoding="utf-8") as f:
-                    f.write(generated_texts[idx])
+                # with open(filename, "w", encoding="utf-8") as f:
+                #     f.write(generated_texts[idx])
                 
-                # Làm sạch chuỗi nếu AI trả về kèm markdown ```json ... ```
-                clean_json = raw_output.replace("```json", "").replace("```", "").strip()
+                # # Làm sạch chuỗi nếu AI trả về kèm markdown ```json ... ```
+                # clean_json = raw_output.replace("```json", "").replace("```", "").strip()
                 
                 try:
                     # Chuyển đổi chuỗi text thành Dictionary theo đúng cấu trúc bạn mong muốn
