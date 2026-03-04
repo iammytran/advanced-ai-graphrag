@@ -984,7 +984,7 @@ Output:"""
             )
             generated_texts = tokenizer.batch_decode(outputs, skip_special_tokens=True)
             
-            for idx, (cid, nodes) in tqdm(enumerate(batch), total=batch, desc="Processing batches of generating summary"):
+            for idx, (cid, nodes) in tqdm(enumerate(batch), total=len(batch), desc="Processing batches of generating summary"):
                 # Tách phần trả lời của Assistant
                 raw_output = generated_texts[idx].split("assistant")[-1].strip()
                 
