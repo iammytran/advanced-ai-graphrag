@@ -997,6 +997,7 @@ async def generate_hierarchical_community_reports_unsloth(
                 
                 # Làm sạch chuỗi nếu AI trả về kèm markdown ```json ... ```
                 clean_json = raw_output.replace("```json", "").replace("```", "").strip()
+                print(f"clean_json: {clean_json}")
                 
                 try:
                     # Chuyển đổi chuỗi text thành Dictionary theo đúng cấu trúc bạn mong muốn
