@@ -872,8 +872,8 @@ async def generate_hierarchical_community_reports_unsloth(
                     elif 'weight' in relevant_rel.columns:
                         relevant_rel = relevant_rel.sort_values(by='weight', ascending=False)
                         
-                    input_text += "\n\nQUAN HỆ (Ưu tiên theo độ kết nối):\n"
-                    input_text += "\n".join([f"ID:{r['human_readable_id']}, {r['source']} -> {r['target']}: {r['description']}" for _, r in relevant_rel.iterrows()])
+                    input_text += "\n\nQUAN HỆ (Sử dụng ID này để trích dẫn):\n"
+                    input_text += "\n".join([f"ID:{idx}, {r['source']} -> {r['target']}: {r['description']}" for idx, r in relevant_rel.iterrows()])
 
                 else:
                     # C. Đối với Level cha: Sắp xếp các cụm con theo độ lớn (Tokens)
@@ -961,26 +961,51 @@ Văn bản:
 Output:"""
                 prompts.append(full_prompt)
 
-            # Thực thi LLM (Batch)
+            # --- Thực thi LLM ---
             inputs = tokenizer(prompts, return_tensors="pt", padding=True).to("cuda")
-            outputs = model.generate(**inputs, max_new_tokens=max_new_tokens, temperature=0.1)
+            outputs = model.generate(
+                **inputs, 
+                max_new_tokens=max_new_tokens, 
+                temperature=0.1,
+                use_cache=True
+            )
             generated_texts = tokenizer.batch_decode(outputs, skip_special_tokens=True)
             
-            for idx, (cid, nodes) in enumerate(batch):
+            for idx, (cid, nodes) in tqdm(enumerate(batch), desc="Processing batches of generating summary"):
+                # Tách phần trả lời của Assistant
                 raw_output = generated_texts[idx].split("assistant")[-1].strip()
+                
+                # Làm sạch chuỗi nếu AI trả về kèm markdown ```json ... ```
+                clean_json = raw_output.replace("```json", "").replace("```", "").strip()
+                
                 try:
-                    data_json = json.loads(raw_output)
-                    summary_for_next_level = data_json.get('summary', raw_output)
-                except:
-                    data_json = raw_output
+                    # Chuyển đổi chuỗi text thành Dictionary theo đúng cấu trúc bạn mong muốn
+                    data_json = json.loads(clean_json)
+                    
+                    # Lấy phần tóm tắt để làm nguyên liệu nén cho Level cha (cấp 0)
+                    summary_for_next_level = data_json.get('summary', "")
+                except Exception as e:
+                    # Trường hợp AI không trả về JSON chuẩn, tạo một dict giả lập để không lỗi code
+                    print(f"Lỗi Parse JSON tại cụm {cid}: {e}")
+                    data_json = {
+                        "title": "Lỗi định dạng",
+                        "summary": raw_output, # Lưu tạm text thô vào đây
+                        "rating": 0,
+                        "rating_explanation": "Không thể parse JSON từ AI",
+                        "findings": []
+                    }
                     summary_for_next_level = raw_output
 
+                # Lưu vào danh sách kết quả cuối cùng với đúng cấu trúc bạn yêu cầu
                 final_reports.append({
-                    "level": current_level,
                     "community_id": cid,
-                    "report": data_json,
+                    "level": current_level,
+                    "report_detail": data_json, # Đây chính là cục JSON: title, summary, rating...
                     "nodes": nodes
                 })
+                
+                # Lưu vào cache để Level 0 (Cha) sử dụng (Substitution logic)
+                # Cấp cha sẽ đọc Summary của con để viết báo cáo tổng quát
                 report_cache[cid] = summary_for_next_level
 
     return final_reports
