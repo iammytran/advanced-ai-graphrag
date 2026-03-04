@@ -849,20 +849,22 @@ async def generate_hierarchical_community_reports_unsloth(
         for node, cid in nodes_in_level.items():
             if cid not in clusters: clusters[cid] = []
             clusters[cid].append(node)
-        print(f"clusters: {clusters}")
+        # print(f"clusters: {clusters}")
 
         level_comms = list(clusters.items())
         batch_size = 4 
         input_text = ""
         
+        # Xử lý 1 batch gồm 4 cluster
         for i in range(0, len(level_comms), batch_size):
             batch = level_comms[i : i + batch_size]
             prompts = []
             
+            # Xử lý từng batch
             for cid, nodes in batch:
                 # --- PHẦN LOGIC ƯU TIÊN THEO ĐỘ QUAN TRỌNG (DEGREE) ---
-                print(f"cid: {cid}")
-                print(f"nodes: {nodes}")
+                # print(f"cid: {cid}")
+                # print(f"nodes: {nodes}")
                 
                 if current_level == max(sorted_levels):
                     # A. Lọc và Sắp xếp Node theo Degree (Thực thể quan trọng nhất đứng đầu)
