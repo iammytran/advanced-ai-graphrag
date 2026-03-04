@@ -1002,26 +1002,38 @@ async def generate_hierarchical_community_reports_unsloth(
 
                 print(f"Printing raw_output to file...")
                 filename = f"debug_output_cluster_{cid}.txt"
+                # Tạo tên file theo ID của cụm
+                filename = f"debug_output_cluster_{cid}.txt"
+                
                 with open(filename, "w", encoding="utf-8") as f:
-                    f.write(raw_output)
-                clean_json = ""
-                if "Output:" in raw_output:
-                    print("found Output in raw_output!")
-                    text = raw_output.split("Output:")[-1]
-            
+                    f.write(generated_texts[idx])
+                    
+                clean_json_str = ""
+                try:
+                    # Cách 1: Tìm vị trí sau chữ Output:
+                    if "Output:" in raw_output:
+                        text = raw_output.split("Output:")[-1]
+                        # print(f"text:{text}") # Removed for cleaner output
+
                     # Cách 2: Tìm dấu { đầu tiên và dấu } cuối cùng phù hợp
                     start_idx = text.find('{')
-                    # Chúng ta cần tìm dấu } đóng lại của object chính, 
-                    # nhưng để đơn giản và tránh lấy nhầm phần "lảm nhảm" phía sau:
-                    # Ta tìm dấu } cuối cùng mà vẫn đảm bảo parse được JSON
-                    
                     # Thử tìm dấu } từ cuối lên
                     end_idx = text.rfind('}')
-                    
+
                     if start_idx != -1 and end_idx != -1:
-                        clean_json = text[start_idx:end_idx+1]
-                        print("found clean_json!")
-                        print(f"clean_json: {clean_json}")
+                        clean_json_str = text[start_idx:end_idx+1]
+
+                        # Escape unescaped newlines and tabs within the string to make it valid JSON
+                        # This regex replaces newlines not preceded by a backslash with an escaped newline.
+                        # This specifically targets newlines inside string values that cause 'Invalid control character' errors.
+                        clean_json_str = re.sub(r'(?<!\\)\n', '', clean_json_str)
+                        # Also handle tabs if they are unescaped
+                        clean_json_str = re.sub(r'(?<!\\)\t', '', clean_json_str)
+
+                        print(f"DEBUG: String passed to json.loads (first 200 chars): {repr(clean_json_str[:200])}")
+                        # return json.loads(clean_json_str)
+                except Exception as e:
+                    print(f"Không thể trích xuất JSON: {e}")
                         # return json.loads(clean_json)
                 # Tách phần trả lời của Assistant
                 # raw_output = generated_texts[idx].split("assistant")[-1].strip()
@@ -1036,7 +1048,7 @@ async def generate_hierarchical_community_reports_unsloth(
                 
                 try:
                     # Chuyển đổi chuỗi text thành Dictionary theo đúng cấu trúc bạn mong muốn
-                    data_json = json.loads(clean_json)
+                    data_json = json.loads(clean_json_str)
                     
                     # Lấy phần tóm tắt để làm nguyên liệu nén cho Level cha (cấp 0)
                     summary_for_next_level = data_json.get('summary', "")
