@@ -994,10 +994,14 @@ async def generate_hierarchical_community_reports_unsloth(
             for idx, (cid, nodes) in tqdm(enumerate(batch), total=len(batch), desc="Processing batches of generating summary"):
                 # Tách phần trả lời của Assistant
                 raw_output = generated_texts[idx].split("assistant")[-1].strip()
+                # Tạo tên file theo ID của cụm
+                filename = f"debug_output_cluster_{cid}.txt"
+                
+                with open(filename, "w", encoding="utf-8") as f:
+                    f.write(generated_texts[idx])
                 
                 # Làm sạch chuỗi nếu AI trả về kèm markdown ```json ... ```
                 clean_json = raw_output.replace("```json", "").replace("```", "").strip()
-                print(f"clean_json: {clean_json}")
                 
                 try:
                     # Chuyển đổi chuỗi text thành Dictionary theo đúng cấu trúc bạn mong muốn
