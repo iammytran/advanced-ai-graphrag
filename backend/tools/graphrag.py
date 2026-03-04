@@ -1012,7 +1012,7 @@ async def generate_hierarchical_community_reports_unsloth(
                 try:
                     # Cách 1: Tìm vị trí sau chữ Output:
                     if "Output:" in raw_output:
-                        text = raw_output.split("Output:")[1]
+                        text = raw_output.split("Output:", 1)[-1]
                         # print(f"text:{text}") # Removed for cleaner output
 
                     start_idx = text.find('{')
