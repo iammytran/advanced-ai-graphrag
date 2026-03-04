@@ -1219,7 +1219,7 @@ if __name__ == '__main__':
 
     # 1. Cấu hình thông số
     model_name = "unsloth/meta-llama-3.1-8b-instruct-bnb-4bit"
-    max_seq_length = 16384 # Tăng lên 8k để chứa đủ context tóm tắt phân cấp
+    max_seq_length = 10000 # Tăng lên 8k để chứa đủ context tóm tắt phân cấp
     max_new_tokens=2048
 
     # 2. Load model và tokenizer
