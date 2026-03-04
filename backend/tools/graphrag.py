@@ -958,7 +958,7 @@ Trong đó 1, 5, 7, 23, 2, 34, 46 và 64 đại diện cho ID (không phải ind
 
 Tuyệt đối không đưa vào các thông tin không có bằng chứng hỗ trợ từ dữ liệu đầu vào.
 
-Giới hạn tổng độ dài báo cáo trong khoảng {context_window} từ.
+Giới hạn tổng độ dài báo cáo trong khoảng {max_new_tokens} từ.
 
 # Dữ liệu thực tế
 
@@ -968,6 +968,8 @@ Văn bản:
 {input_text}
 
 Output:"""
+                tokens = tokenizer.encode(full_prompt)
+                print(f"Chiều dài thực tế của Prompt: {len(tokens)} tokens")
                 prompts.append(full_prompt)
 
             # --- Thực thi LLM ---
@@ -982,7 +984,7 @@ Output:"""
             )
             generated_texts = tokenizer.batch_decode(outputs, skip_special_tokens=True)
             
-            for idx, (cid, nodes) in tqdm(enumerate(batch), desc="Processing batches of generating summary"):
+            for idx, (cid, nodes) in tqdm(enumerate(batch), total=batch, desc="Processing batches of generating summary"):
                 # Tách phần trả lời của Assistant
                 raw_output = generated_texts[idx].split("assistant")[-1].strip()
                 
@@ -1211,6 +1213,7 @@ if __name__ == '__main__':
     # 1. Cấu hình thông số
     model_name = "unsloth/meta-llama-3.1-8b-instruct-bnb-4bit"
     max_seq_length = 8192 # Tăng lên 8k để chứa đủ context tóm tắt phân cấp
+    max_new_tokens=2048
 
     # 2. Load model và tokenizer
     model, tokenizer = FastLanguageModel.from_pretrained(
@@ -1234,7 +1237,7 @@ if __name__ == '__main__':
         relationships_df=relationships_df,
         model=model,
         tokenizer=tokenizer,
-        max_new_tokens=max_seq_length
+        max_new_tokens=max_new_tokens
     ))
     
     # Lưu kết quả ra file JSON để làm dữ liệu cho HippoRAG
