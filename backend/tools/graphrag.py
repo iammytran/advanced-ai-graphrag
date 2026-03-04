@@ -1015,25 +1015,34 @@ async def generate_hierarchical_community_reports_unsloth(
                         text = raw_output.split("Output:")[-1]
                         # print(f"text:{text}") # Removed for cleaner output
 
-                    # Cách 2: Tìm dấu { đầu tiên và dấu } cuối cùng phù hợp
                     start_idx = text.find('{')
-                    # Thử tìm dấu } từ cuối lên
-                    end_idx = text.rfind('}')
 
-                    if start_idx != -1 and end_idx != -1:
-                        clean_json_str = text[start_idx:end_idx+1]
+                    if start_idx != -1:
+                        brace_level = 0
+                        found_json_end = -1
+                        for i in range(start_idx, len(text)):
+                            if text[i] == '{':
+                                brace_level += 1
+                            elif text[i] == '}':
+                                brace_level -= 1
+                                if brace_level == 0:
+                                    found_json_end = i
+                                    break # Found the end of the first complete JSON object
+                        
+                        if found_json_end != -1:
+                            clean_json_str = text[start_idx : found_json_end + 1]
 
-                        # Escape unescaped newlines and tabs within the string to make it valid JSON
-                        # This regex replaces newlines not preceded by a backslash with an escaped newline.
-                        # This specifically targets newlines inside string values that cause 'Invalid control character' errors.
-                        clean_json_str = re.sub(r'(?<!\\)\n', '', clean_json_str)
-                        # Also handle tabs if they are unescaped
-                        clean_json_str = re.sub(r'(?<!\\)\t', '', clean_json_str)
+                            # Escape unescaped newlines and tabs within the string to make it valid JSON
+                            # This regex replaces newlines not preceded by a backslash with an escaped newline.
+                            # This specifically targets newlines inside string values that cause 'Invalid control character' errors.
+                            clean_json_str = re.sub(r'(?<!\\)\n', '', clean_json_str)
+                            # Also handle tabs if they are unescaped
+                            clean_json_str = re.sub(r'(?<!\\)\t', '', clean_json_str)
 
                         # print(f"DEBUG: String passed to json.loads (first 200 chars): {repr(clean_json_str[:200])}")
                         # return json.loads(clean_json_str)
                 except Exception as e:
-                    print(f"Không thể trích xuất JSON: {e}")
+                    print(f"Không thể trích xuất JSON for : {e}")
                         # return json.loads(clean_json)
                 # Tách phần trả lời của Assistant
                 # raw_output = generated_texts[idx].split("assistant")[-1].strip()
