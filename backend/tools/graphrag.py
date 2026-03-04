@@ -856,7 +856,7 @@ async def generate_hierarchical_community_reports_unsloth(
         input_text = ""
         
         # Xử lý 1 batch gồm 4 cluster
-        for i in range(0, len(level_comms), batch_size):
+        for i in tqdm(range(0, len(level_comms), batch_size), desc="Tổng hợp batch", unit="batch"):
             batch = level_comms[i : i + batch_size]
             prompts = []
             
@@ -996,7 +996,7 @@ async def generate_hierarchical_community_reports_unsloth(
             )
             generated_texts = tokenizer.batch_decode(outputs, skip_special_tokens=True)
             
-            for idx, (cid, nodes) in tqdm(enumerate(batch), total=len(batch), desc="Processing batches of generating summary"):
+            for idx, (cid, nodes) in enumerate(batch):
                 raw_output = generated_texts[idx]
                 # Tạo tên file theo ID của cụm
 
@@ -1030,7 +1030,7 @@ async def generate_hierarchical_community_reports_unsloth(
                         # Also handle tabs if they are unescaped
                         clean_json_str = re.sub(r'(?<!\\)\t', '', clean_json_str)
 
-                        print(f"DEBUG: String passed to json.loads (first 200 chars): {repr(clean_json_str[:200])}")
+                        # print(f"DEBUG: String passed to json.loads (first 200 chars): {repr(clean_json_str[:200])}")
                         # return json.loads(clean_json_str)
                 except Exception as e:
                     print(f"Không thể trích xuất JSON: {e}")
