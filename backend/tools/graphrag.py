@@ -998,8 +998,15 @@ async def generate_hierarchical_community_reports_unsloth(
             
             for idx, (cid, nodes) in tqdm(enumerate(batch), total=len(batch), desc="Processing batches of generating summary"):
                 raw_output = generated_texts[idx]
+                # Tạo tên file theo ID của cụm
+
+                print(f"Printing raw_output to file...")
+                filename = f"debug_output_cluster_{cid}.txt"
+                with open(filename, "w", encoding="utf-8") as f:
+                    f.write(raw_output)
                 clean_json = ""
                 if "Output:" in raw_output:
+                    print("found Output in raw_output!")
                     text = raw_output.split("Output:")[-1]
             
                     # Cách 2: Tìm dấu { đầu tiên và dấu } cuối cùng phù hợp
@@ -1013,6 +1020,8 @@ async def generate_hierarchical_community_reports_unsloth(
                     
                     if start_idx != -1 and end_idx != -1:
                         clean_json = text[start_idx:end_idx+1]
+                        print("found clean_json!")
+                        print(f"clean_json: {clean_json}")
                         # return json.loads(clean_json)
                 # Tách phần trả lời của Assistant
                 # raw_output = generated_texts[idx].split("assistant")[-1].strip()
