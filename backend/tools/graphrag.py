@@ -1244,7 +1244,7 @@ if __name__ == '__main__':
     # component_sizes = sorted([len(c) for c in components], reverse=True)
     # print(f"Kích thước các mảnh lớn nhất: {component_sizes[:10]}")
 
-    file_path = "new_prompt_results/relationships.pkl"
+    file_path = "relationships.pkl"
     relationships = None
 
     # Mở và nạp đối tượng
@@ -1256,7 +1256,7 @@ if __name__ == '__main__':
     relationships_df = pd.DataFrame(relationships)
     # print(relationships_df)
 
-    file_path = "new_prompt_results/entities.pkl"
+    file_path = "entities.pkl"
     entities = None
      # Mở và nạp đối tượng
     with open(file_path, "rb") as f:
