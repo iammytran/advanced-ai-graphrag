@@ -965,10 +965,12 @@ Output:"""
             # --- Thực thi LLM ---
             inputs = tokenizer(prompts, return_tensors="pt", padding=True).to("cuda")
             outputs = model.generate(
-                **inputs, 
-                max_new_tokens=max_new_tokens, 
-                temperature=0.1,
-                use_cache=True
+                input_ids = inputs.input_ids,
+                attention_mask = inputs.attention_mask, # Truyền rõ ràng mask ở đây
+                max_new_tokens = max_new_tokens,
+                use_cache = True,
+                temperature = 0.1,
+                pad_token_id = tokenizer.pad_token_id
             )
             generated_texts = tokenizer.batch_decode(outputs, skip_special_tokens=True)
             
