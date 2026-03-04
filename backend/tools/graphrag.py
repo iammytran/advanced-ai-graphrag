@@ -826,6 +826,7 @@ async def generate_hierarchical_community_reports_unsloth(
 ):
     # 1. Đảo ngược Level để chạy từ dưới (Lá) lên trên (Gốc)
     sorted_levels = sorted([int(k) for k in community_results.keys()], reverse=True)
+    print(f"sorted_levels: {sorted_levels}")
     
     final_reports = []
     report_cache = {} 
@@ -835,7 +836,7 @@ async def generate_hierarchical_community_reports_unsloth(
     for current_level in sorted_levels:
         print(f"--- Đang xử lý Level {current_level} ---")
         
-        nodes_in_level = community_results[str(current_level)]
+        nodes_in_level = community_results[current_level]
         clusters = {}
         for node, cid in nodes_in_level.items():
             if cid not in clusters: clusters[cid] = []
