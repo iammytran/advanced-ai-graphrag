@@ -853,6 +853,7 @@ async def generate_hierarchical_community_reports_unsloth(
 
         level_comms = list(clusters.items())
         batch_size = 4 
+        input_text = ""
         
         for i in range(0, len(level_comms), batch_size):
             batch = level_comms[i : i + batch_size]
@@ -902,7 +903,7 @@ async def generate_hierarchical_community_reports_unsloth(
                     
                     input_text = "BÁO CÁO TÓM TẮT TỪ CÁC CỤM CON (Dữ liệu đã nén):\n"
                     input_text += "\n---\n".join(sub_reports)
-                    print(f"input_text: {input_text}")
+                print(f"input_text: {input_text}")
 
                 # D. Kiểm soát Vali (Context Window): Cắt bỏ những phần ít quan trọng ở cuối danh sách
                 tokens = tokenizer.encode(input_text)
