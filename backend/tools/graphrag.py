@@ -849,6 +849,7 @@ async def generate_hierarchical_community_reports_unsloth(
         for node, cid in nodes_in_level.items():
             if cid not in clusters: clusters[cid] = []
             clusters[cid].append(node)
+        print(f"clusters: {clusters}")
 
         level_comms = list(clusters.items())
         batch_size = 4 
@@ -859,6 +860,8 @@ async def generate_hierarchical_community_reports_unsloth(
             
             for cid, nodes in batch:
                 # --- PHẦN LOGIC ƯU TIÊN THEO ĐỘ QUAN TRỌNG (DEGREE) ---
+                print(f"cid: {cid}")
+                print(f"nodes: {nodes}")
                 
                 if current_level == max(sorted_levels):
                     # A. Lọc và Sắp xếp Node theo Degree (Thực thể quan trọng nhất đứng đầu)
@@ -899,6 +902,7 @@ async def generate_hierarchical_community_reports_unsloth(
                     
                     input_text = "BÁO CÁO TÓM TẮT TỪ CÁC CỤM CON (Dữ liệu đã nén):\n"
                     input_text += "\n---\n".join(sub_reports)
+                    print(f"input_text: {input_text}")
 
                 # D. Kiểm soát Vali (Context Window): Cắt bỏ những phần ít quan trọng ở cuối danh sách
                 tokens = tokenizer.encode(input_text)
@@ -907,67 +911,67 @@ async def generate_hierarchical_community_reports_unsloth(
                     input_text = tokenizer.decode(tokens[:context_window - 800]) + "\n...(Đã lược bỏ các phần ít quan trọng hơn do vượt dung lượng)..."
 
                 full_prompt =f"""
-Bạn là một trợ lý AI chuyên gia về hệ thống pháp luật Việt Nam, giúp phân tích và khám phá thông tin trong các văn bản quy phạm pháp luật.
-Nhiệm vụ của bạn là trích xuất và đánh giá các thông tin liên quan đến các thực thể (ví dụ: Cơ quan nhà nước, tổ chức, cá nhân) và các quy định trong mạng lưới pháp luật.
+                    Bạn là một trợ lý AI chuyên gia về hệ thống pháp luật Việt Nam, giúp phân tích và khám phá thông tin trong các văn bản quy phạm pháp luật.
+                    Nhiệm vụ của bạn là trích xuất và đánh giá các thông tin liên quan đến các thực thể (ví dụ: Cơ quan nhà nước, tổ chức, cá nhân) và các quy định trong mạng lưới pháp luật.
 
-# Mục tiêu
-Viết một báo cáo toàn diện về một "cụm pháp lý" (community), dựa trên danh sách các thực thể thuộc cụm đó cũng như các mối quan hệ và các tuyên bố (claims) liên quan. 
-Báo cáo này sẽ được sử dụng để hỗ trợ các nhà hoạch định chính sách, luật sư hoặc người dân hiểu rõ về tác động và nội dung của các quy định. 
-Nội dung báo cáo phải bao quát được: các thực thể chính, sự tuân thủ pháp lý, thẩm quyền, trách nhiệm, các hành vi bị cấm và các chế tài liên quan.
+                    # Mục tiêu
+                    Viết một báo cáo toàn diện về một "cụm pháp lý" (community), dựa trên danh sách các thực thể thuộc cụm đó cũng như các mối quan hệ và các tuyên bố (claims) liên quan. 
+                    Báo cáo này sẽ được sử dụng để hỗ trợ các nhà hoạch định chính sách, luật sư hoặc người dân hiểu rõ về tác động và nội dung của các quy định. 
+                    Nội dung báo cáo phải bao quát được: các thực thể chính, sự tuân thủ pháp lý, thẩm quyền, trách nhiệm, các hành vi bị cấm và các chế tài liên quan.
 
-# Cấu trúc báo cáo
+                    # Cấu trúc báo cáo
 
-Báo cáo phải bao gồm các phần sau:
+                    Báo cáo phải bao gồm các phần sau:
 
-- TIÊU ĐỀ: Tên của cụm thực thể đại diện cho các nội dung chính - tiêu đề phải ngắn gọn nhưng cụ thể. Nếu có thể, hãy đưa tên các văn bản luật hoặc cơ quan chủ quản vào tiêu đề.
-- TÓM TẮT: Bản tóm tắt điều hành về cấu trúc tổng thể của cụm pháp lý, cách các thực thể/điều khoản liên quan đến nhau và các điểm quan trọng nhất.
-- ĐIỂM ĐÁNH GIÁ TÁC ĐỘNG (IMPACT SEVERITY RATING): Một điểm số thực từ 0-10 đại diện cho mức độ quan trọng hoặc tác động pháp lý của các thực thể/quy định trong cụm. (10 là mức độ quan trọng nhất, ví dụ: các quy định hiến pháp hoặc hình sự nghiêm trọng).
-- GIẢI THÍCH ĐIỂM ĐÁNH GIÁ: Giải thích bằng một câu duy nhất về lý do đưa ra điểm số tác động đó.
-- CÁC PHÁT HIỆN CHI TIẾT: Danh sách từ 5-10 thông tin chuyên sâu (insights) về cụm pháp lý. Mỗi phát hiện cần có một phần tóm tắt ngắn, sau đó là các đoạn văn giải thích chi tiết được căn cứ chính xác theo quy tắc trích dẫn bên dưới. Hãy trình bày một cách toàn diện và chặt chẽ.
+                    - TIÊU ĐỀ: Tên của cụm thực thể đại diện cho các nội dung chính - tiêu đề phải ngắn gọn nhưng cụ thể. Nếu có thể, hãy đưa tên các văn bản luật hoặc cơ quan chủ quản vào tiêu đề.
+                    - TÓM TẮT: Bản tóm tắt điều hành về cấu trúc tổng thể của cụm pháp lý, cách các thực thể/điều khoản liên quan đến nhau và các điểm quan trọng nhất.
+                    - ĐIỂM ĐÁNH GIÁ TÁC ĐỘNG (IMPACT SEVERITY RATING): Một điểm số thực từ 0-10 đại diện cho mức độ quan trọng hoặc tác động pháp lý của các thực thể/quy định trong cụm. (10 là mức độ quan trọng nhất, ví dụ: các quy định hiến pháp hoặc hình sự nghiêm trọng).
+                    - GIẢI THÍCH ĐIỂM ĐÁNH GIÁ: Giải thích bằng một câu duy nhất về lý do đưa ra điểm số tác động đó.
+                    - CÁC PHÁT HIỆN CHI TIẾT: Danh sách từ 5-10 thông tin chuyên sâu (insights) về cụm pháp lý. Mỗi phát hiện cần có một phần tóm tắt ngắn, sau đó là các đoạn văn giải thích chi tiết được căn cứ chính xác theo quy tắc trích dẫn bên dưới. Hãy trình bày một cách toàn diện và chặt chẽ.
 
-Trả về kết quả dưới dạng chuỗi định dạng JSON chuẩn như sau:
-    {{
-        "title": <tieu_de_bao_cao>,
-        "summary": <tom_tat_dieu_hanh>,
-        "rating": <diem_danh_gia_tac_dong>,
-        "rating_explanation": <giai_thich_diem_danh_gia>,
-        "findings": [
-            {{
-                "summary": <tom_tat_phat_hien_1>,
-                "explanation": <giai_thich_chi_tiet_phat_hien_1>
-            }},
-            {{
-                "summary": <tom_tat_phat_hien_2>,
-                "explanation": <giai_thich_chi_tiet_phat_hien_2>
-            }}
-        ]
-    }}
+                    Trả về kết quả dưới dạng chuỗi định dạng JSON chuẩn như sau:
+                        {{
+                            "title": <tieu_de_bao_cao>,
+                            "summary": <tom_tat_dieu_hanh>,
+                            "rating": <diem_danh_gia_tac_dong>,
+                            "rating_explanation": <giai_thich_diem_danh_gia>,
+                            "findings": [
+                                {{
+                                    "summary": <tom_tat_phat_hien_1>,
+                                    "explanation": <giai_thich_chi_tiet_phat_hien_1>
+                                }},
+                                {{
+                                    "summary": <tom_tat_phat_hien_2>,
+                                    "explanation": <giai_thich_chi_tiet_phat_hien_2>
+                                }}
+                            ]
+                        }}
 
-# Quy tắc trích dẫn (Grounding Rules)
+                    # Quy tắc trích dẫn (Grounding Rules)
 
-Các luận điểm được hỗ trợ bởi dữ liệu phải liệt kê các tham chiếu dữ liệu như sau:
+                    Các luận điểm được hỗ trợ bởi dữ liệu phải liệt kê các tham chiếu dữ liệu như sau:
 
-"Đây là một câu ví dụ được hỗ trợ bởi nhiều tham chiếu dữ liệu [Data: <tên bộ dữ liệu> (id bản ghi); <tên bộ dữ liệu> (id bản ghi)]."
+                    "Đây là một câu ví dụ được hỗ trợ bởi nhiều tham chiếu dữ liệu [Data: <tên bộ dữ liệu> (id bản ghi); <tên bộ dữ liệu> (id bản ghi)]."
 
-Không liệt kê quá 5 ID bản ghi trong một tham chiếu đơn lẻ. Thay vào đó, hãy liệt kê 5 ID liên quan nhất và thêm "+more" để cho biết còn nhiều hơn thế.
+                    Không liệt kê quá 5 ID bản ghi trong một tham chiếu đơn lẻ. Thay vào đó, hãy liệt kê 5 ID liên quan nhất và thêm "+more" để cho biết còn nhiều hơn thế.
 
-Ví dụ:
-"Cơ quan A có thẩm quyền xử phạt đối với hành vi vi phạm về thuế và chịu trách nhiệm trước Chính phủ [Data: Thực thể (5, 7); Quan hệ (23); Tuyên bố (7, 2, 34, 64, 46, +more)]."
+                    Ví dụ:
+                    "Cơ quan A có thẩm quyền xử phạt đối với hành vi vi phạm về thuế và chịu trách nhiệm trước Chính phủ [Data: Thực thể (5, 7); Quan hệ (23); Tuyên bố (7, 2, 34, 64, 46, +more)]."
 
-Trong đó 1, 5, 7, 23, 2, 34, 46 và 64 đại diện cho ID (không phải index) của bản ghi dữ liệu liên quan.
+                    Trong đó 1, 5, 7, 23, 2, 34, 46 và 64 đại diện cho ID (không phải index) của bản ghi dữ liệu liên quan.
 
-Tuyệt đối không đưa vào các thông tin không có bằng chứng hỗ trợ từ dữ liệu đầu vào.
+                    Tuyệt đối không đưa vào các thông tin không có bằng chứng hỗ trợ từ dữ liệu đầu vào.
 
-Giới hạn tổng độ dài báo cáo trong khoảng {max_new_tokens} từ.
+                    Giới hạn tổng độ dài báo cáo trong khoảng {max_new_tokens} từ.
 
-# Dữ liệu thực tế
+                    # Dữ liệu thực tế
 
-Sử dụng văn bản sau đây để trả lời. Không được tự ý bịa đặt thông tin.
+                    Sử dụng văn bản sau đây để trả lời. Không được tự ý bịa đặt thông tin.
 
-Văn bản:
-{input_text}
+                    Văn bản:
+                    {input_text}
 
-Output:"""
+                    Output:"""
                 tokens = tokenizer.encode(full_prompt)
                 print(f"Chiều dài thực tế của Prompt: {len(tokens)} tokens")
                 prompts.append(full_prompt)
