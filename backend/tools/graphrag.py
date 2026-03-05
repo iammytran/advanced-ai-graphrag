@@ -931,7 +931,10 @@ async def generate_hierarchical_community_reports_unsloth(
                     - TÓM TẮT: Bản tóm tắt điều hành về cấu trúc tổng thể của cụm pháp lý, cách các thực thể/điều khoản liên quan đến nhau và các điểm quan trọng nhất.
                     - ĐIỂM ĐÁNH GIÁ TÁC ĐỘNG (IMPACT SEVERITY RATING): Một điểm số thực từ 0-10 đại diện cho mức độ quan trọng hoặc tác động pháp lý của các thực thể/quy định trong cụm. (10 là mức độ quan trọng nhất, ví dụ: các quy định hiến pháp hoặc hình sự nghiêm trọng).
                     - GIẢI THÍCH ĐIỂM ĐÁNH GIÁ: Giải thích bằng một câu duy nhất về lý do đưa ra điểm số tác động đó.
-                    - CÁC PHÁT HIỆN CHI TIẾT: Danh sách từ 5-10 thông tin chuyên sâu (insights) về cụm pháp lý. Mỗi phát hiện cần có một phần tóm tắt ngắn, sau đó là các đoạn văn giải thích chi tiết được căn cứ chính xác theo quy tắc trích dẫn bên dưới. Hãy trình bày một cách toàn diện và chặt chẽ.
+                    - CÁC PHÁT HIỆN CHI TIẾT: Danh sách từ 5-10 thông tin chuyên sâu (insights) về cụm pháp lý. 
+                        * QUAN TRỌNG: Chỉ trích xuất những thông tin thực sự có trong dữ liệu. Nếu dữ liệu nghèo nàn, bạn có thể viết ít hơn 5 phát hiện (nhưng tối thiểu phải có 2-3 nếu có thể).
+                        * TÍNH DUY NHẤT: Mỗi phát hiện phải là một khía cạnh pháp lý khác biệt. Tuyệt đối không lặp lại nội dung đã viết ở các mục trước bằng cách thay đổi từ ngữ.
+                        * CẤU TRÚC: Mỗi phát hiện cần có một phần tóm tắt ngắn, sau đó là đoạn văn giải thích chi tiết có trích dẫn ID dữ liệu chuẩn xác.
 
                     Trả về kết quả dưới dạng chuỗi định dạng JSON chuẩn như sau:
                         {{
@@ -977,7 +980,10 @@ async def generate_hierarchical_community_reports_unsloth(
 
                     # YÊU CẦU QUAN TRỌNG: 
                     - Chỉ trả về duy nhất một khối JSON hợp lệ.
+                    - Không cố gắng bịa thêm thông tin hoặc lặp lại các quy định giống nhau để làm dài danh sách findings.
                     - Không viết thêm lời chào, không viết phần lưu ý hoặc kết luận sau JSON.
+                    - Nếu các thực thể có nội dung tương tự nhau, hãy gom nhóm chúng lại thành một phát hiện duy nhất mang tính tổng quát thay vì tách rời.
+                    - Dừng lại ngay khi hết thông tin hữu ích.
                     - Dừng lại ngay sau khi đóng ngoặc nhọn }} của JSON.
 
                     Output:"""
