@@ -4,6 +4,7 @@ import asyncio
 import pandas as pd
 from tqdm import tqdm
 from unsloth import FastLanguageModel
+from transformers import AutoTokenizer
 
 import random
 
@@ -203,11 +204,10 @@ async def global_query_unsloth(query, level, community_reports, model, tokenizer
 if __name__ == '__main__':
     model_name = "unsloth/meta-llama-3.1-8b-instruct-bnb-4bit"
     max_seq_length = 14000 # Tăng lên 8k để chứa đủ context tóm tắt phân cấp
-    model, tokenizer = FastLanguageModel.from_pretrained(
-        model_name = model_name,
-        max_seq_length = max_seq_length,
-        load_in_4bit = True, # Giúp chạy nhanh và tiết kiệm VRAM
-    )
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+    # Đừng quên cấu hình padding side cho Batch Inference nếu cần
+    tokenizer.padding_side = "left"
 
     data = None
     file_path = 'community_reports_2026-03-06_00-06-07.json'
