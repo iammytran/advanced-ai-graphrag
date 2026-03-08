@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getSuggestedQuestions, sendMessage } from './services/backendApi'
+import { sendMessage, getSuggestedQuestions } from './services/mockApi'
+import { generateImageFromGemini } from './services/geminiApi'
 
 function App() {
     // State
@@ -74,16 +75,36 @@ function App() {
                 illustrationType
             })
 
+            const botMessageId = Date.now() + 1;
             const botMessage = {
-                id: Date.now() + 1,
+                id: botMessageId,
                 type: 'bot',
                 text: response.text,
                 character: response.character,
-                illustration: response.illustration,
+                illustration: response.illustration ? { ...response.illustration, isLoadingImage: true } : null,
                 timestamp: new Date()
             }
 
             setMessages(prev => [...prev, botMessage])
+
+            if (response.illustration) {
+                generateImageFromGemini(response.character, toneValue, illustrationType, response.text)
+                    .then(imageUrl => {
+                        setMessages(prev => prev.map(msg => {
+                            if (msg.id === botMessageId) {
+                                return {
+                                    ...msg,
+                                    illustration: {
+                                        ...msg.illustration,
+                                        url: imageUrl || msg.illustration.url, 
+                                        isLoadingImage: false
+                                    }
+                                };
+                            }
+                            return msg;
+                        }));
+                    });
+            }
         } catch (error) {
             console.error('Error:', error)
         } finally {
@@ -312,7 +333,13 @@ function App() {
                                     </div>
                                     {message.illustration && (
                                         <div className="message-illustration">
-                                            <img src={message.illustration.url} alt={message.illustration.caption} />
+                                            {message.illustration.isLoadingImage ? (
+                                                <div className="image-loading-skeleton" style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#e2e8f0', borderRadius: '8px', margin: '10px 0', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}>
+                                                    <span style={{ color: '#64748b', fontSize: '14px' }}>🖼️ Đang vẽ hình minh họa...</span>
+                                                </div>
+                                            ) : (
+                                                <img src={message.illustration.url} alt={message.illustration.caption} />
+                                            )}
                                             <div className="illustration-caption">
                                                 {message.illustration.caption}
                                             </div>
