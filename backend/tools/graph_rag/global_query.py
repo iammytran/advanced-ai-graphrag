@@ -133,7 +133,17 @@ async def run_reduce_step(query, map_results, model, tokenizer, max_new_tokens=1
     response_type="multiple paragraphs"
 
     # Lấy Top 10 câu trả lời hữu ích nhất làm ngữ cảnh
-    final_context = "\n---\n".join([r['answer'] for r in sorted_results[:10]])
+    top_results = sorted_results[:10]
+
+    if len(top_results) == 0:
+        final_context = "KHÔNG CÓ DỮ LIỆU PHÂN TÍCH PHÙ HỢP."
+    else:
+        # Thêm số thứ tự và tổng số lượng để AI biết ngữ cảnh đang dày hay mỏng
+        final_context = f"TỔNG HỢP CÓ {len(top_results)} LUẬN ĐIỂM QUAN TRỌNG:\n\n"
+        final_context += "\n---\n".join([
+            f"LUẬN ĐIỂM {i+1}:\n{r['description']}" 
+            for i, r in enumerate(top_results)
+        ])
 
     reduce_prompt = f"""
 ---Vai trò---
@@ -204,7 +214,11 @@ async def global_query_unsloth(query, level, community_reports, model, tokenizer
 if __name__ == '__main__':
     model_name = "unsloth/meta-llama-3.1-8b-instruct-bnb-4bit"
     max_seq_length = 14000 # Tăng lên 8k để chứa đủ context tóm tắt phân cấp
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    model, tokenizer = FastLanguageModel.from_pretrained(
+        model_name = model_name,
+        max_seq_length = max_seq_length,
+        load_in_4bit = True, # Giúp chạy nhanh và tiết kiệm VRAM
+    )
 
     # Đừng quên cấu hình padding side cho Batch Inference nếu cần
     tokenizer.padding_side = "left"
@@ -224,6 +238,16 @@ if __name__ == '__main__':
         print("Không tìm thấy file!")
     except json.JSONDecodeError:
         print("File không đúng định dạng JSON!")
+
+    # Bước 2: Map
+    query = "Chơi game bắn cá ăn xu sẽ bị xử lý như thế nào?"
+    map_results = asyncio.run(run_map_step(query, chunks, model, tokenizer))
+    if not map_results:
+        print("Không tìm thấy thông tin liên quan.")
+        
+    # Bước 3: Reduce
+    final_answer = asyncio.run(run_reduce_step(query, map_results, model, tokenizer))
+    print(final_answer)
 
     # chunks = prepare_global_context("", 2, data, tokenizer)
     # print(chunks)
