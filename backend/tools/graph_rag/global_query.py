@@ -19,10 +19,11 @@ def prepare_global_context(query, level, community_reports, tokenizer, context_w
     Chuẩn bị ngữ cảnh cho Global Search từ các báo cáo cộng đồng.
     """
     # 1. Lọc báo cáo theo đúng level yêu cầu
-    reports = [r for r in community_reports if r['level'] == level]
-    if not reports:
-        print(f"--- Cảnh báo: Không tìm thấy báo cáo nào ở Level {level} ---")
-        return []
+    # reports = [r for r in community_reports if r['level'] == level]
+    # if not reports:
+    #     print(f"--- Cảnh báo: Không tìm thấy báo cáo nào ở Level {level} ---")
+    #     return []
+    reports = community_reports
 
     # 2. Xáo trộn ngẫu nhiên (chuẩn Paper GraphRAG)
     random.shuffle(reports)
