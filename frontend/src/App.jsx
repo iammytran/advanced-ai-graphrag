@@ -96,7 +96,7 @@ function App() {
                                     ...msg,
                                     illustration: {
                                         ...msg.illustration,
-                                        url: imageUrl || msg.illustration.url, 
+                                        url: imageUrl || msg.illustration.url,
                                         isLoadingImage: false
                                     }
                                 };
