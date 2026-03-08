@@ -19,7 +19,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Mute warnings
 import warnings
 
-from backend.config.config import OPENAI_API_KEY, OPENAI_MODEL
+from backend.config.config import LANGSMITH_API_KEY, OPENAI_API_KEY, OPENAI_MODEL
 from backend.src.chatbot import Chatbot
 
 warnings.filterwarnings("ignore")
@@ -32,7 +32,12 @@ def get_judge_llm():
     """Get the LLM to use for evaluation (Judge)"""
     # Prefer OpenAI for evaluation if available, as it's the standard for 'LLM-as-a-Judge'
     if OPENAI_API_KEY:
-        return ChatOpenAI(model=OPENAI_MODEL, temperature=0)
+        return ChatOpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            model=OPENAI_MODEL,
+            temperature=0,
+            max_completion_tokens=1000,
+        )
 
     raise ValueError(
         "No API key found for evaluation. Please set OPENAI_API_KEY or GOOGLE_API_KEY."
@@ -216,7 +221,7 @@ def retrieval_relevance(inputs: dict, outputs: dict) -> bool:
 def target(inputs: dict) -> dict:
     """Run the RAG Chatbot"""
     # The chatbot.run() method returns the final state dict
-    result = chatbot.run(inputs["question"])
+    result = chatbot.chat(inputs["question"])
     return {
         "answer": result["answer"],
         # Ensure we pass the list of Document objects
@@ -235,7 +240,7 @@ def main():
         raw_data = json.load(f)
 
     # Initialize Client
-    client = Client()
+    client = Client(api_key=LANGSMITH_API_KEY)
 
     # Dataset 1: Original Question
     dataset_name_original = "RAG_Eval_Dataset_Original"
@@ -252,20 +257,20 @@ def main():
     else:
         print(f"Using existing dataset '{dataset_name_original}'")
 
-    # Dataset 2: Reframed Question
-    dataset_name_reframed = "RAG_Eval_Dataset_Reframed"
-    if not client.has_dataset(dataset_name=dataset_name_reframed):
-        print(f"Creating dataset '{dataset_name_reframed}'...")
-        dataset_reframed = client.create_dataset(dataset_name=dataset_name_reframed)
+    # # Dataset 2: Reframed Question
+    # dataset_name_reframed = "RAG_Eval_Dataset_Reframed"
+    # if not client.has_dataset(dataset_name=dataset_name_reframed):
+    #     print(f"Creating dataset '{dataset_name_reframed}'...")
+    #     dataset_reframed = client.create_dataset(dataset_name=dataset_name_reframed)
 
-        for item in raw_data:
-            client.create_example(
-                inputs={"question": item["reframed_question"]},
-                outputs={"answer": item["answer"]},
-                dataset_id=dataset_reframed.id,
-            )
-    else:
-        print(f"Using existing dataset '{dataset_name_reframed}'")
+    #     for item in raw_data:
+    #         client.create_example(
+    #             inputs={"question": item["reframed_question"]},
+    #             outputs={"answer": item["answer"]},
+    #             dataset_id=dataset_reframed.id,
+    #         )
+    # else:
+    #     print(f"Using existing dataset '{dataset_name_reframed}'")
 
     # Run Evaluation
     print(f"Starting evaluation with judges using {get_judge_llm().model_name}...")
@@ -282,21 +287,21 @@ def main():
         },
     )
 
-    print("\n--- Evaluating Reframed Questions Dataset ---")
-    experiment_results_reframed = client.evaluate(
-        target,
-        data=dataset_name_reframed,
-        evaluators=[correctness, groundedness, relevance, retrieval_relevance],
-        experiment_prefix="rag-chatbot-reframed",
-        metadata={
-            "description": "RAG Chatbot Evaluation - Reframed Questions",
-            "llm_model": OPENAI_MODEL,
-        },
-    )
-
+    # print("\n--- Evaluating Reframed Questions Dataset ---")
+    # experiment_results_reframed = client.evaluate(
+    #     target,
+    #     data=dataset_name_reframed,
+    #     evaluators=[correctness, groundedness, relevance, retrieval_relevance],
+    #     experiment_prefix="rag-chatbot-reframed",
+    #     metadata={
+    #         "description": "RAG Chatbot Evaluation - Reframed Questions",
+    #         "llm_model": OPENAI_MODEL,
+    #     },
+    # )
+    df_results_original = experiment_results_original.to_pandas()
     print("\nEvaluations Complete!")
-    print(f"Original Question Results: {experiment_results_original.url}")
-    print(f"Reframed Question Results: {experiment_results_reframed.url}")
+    print(f"Original Question Results: {df_results_original}")
+    # print(f"Reframed Question Results: {experiment_results_reframed.url}")
 
 
 if __name__ == "__main__":
