@@ -216,7 +216,8 @@ if __name__ == '__main__':
             data = json.load(f)
         
         chunks = prepare_global_context("", 2, data, tokenizer)
-        print(chunks)
+        print(len(chunks))
+        print(chunks[0])
         # # Bây giờ 'data' là một Python Dictionary (hoặc List)
         # print(data['title']) # Truy cập thử một key
     except FileNotFoundError:
