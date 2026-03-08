@@ -215,6 +215,8 @@ if __name__ == '__main__':
         with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
         
+        chunks = prepare_global_context("", 2, data, tokenizer)
+        print(chunks)
         # # Bây giờ 'data' là một Python Dictionary (hoặc List)
         # print(data['title']) # Truy cập thử một key
     except FileNotFoundError:
@@ -222,5 +224,5 @@ if __name__ == '__main__':
     except json.JSONDecodeError:
         print("File không đúng định dạng JSON!")
 
-    chunks = prepare_global_context("", 2, data, tokenizer)
-    print(chunks)
+    # chunks = prepare_global_context("", 2, data, tokenizer)
+    # print(chunks)
