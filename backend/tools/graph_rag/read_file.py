@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 from markitdown import MarkItDown
+from tqdm import tqdm
 
 
 def read_pdf(file_path):
@@ -27,9 +28,10 @@ def ingest_documents_to_df(folder_path: str) -> pd.DataFrame:
     """
     data = []
     folder = Path(folder_path)
+    print(f"folder: {folder}")
 
     # Duyệt qua tất cả các file trong folder
-    for file_path in folder.iterdir():
+    for file_path in tqdm(folder.iterdir(), desc="Processing docs in folder"):
         if file_path.is_file():
             suffix = file_path.suffix.lower()
             content = ""
