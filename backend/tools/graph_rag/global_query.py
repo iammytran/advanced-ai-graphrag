@@ -253,7 +253,16 @@ if __name__ == '__main__':
         
     # Bước 3: Reduce
     final_answer = asyncio.run(run_reduce_step(query, map_results, model, tokenizer))
-    print(final_answer)
+    # Định nghĩa tên file (có thể đặt tên theo câu hỏi hoặc thời gian)
+    file_name = "final_answer.txt"
+
+    with open(file_name, "w", encoding="utf-8") as f:
+        f.write(f"CÂU HỎI: {query}\n")
+        f.write("="*50 + "\n")
+        f.write(final_answer)
+
+    print(f"Đã lưu câu trả lời vào file: {file_name}")
+        # print(final_answer)
 
     # chunks = prepare_global_context("", 2, data, tokenizer)
     # print(chunks)
