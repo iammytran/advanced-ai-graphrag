@@ -5,8 +5,14 @@ import pandas as pd
 from tqdm import tqdm
 from unsloth import FastLanguageModel
 from transformers import AutoTokenizer
+import logging
+import warnings
 
-import random
+# Ẩn các cảnh báo tương lai (FutureWarnings)
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+# Giảm mức độ log của transformers xuống chỉ hiện lỗi (ERROR) thay vì cảnh báo (WARNING)
+logging.getLogger("transformers").setLevel(logging.ERROR)
 
 def prepare_global_context(query, level, community_reports, tokenizer, context_window=6000):
     """
