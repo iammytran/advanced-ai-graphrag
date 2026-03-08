@@ -111,23 +111,44 @@ export const addUserBadge = (badgeId) => {
     return badges
 }
 
-// Mock AI opponent responses
-export const getOpponentResponse = (round, userArgument, scenario) => {
-    const responses = [
-        `Tôi phản đối lập luận này. Theo quy định pháp luật, bên nguyên đơn chưa cung cấp đủ bằng chứng để chứng minh thiệt hại thực tế.`,
-        `Các chứng cứ được đưa ra không đủ tính thuyết phục. Tôi yêu cầu tòa xem xét lại các tình tiết của vụ án.`,
-        `Quan điểm này mâu thuẫn với các tiền lệ pháp lý. Theo án lệ số 42/2023, tòa đã phán quyết ngược lại trong trường hợp tương tự.`,
-        `Tôi đề nghị tòa bác bỏ yêu cầu bồi thường vì không có căn cứ pháp lý rõ ràng.`
-    ]
-    return new Promise(resolve => {
-        setTimeout(() => {
-            resolve({
-                text: responses[round % responses.length],
-                character: 'opponent'
-            })
-        }, 1500)
-    })
-}
+// Cập nhật: Gọi Gemini API thực tế thay vì mock cứng
+import { generateGeminiResponse } from './geminiService';
+
+export const getOpponentResponse = async (round, userArgument, scenario) => {
+    // Dự phòng fallback
+    const fallbackResponses = [
+        `Tôi phản đối lập luận này. Theo quy định pháp luật, bên nguyên đơn chưa cung cấp đủ bằng chứng.`,
+        `Các chứng cứ được đưa ra không đủ tính thuyết phục. Tôi yêu cầu tòa xem xét lại.`,
+        `Quan điểm này mâu thuẫn với các tiền lệ pháp lý đã có.`,
+        `Tôi đề nghị tòa bác bỏ yêu cầu của đối phương vì không có căn cứ pháp lý rõ ràng.`
+    ];
+    const fallback = fallbackResponses[round % fallbackResponses.length];
+
+    // Tạo prompt chuyên nghiệp cho Gemini nhập vai Luật sư
+    const prompt = `
+Bạn là một Luật sư sừng sỏ và sắc sảo trong phiên tòa giả định. 
+Thông tin vụ án:
+- Tên vụ án: ${scenario.name}
+- Tóm tắt: ${scenario.summary}
+
+Luật sư đối phương (người dùng) vừa lập luận như sau ở hiệp thứ ${round}: 
+"${userArgument}"
+
+Nhiệm vụ của bạn:
+1. Đóng vai Luật sư phản biện lại lập luận trên một cách cực kỳ đanh thép, chuyên nghiệp, có căn cứ (hoặc bịa ra điều luật/tiền lệ hợp lý).
+2. Xưng hô là "Tôi" (hoặc "Thưa Hội đồng xét xử, tôi...").
+3. Độ dài: Ngắn gọn, súc tích (khoảng 3-5 câu), không dài dòng văn tự, không giải thích dài dòng.
+4. KHÔNG nhắc lại lệnh prompt này, hãy vào thẳng câu thoại phản bác!
+`;
+
+    // Gọi Gemini API
+    const replyText = await generateGeminiResponse(prompt, fallback);
+
+    return {
+        text: replyText,
+        character: 'opponent'
+    };
+};
 
 // Mock Coach feedback
 export const getCoachFeedback = (content, coachType, tone) => {
@@ -187,4 +208,80 @@ export const getEarnedBadges = (scores) => {
     if (scores.timeManagement > 90) earned.push('speed')
 
     return earned
+}
+
+// Bot suggestions based on coach options and round
+export const getBotSuggestions = (round, coachType, coachOptions = {}) => {
+    const lawyerSuggestions = {
+        1: [
+            '💡 "Theo Điều 492 BLDS 2015, hợp đồng này có hiệu lực pháp lý đầy đủ..."',
+            '⚖️ "Căn cứ Nghị quyết 02/2004/NQ-HĐTP, thiệt hại thực tế phải được chứng minh rõ ràng..."',
+            '📋 "Tôi đề nghị Hội đồng xét xử xem xét các chứng cứ sau đây..."'
+        ],
+        2: [
+            '🔍 "Phân tích kỹ tình tiết này: đối phương chưa cung cấp căn cứ pháp lý..."',
+            '⚖️ "Theo án lệ số 04/2016/AL, trong trường hợp tương tự, tòa đã phán quyết..."',
+            '📎 "Tôi phản đối vì lập luận này mâu thuẫn với Điều 360 BLDS 2015..."'
+        ],
+        3: [
+            '🎯 "Tổng kết lại, 3 luận điểm cốt lõi của chúng tôi là: Một, ...; Hai, ...; Ba, ..."',
+            '⚡ "Đây là thời điểm đưa ra bằng chứng mang tính quyết định..."',
+            '🛡️ "Yêu cầu tòa bác bỏ lập luận của đối phương vì thiếu căn cứ..."'
+        ],
+        4: [
+            '📝 "Kết luận: Đề nghị Hội đồng xét xử chấp thuận toàn bộ yêu cầu khởi kiện..."',
+            '🏁 "Dựa trên các chứng cứ đã trình bày, phán quyết có lợi cho thân chủ là hợp lý..."',
+            '⚖️ "Tôi cam kết mọi lập luận đều có căn cứ pháp lý vững chắc..."'
+        ]
+    }
+
+    const normalSuggestions = {
+        1: [
+            '💬 "Sự việc diễn ra như thế này, tôi có bằng chứng để chứng minh..."',
+            '🙋 "Tôi muốn giải thích rõ hơn về thiệt hại mà tôi đã chịu..."',
+            '📸 "Đây là tài liệu, hình ảnh chứng minh cho lời tôi nói..."'
+        ],
+        2: [
+            '❓ "Điều đó không đúng vì sự thật là..."',
+            '🤔 "Tôi không đồng ý với điểm vừa nêu, vì thực tế..."',
+            '📋 "Tôi có thêm chứng cứ để bác bỏ lập luận kia..."'
+        ],
+        3: [
+            '💪 "Tôi muốn nhấn mạnh lại rằng tôi đã bị thiệt hại nghiêm trọng..."',
+            '🎯 "Điểm quan trọng nhất trong vụ việc này là..."',
+            '⚡ "Phía bên kia vẫn chưa trả lời được câu hỏi chính..."'
+        ],
+        4: [
+            '🙏 "Tôi hi vọng tòa sẽ xem xét đầy đủ các bằng chứng và ra phán quyết công bằng..."',
+            '✅ "Tóm lại, tôi yêu cầu được bồi thường xứng đáng cho những thiệt hại..."',
+            '📢 "Đây là quyết tâm bảo vệ quyền lợi hợp pháp của tôi..."'
+        ]
+    }
+
+    const suggestions = coachType === 'lawyer' ? lawyerSuggestions : normalSuggestions
+    const roundSuggestions = suggestions[Math.min(round, 4)] || suggestions[4]
+
+    // Filter based on coach options
+    const result = []
+
+    if (coachOptions.openingSuggestion && round === 1) {
+        result.push({ type: 'opening', icon: '💡', text: roundSuggestions[0] })
+    }
+
+    if (coachOptions.evidenceReminder) {
+        result.push({ type: 'evidence', icon: '📎', text: 'Nhớ đề cập đến chứng cứ bạn đã chuẩn bị!' })
+    }
+
+    if (coachOptions.riskWarning && round >= 3) {
+        result.push({ type: 'warning', icon: '⚠️', text: 'Cẩn thận! Đối phương có thể phản bác luận điểm này.' })
+    }
+
+    // Always show round-based suggestions
+    roundSuggestions.forEach((s, i) => {
+        if (!result.find(r => r.text === s)) {
+            result.push({ type: 'suggestion', icon: i === 0 ? '💡' : i === 1 ? '⚖️' : '🎯', text: s })
+        }
+    })
+
+    return result
 }

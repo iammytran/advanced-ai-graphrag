@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { scenarios, getOpponentResponse } from '../../services/courtroomMockApi'
+import { scenarios, getOpponentResponse, getBotSuggestions } from '../../services/courtroomMockApi'
 
 function Courtroom() {
     const navigate = useNavigate()
@@ -20,6 +20,9 @@ function Courtroom() {
     const [userInput, setUserInput] = useState('')
     const [isOpponentTurn, setIsOpponentTurn] = useState(false)
     const [objectionsUsed, setObjectionsUsed] = useState(0)
+
+    // Left panel suggestions
+    const [botSuggestions, setBotSuggestions] = useState([])
 
     const messagesEndRef = useRef(null)
 
@@ -46,7 +49,18 @@ function Courtroom() {
             text: `📢 Phiên tòa bắt đầu!\n\nVụ án: ${sc?.name}\nVai trò của bạn: ${sess.role === 'defendant' ? 'Luật sư bào chữa' : 'Luật sư nguyên đơn'}\n\nHãy trình bày luận điểm mở đầu của bạn.`
         }
         setMessages([openingMessage])
+
+        // Load initial bot suggestions
+        const suggestions = getBotSuggestions(1, sess.coach?.type || 'normal', sess.coach?.options || {})
+        setBotSuggestions(suggestions)
     }, [navigate])
+
+    // Update suggestions when round changes
+    useEffect(() => {
+        if (!session) return
+        const suggestions = getBotSuggestions(currentRound, session.coach?.type || 'normal', session.coach?.options || {})
+        setBotSuggestions(suggestions)
+    }, [currentRound, session])
 
     // Timer countdown
     useEffect(() => {
@@ -184,9 +198,29 @@ function Courtroom() {
         }
     }
 
+    // Click suggestion → fill input
+    const handleSuggestionClick = (suggestionText) => {
+        // Strip the icon prefix and quotes for cleaner input
+        const cleaned = suggestionText.replace(/^[^\s]+\s*"?/, '').replace(/"$/, '')
+        setUserInput(cleaned)
+    }
+
+    // Click argument card → paste argument + linked evidences into input
+    const handleArgumentClick = (arg, linkedEvidences) => {
+        let text = arg.text
+        if (linkedEvidences.length > 0) {
+            const evidenceList = linkedEvidences.map(ev => `"${ev.name}"`).join(', ')
+            text += `\n\n📎 Chứng cứ đính kèm: ${evidenceList}`
+        }
+        setUserInput(text)
+    }
+
     if (!scenario) {
         return <div className="courtroom-page">Loading...</div>
     }
+
+    const strategy = session?.strategy
+    const coach = session?.coach
 
     return (
         <div className="courtroom-page courtroom-session">
@@ -213,90 +247,243 @@ function Courtroom() {
                 </div>
             </header>
 
-            {/* Messages Area */}
-            <div className="courtroom-messages">
-                {messages.map(msg => (
-                    <div key={msg.id} className={`courtroom-message ${msg.type}`}>
-                        <div className="message-avatar">
-                            {msg.type === 'user' && '👤'}
-                            {msg.type === 'opponent' && '🤖'}
-                            {msg.type === 'system' && '⚖️'}
-                            {msg.type === 'objection' && '✋'}
+            {/* Main Body - 30/70 Split */}
+            <div className="courtroom-body">
+
+                {/* LEFT PANEL — 30% */}
+                <div className="session-left-panel">
+
+                    {/* TOP: Scenario Info */}
+                    <div className="session-scenario-info">
+                        <div className="panel-title">
+                            <span className="panel-title-icon">🏛️</span>
+                            <div>
+                                <h3>Tình huống</h3>
+                                <p>{session?.role === 'defendant' ? 'Luật sư bào chữa' : 'Luật sư nguyên đơn'}</p>
+                            </div>
                         </div>
-                        <div className="message-content">
-                            {msg.type === 'user' && <span className="sender">Bạn</span>}
-                            {msg.type === 'opponent' && <span className="sender">Đối phương</span>}
-                            <p>{msg.text}</p>
+
+                        <div className="scenario-detail-content">
+                            <div className="scenario-detail-name">{scenario.name}</div>
+                            <p className="scenario-detail-desc">{scenario.description}</p>
+
+                            <div className="scenario-detail-section">
+                                <div className="scenario-detail-label">📋 Tóm tắt vụ án</div>
+                                <p className="scenario-detail-summary">{scenario.summary}</p>
+                            </div>
+
+                            {scenario.facts?.length > 0 && (
+                                <div className="scenario-detail-section">
+                                    <div className="scenario-detail-label">🔍 Sự kiện pháp lý</div>
+                                    <ul className="scenario-facts-list">
+                                        {scenario.facts.map((fact, i) => (
+                                            <li key={i}>
+                                                <span className="fact-dot">•</span>
+                                                <span>{fact}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
                         </div>
                     </div>
-                ))}
 
-                {isOpponentTurn && (
-                    <div className="courtroom-message opponent typing">
-                        <div className="message-avatar">🤖</div>
-                        <div className="message-content">
-                            <span className="typing-indicator">Đang phản hồi...</span>
+                    {/* BOTTOM: Strategy Info */}
+                    <div className="session-strategy-info">
+                        <div className="panel-title">
+                            <span className="panel-title-icon">📋</span>
+                            <div>
+                                <h3>Chiến lược của bạn</h3>
+                                <p>Đã xây dựng trước phiên tòa</p>
+                            </div>
                         </div>
+
+                        {!strategy ? (
+                            <div className="strategy-empty">
+                                <span>📝</span>
+                                <p>Không có chiến lược được xây dựng trước</p>
+                            </div>
+                        ) : (
+                            <div className="strategy-content-panel">
+                                {/* Arguments */}
+                                {/* Arguments — each clickable, with linked evidences shown inline */}
+                                {strategy.arguments?.length > 0 && (
+                                    <div className="strategy-block">
+                                        <div className="strategy-block-title">💬 Luận điểm · click để dán vào chat</div>
+                                        {strategy.arguments.map((arg, i) => {
+                                            if (!arg.text) return null
+                                            // Find evidences linked to this argument
+                                            const linked = (strategy.evidences || []).filter(
+                                                ev => ev.linkedArguments?.includes(arg.id)
+                                            )
+                                            return (
+                                                <button
+                                                    key={arg.id || i}
+                                                    className={`strategy-arg-card ${linked.length > 0 ? 'has-evidence' : ''}`}
+                                                    onClick={() => handleArgumentClick(arg, linked)}
+                                                    title="Click để dán luận điểm + chứng cứ vào ô nhập liệu"
+                                                >
+                                                    <div className="strategy-arg-top">
+                                                        <span className="strategy-num">{i + 1}</span>
+                                                        <span className="strategy-arg-text">{arg.text}</span>
+                                                    </div>
+                                                    {linked.length > 0 && (
+                                                        <div className="strategy-arg-evidences">
+                                                            {linked.map(ev => (
+                                                                <span key={ev.id} className="strategy-ev-tag" title={ev.name}>
+                                                                    <span className="ev-icon">📄</span>
+                                                                    <span className="ev-name">{ev.name}</span>
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    <div className="strategy-arg-hint">↗ Dán vào chat</div>
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                )}
+
+                                {/* Standalone evidences (not linked to any argument) */}
+                                {strategy.evidences?.some(ev => !ev.linkedArguments?.length) && (
+                                    <div className="strategy-block">
+                                        <div className="strategy-block-title">📎 Chứng cứ khác</div>
+                                        {strategy.evidences.filter(ev => !ev.linkedArguments?.length).map((ev, i) => (
+                                            <div key={ev.id || i} className="strategy-evidence-item">
+                                                <span>📄</span>
+                                                <span>{ev.name}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Requirements */}
+                                {strategy.requirements && (
+                                    <div className="strategy-block">
+                                        <div className="strategy-block-title">🎯 Yêu cầu</div>
+                                        <p className="strategy-requirements">{strategy.requirements}</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
-                )}
 
-                <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input Area */}
-            <div className="courtroom-input">
-                <div className="input-controls">
-                    <button
-                        className="control-btn pause-btn"
-                        onClick={handlePause}
-                        disabled={!session?.settings?.pauseEnabled || pausesUsed >= 3 || isPaused}
-                    >
-                        ⏸️ Tạm dừng ({3 - pausesUsed} lượt)
-                    </button>
-
-                    <button
-                        className="control-btn objection-btn"
-                        onClick={handleObjection}
-                        disabled={objectionsUsed >= (session?.settings?.objectionLimit || 3)}
-                    >
-                        ✋ Phản đối ({(session?.settings?.objectionLimit || 3) - objectionsUsed} lượt)
-                    </button>
-
-                    <button
-                        className="control-btn end-btn"
-                        onClick={handleEndEarly}
-                    >
-                        ⏹️ Kết thúc
-                    </button>
                 </div>
 
-                <div className="input-row">
-                    <textarea
-                        placeholder="Nhập lập luận của bạn..."
-                        value={userInput}
-                        onChange={(e) => setUserInput(e.target.value)}
-                        disabled={isOpponentTurn || currentRound > totalRounds}
-                        onKeyPress={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault()
-                                handleSendMessage()
-                            }
-                        }}
-                    />
-                    <button
-                        className="send-btn"
-                        onClick={handleSendMessage}
-                        disabled={isOpponentTurn || !userInput.trim() || currentRound > totalRounds}
-                    >
-                        ➡️ Gửi
-                    </button>
-                </div>
+                {/* RIGHT PANEL — 70% */}
+                <div className="session-right-panel">
+                    {/* Messages Area */}
+                    <div className="courtroom-messages">
+                        {messages.map(msg => (
+                            <div key={msg.id} className={`courtroom-message ${msg.type}`}>
+                                <div className="message-avatar">
+                                    {msg.type === 'user' && '👤'}
+                                    {msg.type === 'opponent' && '🤖'}
+                                    {msg.type === 'system' && '⚖️'}
+                                    {msg.type === 'objection' && '✋'}
+                                </div>
+                                <div className="message-content">
+                                    {msg.type === 'user' && <span className="sender">Bạn</span>}
+                                    {msg.type === 'opponent' && <span className="sender">Đối phương</span>}
+                                    <p>{msg.text}</p>
+                                </div>
+                            </div>
+                        ))}
 
-                {currentRound > totalRounds && (
-                    <button className="conclude-btn" onClick={endSession}>
-                        📋 Đưa ra kết luận cuối cùng
-                    </button>
-                )}
+                        {isOpponentTurn && (
+                            <div className="courtroom-message opponent typing">
+                                <div className="message-avatar">🤖</div>
+                                <div className="message-content">
+                                    <span className="typing-indicator">Đang phản hồi...</span>
+                                </div>
+                            </div>
+                        )}
+
+                        <div ref={messagesEndRef} />
+                    </div>
+
+                    {/* Coach Suggestions — above input */}
+                    {botSuggestions.length > 0 && (
+                        <div className="session-coach-suggestions-bar">
+                            <div className="coach-suggestions-header">
+                                <span>{coach?.type === 'lawyer' ? '👨‍⚖️' : '😊'}</span>
+                                <span>Gợi ý coach · Vòng {currentRound}</span>
+                            </div>
+                            <div className="coach-suggestions-chips">
+                                {botSuggestions.map((sug, idx) => (
+                                    <button
+                                        key={idx}
+                                        className={`coach-chip coach-chip-${sug.type}`}
+                                        onClick={() => handleSuggestionClick(sug.text)}
+                                        title={sug.text}
+                                    >
+                                        <span>{sug.icon}</span>
+                                        <span className="coach-chip-text">{sug.text}</span>
+                                    </button>
+                                ))}
+                            </div>
+                            {coach?.options?.autoObjection && (
+                                <div className="auto-objection-hint">✋ Tự động phản đối BẬT</div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Input Area */}
+                    <div className="courtroom-input">
+                        <div className="input-controls">
+                            <button
+                                className="control-btn pause-btn"
+                                onClick={handlePause}
+                                disabled={!session?.settings?.pauseEnabled || pausesUsed >= 3 || isPaused}
+                            >
+                                ⏸️ Tạm dừng ({3 - pausesUsed} lượt)
+                            </button>
+
+                            <button
+                                className="control-btn objection-btn"
+                                onClick={handleObjection}
+                                disabled={objectionsUsed >= (session?.settings?.objectionLimit || 3)}
+                            >
+                                ✋ Phản đối ({(session?.settings?.objectionLimit || 3) - objectionsUsed} lượt)
+                            </button>
+
+                            <button
+                                className="control-btn end-btn"
+                                onClick={handleEndEarly}
+                            >
+                                ⏹️ Kết thúc
+                            </button>
+                        </div>
+
+                        <div className="input-row">
+                            <textarea
+                                placeholder="Nhập lập luận của bạn... (hoặc click gợi ý Coach phía trên)"
+                                value={userInput}
+                                onChange={(e) => setUserInput(e.target.value)}
+                                disabled={isOpponentTurn || currentRound > totalRounds}
+                                onKeyPress={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault()
+                                        handleSendMessage()
+                                    }
+                                }}
+                            />
+                            <button
+                                className="send-btn"
+                                onClick={handleSendMessage}
+                                disabled={isOpponentTurn || !userInput.trim() || currentRound > totalRounds}
+                            >
+                                ➡️ Gửi
+                            </button>
+                        </div>
+
+                        {currentRound > totalRounds && (
+                            <button className="conclude-btn" onClick={endSession}>
+                                📋 Đưa ra kết luận cuối cùng
+                            </button>
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     )
