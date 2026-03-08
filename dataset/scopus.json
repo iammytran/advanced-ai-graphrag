@@ -36,7 +36,148 @@
     },
     {
         "id": 5,
-        "source": [
+        "sources": [
+            {
+                "Bộ luật hình sự 2015": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Bo-luat-hinh-su-2015-296661.aspx"
+            }
+        ]
+    },
+    {
+        "id": 6,
+        "sources": [
+            {
+                "Bộ luật dân sự 2015": "https://thuvienphapluat.vn/van-ban/Quyen-dan-su/Bo-luat-dan-su-2015-296215.aspx",
+                "Bộ luật hình sự 2015": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Bo-luat-hinh-su-2015-296661.aspx"
+            }
+        ]
+    },
+    {
+        "id": 7,
+        "sources": [
+            {
+                "Nghị quyết số 04/2025/NQ-HĐTP": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Nghi-quyet-04-2025-NQ-HDTP-huong-dan-ap-dung-cac-tinh-tiet-giam-nhe-trach-nhiem-hinh-su-679023.aspx"
+            }
+        ]
+    },
+    {
+        "id": 8,
+        "sources": [
+            {
+                "Nghị quyết số 04/2025/NQ-HĐTP": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Nghi-quyet-04-2025-NQ-HDTP-huong-dan-ap-dung-cac-tinh-tiet-giam-nhe-trach-nhiem-hinh-su-679023.aspx"
+            }
+        ]
+    },
+    {
+        "id": 9,
+        "sources": [
+            {
+                "Bộ luật hình sự 2015": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Bo-luat-hinh-su-2015-296661.aspx",
+                "Bộ luật Tố tụng Hình sự 2015": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Bo-luat-to-tung-hinh-su-2015-296884.aspx"
+            }
+        ]
+    },
+    {
+        "id": 10,
+        "sources": [
+            {
+                "Nghị quyết số 04/2025/NQ-HĐTP": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Nghi-quyet-04-2025-NQ-HDTP-huong-dan-ap-dung-cac-tinh-tiet-giam-nhe-trach-nhiem-hinh-su-679023.aspx",
+                "Bộ luật hình sự 2015": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Bo-luat-hinh-su-2015-296661.aspx"
+            }
+        ]
+    },
+    {
+        "id": 11,
+        "sources": [
+            {
+                "Nghị quyết số 04/2025/NQ-HĐTP": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Nghi-quyet-04-2025-NQ-HDTP-huong-dan-ap-dung-cac-tinh-tiet-giam-nhe-trach-nhiem-hinh-su-679023.aspx"            }
+        ]
+    },
+    {
+        "id": 12,
+        "sources": [
+            {
+                "Nghị quyết số 04/2025/NQ-HĐTP": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Nghi-quyet-04-2025-NQ-HDTP-huong-dan-ap-dung-cac-tinh-tiet-giam-nhe-trach-nhiem-hinh-su-679023.aspx",
+                "Bộ luật hình sự 2015": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Bo-luat-hinh-su-2015-296661.aspx"
+            }
+        ]
+    },
+    {
+        "id": 13,
+        "sources": [
+            {
+                "Bộ luật Tố tụng Hình sự 2015": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Bo-luat-to-tung-hinh-su-2015-296884.aspx"                
+            }
+        ]
+    },
+    {
+        "id": 13,
+        "sources": [
+            {
+                "Bộ luật Tố tụng Hình sự 2015": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Bo-luat-to-tung-hinh-su-2015-296884.aspx"                
+            }
+        ]
+    },
+    {
+        "id": 14,
+        "sources": [
+            {
+                "Thông tư 64/2019/TT-BCA": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Thong-tu-64-2019-TT-BCA-nguoi-duoc-tha-tu-truoc-thoi-han-co-dieu-kien-thay-doi-noi-cu-tru-437037.aspx"
+            }
+        ]
+    },
+    {
+        "id": 15,
+        "sources": [
+            {
+                "Bộ luật hình sự 2015": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Bo-luat-hinh-su-2015-296661.aspx"
+            }
+        ]
+    },
+    {
+        "id": 16,
+        "sources": [
+            {
+                "Bộ luật hình sự 2015": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Bo-luat-hinh-su-2015-296661.aspx"
+            }
+        ]
+    },
+    {
+        "id": 17,
+        "sources": [
+            {
+                "Pháp lệnh phòng, chống mại dâm năm 2003": "https://thuvienphapluat.vn/van-ban/Van-hoa-Xa-hoi/Phap-lenh-phong-chong-mai-dam-2003-10-2003-PL-UBTVQH11-50643.aspx",
+                "Bộ luật hình sự 2015": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Bo-luat-hinh-su-2015-296661.aspx"
+            }
+        ]
+    },
+    {
+        "id": 18,
+        "sources": [
+            {
+                "Bộ luật hình sự 2015": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Bo-luat-hinh-su-2015-296661.aspx"
+            }
+        ]
+    },
+    {
+        "id": 19,
+        "sources": [
+            {
+                "Bộ luật Lao động 2019": "https://thuvienphapluat.vn/van-ban/Lao-dong-Tien-luong/Bo-Luat-lao-dong-2019-333670.aspx",
+                "Bộ luật hình sự 2015": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Bo-luat-hinh-su-2015-296661.aspx"
+            }
+        ]
+    },
+    {
+        "id": 20,
+        "sources": [
+            {
+                "Bộ luật hình sự 2015": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Bo-luat-hinh-su-2015-296661.aspx"
+            }
+        ]
+    },
+    {
+        "id": 21,
+        "sources": [
             {
                 "Bộ luật hình sự 2015": "https://thuvienphapluat.vn/van-ban/Trach-nhiem-hinh-su/Bo-luat-hinh-su-2015-296661.aspx"
             }

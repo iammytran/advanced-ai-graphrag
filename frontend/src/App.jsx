@@ -1,7 +1,11 @@
-import { useState, useRef, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+<<<<<<< HEAD
 import { sendMessage, getSuggestedQuestions } from './services/mockApi'
 import { generateImageFromGemini } from './services/geminiApi'
+=======
+import { getSuggestedQuestions, sendMessage } from './services/backendApi'
+>>>>>>> c39bb11e14a81583b517959210e8f27b8f7acf97
 
 function App() {
     // State
