@@ -187,9 +187,9 @@ export const addUserBadge = (badgeId) => {
     return badges
 }
 
-import { evaluateSession } from './backendApi';
+import { evaluateSession } from './backendApi'
 // Cập nhật: Gọi Gemini API thực tế thay vì mock cứng
-import { generateGeminiResponse } from './geminiService';
+import { generateGeminiResponse } from './geminiService'
 
 export const getOpponentResponse = async (round, userArgument, scenario, userRole = 'defendant', messages = []) => {
     // Dự phòng fallback
