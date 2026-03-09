@@ -8,6 +8,8 @@ from transformers import AutoTokenizer
 import logging
 import warnings
 from datetime import datetime
+import os
+from pathlib import Path
 
 # Ẩn các cảnh báo tương lai (FutureWarnings)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -128,10 +130,23 @@ Trong đó 1, 2, 3, 7, 34, 46, và 64 đại diện cho ID (không phải index)
         try:
             clean_json = res_raw.replace("```json", "").replace("```", "").strip()
             res_json = json.loads(clean_json)
-            if res_json.get('score', 0) > 0:
-                intermediate_results.append(res_json)
-        except:
+            intermediate_results.append(res_json)
+            # if res_json.get('score', 0) > 0:
+            #     intermediate_results.append(res_json)
+        except Exception:
             continue
+
+        # 1. Xác định tên file và thư mục lưu trữ
+        output_file = "intermediate_results.json"
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+
+        # 2. Ghi dữ liệu ra file JSON
+        try:
+            with open(output_file, 'w', encoding='utf-8') as f:
+                json.dump(intermediate_results, f, ensure_ascii=False, indent=4)
+            print(f"✅ Đã lưu thành công {len(intermediate_results)} kết quả vào {output_file}")
+        except Exception as e:
+            print(f"❌ Lỗi khi lưu file JSON: {e}")
             
     return intermediate_results
 

@@ -344,7 +344,11 @@ if __name__ == '__main__':
     with open(relationships_path, 'rb') as f:
         relationships = pickle.load(f)
 
-    result, hierarchy = _compute_leiden_communities(relationships, max_cluster_size=10, use_lcc=False)
+    relationships_df = None
+    if isinstance(relationships, list):
+        relationships_df = pd.DataFrame(relationships)
+
+    result, hierarchy = _compute_leiden_communities(relationships_df, max_cluster_size=10, use_lcc=False)
     total_communities = len(hierarchy)
     print(f"Có {total_communities} communities")
 
