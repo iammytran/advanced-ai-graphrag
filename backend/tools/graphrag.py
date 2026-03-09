@@ -127,7 +127,7 @@ def extract_entities_unsloth(
     tokenizer,
     prompt_template: str,
     entity_types: str,
-    batch_size: int = 8, # Điều chỉnh dựa trên VRAM (4, 8, 16...)
+    batch_size: int = 16, # Điều chỉnh dựa trên VRAM (4, 8, 16...)
     max_new_tokens: int = 1500
 ):
 
@@ -176,7 +176,7 @@ def extract_entities_unsloth(
                 completion_delimiter=completion_delimiter,
                 record_delimiter=record_delimiter
             )
-            
+
             prompts.append(full_prompt)
 
         # Tokenize toàn bộ batch
