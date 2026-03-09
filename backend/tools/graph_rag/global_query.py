@@ -232,7 +232,7 @@ if __name__ == '__main__':
     tokenizer.padding_side = "left"
 
     data = None
-    file_path = 'community_reports_2026-03-06_00-06-07.json'
+    file_path = 'community_summaries_20260309_151953.json'
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
