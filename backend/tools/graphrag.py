@@ -218,7 +218,7 @@ async def main():
 
     # 1. Cấu hình thông số
     model_name = "unsloth/meta-llama-3.1-8b-instruct-bnb-4bit"
-    max_seq_length = 16000 # Tăng lên 8k để chứa đủ context tóm tắt phân cấp
+    max_seq_length = 10000
     max_new_tokens=2048
 
     # 2. Load model và tokenizer
@@ -317,7 +317,9 @@ async def main():
         relationships_df=relationships_df,
         model=model,
         tokenizer=tokenizer,
-        max_new_tokens=max_new_tokens
+        max_new_tokens=max_new_tokens,
+        context_window=max_seq_length,
+        folder_for_debug=new_folder_name
     ))
 
     with open(f"{new_folder_name}/community_summaries.json", "w", encoding="utf-8") as f:

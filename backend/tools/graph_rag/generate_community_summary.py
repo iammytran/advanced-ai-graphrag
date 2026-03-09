@@ -117,8 +117,9 @@ async def generate_hierarchical_community_reports_unsloth(
     relationships_df: pd.DataFrame, # Cần có cột 'rank' hoặc 'weight' (Combined Degree)
     model,
     tokenizer,
+    folder_for_debug,
     max_new_tokens=2048,
-    context_window=4096 
+    context_window=4096
 ):
     # 1. Đảo ngược Level để chạy từ dưới (Lá) lên trên (Gốc)
     sorted_levels = sorted([int(k) for k in community_results.keys()], reverse=True)
@@ -299,10 +300,8 @@ async def generate_hierarchical_community_reports_unsloth(
                 raw_output = generated_texts[idx]
                 # Tạo tên file theo ID của cụm
 
-                print(f"Printing raw_output to file...")
-                filename = f"debug_output_cluster_{cid}.txt"
-                # Tạo tên file theo ID của cụm
-                filename = f"debug_output_cluster_{cid}.txt"
+                print(f"Printing raw_output of cluster {cid} to file...")
+                filename = f"{folder_for_debug}/debug_output_cluster_{cid}.txt"
                 
                 with open(filename, "w", encoding="utf-8") as f:
                     f.write(generated_texts[idx])
@@ -386,10 +385,6 @@ async def generate_hierarchical_community_reports_unsloth(
 
     return final_reports
 
-def save_hierarchical_reports(reports, filename="hierarchical_reports.json"):
-    with open(filename, 'w', encoding='utf-8') as f:
-        json.dump(reports, f, ensure_ascii=False, indent=4)
-#     print(f"✅ Đã xuất {len(reports)} báo cáo cộng đồng vào {filename}")
 
 def save_full_graph_context(result, hierarchy, filename="graph_context_old_prompt.json"):
     full_context = {
