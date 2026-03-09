@@ -238,10 +238,17 @@ if __name__ == '__main__':
             data = json.load(f)
         
         chunks = prepare_global_context("", 2, data, tokenizer)
-        print(len(chunks))
-        print(chunks[0])
-        # # Bây giờ 'data' là một Python Dictionary (hoặc List)
-        # print(data['title']) # Truy cập thử một key
+        # --- LOGIC LƯU FILE DEBUG ---
+        debug_file = "debug_chunks.txt"
+        with open(debug_file, "w", encoding="utf-8") as f_out:
+            f_out.write(f"TỔNG SỐ CHUNKS: {len(chunks)}\n")
+            for idx, chunk in enumerate(chunks):
+                f_out.write(f"\n{'='*30} CHUNK {idx} {'='*30}\n")
+                f_out.write(chunk)
+                f_out.write("\n")
+        # ----------------------------
+
+        print(f"Đã lưu {len(chunks)} chunks vào file: {debug_file}")
     except FileNotFoundError:
         print("Không tìm thấy file!")
     except json.JSONDecodeError:
