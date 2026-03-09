@@ -29,6 +29,9 @@ import torch
 import logging
 import transformers
 from datetime import datetime
+from langchain.tools import tool
+from langchain_chroma import Chroma
+from datetime import datetime
 
 from backend.tools.graph_rag.compute_leiden_communities import _compute_leiden_communities
 from backend.tools.graph_rag.generate_community_summary import generate_hierarchical_community_reports_unsloth
@@ -497,6 +500,47 @@ async def main():
 
     plt.show()
 
+# @tool
+# def graphrag_retrieval(query: str) -> str:
+#     """
+#     CHỈ SỬ DỤNG công cụ này khi người dùng hỏi về:
+#     - Các quy định pháp luật, điều luật.
+#     - Mức xử phạt vi phạm hành chính (ví dụ: đánh bài phạt bao nhiêu, vượt đèn đỏ...).
+#     - Các thông tin cần trích dẫn chính xác từ văn bản luật pháp.
+
+#     KHÔNG SỬ DỤNG công cụ này nếu:
+#     - Người dùng chỉ đang chào hỏi (Xin chào, bạn là ai...).
+#     - Người dùng yêu cầu tóm tắt lại câu trả lời trước đó.
+#     """
+#     vector_db = Chroma(
+#         persist_directory=CHROMA_DB_PATH,
+#         collection_name="docs",
+#         embedding_function=embeddings,
+#     )
+
+#     retriever = vector_db.as_retriever(
+#         search_type="mmr",
+#         search_kwargs={
+#             "k": 5,  # Số lượng chunk cuối cùng trả về cho LLM
+#             "fetch_k": 20,  # Số lượng chunk lấy ra ban đầu để lọc MMR
+#             "lambda_mult": 0.5,  # Cân bằng giữa độ tương đồng (1.0) và độ đa dạng (0.0)
+#         },
+#     )
+
+#     print(f"\n[Tool Execution] Đang tìm kiếm thông tin cho: '{query}'...")
+
+#     retrieved_docs = retriever.invoke(query)
+
+#     formatted_context = ""
+#     for i, doc in enumerate(retrieved_docs):
+#         formatted_context += f"--- Tài liệu {i+1} ---\n{doc.page_content}\n\n"
+
+#     if not retrieved_docs:
+#         return "Không tìm thấy thông tin tài chính nào liên quan đến câu hỏi trong cơ sở dữ liệu."
+
+#     print(formatted_context)
+#     return formatted_context
+
     
 if __name__ == '__main__':
     file_path = "new_prompt_results/relationships.pkl"
@@ -559,11 +603,11 @@ if __name__ == '__main__':
         tokenizer=tokenizer,
         max_new_tokens=max_new_tokens
     ))
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     
     # Lưu kết quả ra file JSON
-    with open("community_summaries.json", "w", encoding="utf-8") as f:
+    with open(f"community_summaries_{timestamp}.json", "w", encoding="utf-8") as f:
         json.dump(reports, f, ensure_ascii=False, indent=4)
-
-
 
     # asyncio.run(main())
