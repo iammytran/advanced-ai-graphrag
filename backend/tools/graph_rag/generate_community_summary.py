@@ -214,8 +214,11 @@ async def generate_hierarchical_community_reports_unsloth(
 
                     Báo cáo phải bao gồm các phần sau:
 
-                    - TIÊU ĐỀ: Tên của cụm thực thể đại diện cho các nội dung chính - tiêu đề phải ngắn gọn nhưng cụ thể. Nếu có thể, hãy đưa tên các văn bản luật hoặc cơ quan chủ quản vào tiêu đề.
-                    - TÓM TẮT: Bản tóm tắt điều hành về cấu trúc tổng thể của cụm pháp lý, cách các thực thể/điều khoản liên quan đến nhau và các điểm quan trọng nhất.
+                    - TIÊU ĐỀ: Tên của cụm thực thể đại diện cho các nội dung chính - tiêu đề phải ngắn gọn nhưng cụ thể. Nếu có thể, hãy đưa tên các văn bản luật hoặc cơ quan chủ quản vào tiêu đề, ví dụ như Điều 182 của bộ luật hình sự
+                    - TÓM TẮT: 
+                        + YÊU CẦU BẮT BUỘC: Phải tổng hợp toàn bộ nội dung từ các Nodes được liệt kê.
+                        + CHI TIẾT ĐỊNH LƯỢNG: Phải ghi rõ: Hành vi vi phạm là gì? Hình phạt cụ thể là bao nhiêu (số tiền phạt tối thiểu - tối đa, số năm tù, thời gian đình chỉ hoạt động)? Cơ quan nào có thẩm quyền xử lý?
+                        + Lưu ý: Tuyệt đối không viết tóm tắt kiểu khái quát "cụm này nói về thuế". Phải viết: "Điều A quy định phạt X đồng cho hành vi Y, do cơ quan Z thực hiện".
                     - ĐIỂM ĐÁNH GIÁ TÁC ĐỘNG (IMPACT SEVERITY RATING): Một điểm số thực từ 0-10 đại diện cho mức độ quan trọng hoặc tác động pháp lý của các thực thể/quy định trong cụm. (10 là mức độ quan trọng nhất, ví dụ: các quy định hiến pháp hoặc hình sự nghiêm trọng).
                     - GIẢI THÍCH ĐIỂM ĐÁNH GIÁ: Giải thích bằng một câu duy nhất về lý do đưa ra điểm số tác động đó.
                     - CÁC PHÁT HIỆN CHI TIẾT: Danh sách từ 5-10 thông tin chuyên sâu (insights) về cụm pháp lý. 
