@@ -171,7 +171,7 @@ def extract_entities_unsloth(
         for _, row in batch_rows.iterrows():
             doc = row.get('file_name', 'Văn bản gốc')
             doc_name = os.path.splitext(doc)[0]
-            text_content = row['text']
+            text_content = row['chunk']
             
             # Format prompt theo cấu trúc của Unsloth/Llama3
             # Nhớ đưa các quy tắc "không dùng từ đây/đó" vào prompt_template
@@ -237,6 +237,7 @@ async def main():
         tokenizer.pad_token = tokenizer.eos_token
 
     # 5. Chunking
+    print("Chunking...")
     law_texts_df = get_law_texts_external()
     law_texts_df["chunk"] = law_texts_df["content"].apply(chunk_civil_code_markdown)
 
@@ -250,6 +251,7 @@ async def main():
     chunk_details = chunk_details.rename(columns={'content': 'chunk'})
 
     final_df = pd.concat([new_df[['file_name']], chunk_details], axis=1)
+    print("Ready for extracting entities and relationships...")
 
     # 8. Gọi hàm trích xuất (Sử dụng hàm standalone mà chúng ta đã thảo luận)
     entities_df, relationships_df = extract_entities_unsloth(
