@@ -219,6 +219,8 @@ async def generate_hierarchical_community_reports_unsloth(
                         + YÊU CẦU BẮT BUỘC: Phải tổng hợp toàn bộ nội dung từ các Nodes được liệt kê.
                         + CHI TIẾT ĐỊNH LƯỢNG: Phải ghi rõ: Hành vi vi phạm là gì? Hình phạt cụ thể là bao nhiêu (số tiền phạt tối thiểu - tối đa, số năm tù, thời gian đình chỉ hoạt động)? Cơ quan nào có thẩm quyền xử lý?
                         + Lưu ý: Tuyệt đối không viết tóm tắt kiểu khái quát "cụm này nói về thuế". Phải viết: "Điều A quy định phạt X đồng cho hành vi Y, do cơ quan Z thực hiện".
+                        + Tuyệt đối không sử dụng các đại từ chỉ định hoặc từ thay thế (như: đây, đó, này, họ, nó, quy định ấy...). Thay vào đó, phải lặp lại chính xác tên thực thể hoặc nội dung cụ thể để đảm bảo mỗi mô tả đều có ý nghĩa độc lập.
+                        + Tóm tắt có thể chứa nhiều hơn 1 thông tin, nhưng các thông tin phải liên quan đến nhau và đến cụm nó đang mô tả.
                     - ĐIỂM ĐÁNH GIÁ TÁC ĐỘNG (IMPACT SEVERITY RATING): Một điểm số thực từ 0-10 đại diện cho mức độ quan trọng hoặc tác động pháp lý của các thực thể/quy định trong cụm. (10 là mức độ quan trọng nhất, ví dụ: các quy định hiến pháp hoặc hình sự nghiêm trọng).
                     - GIẢI THÍCH ĐIỂM ĐÁNH GIÁ: Giải thích bằng một câu duy nhất về lý do đưa ra điểm số tác động đó.
                     - CÁC PHÁT HIỆN CHI TIẾT: Danh sách từ 5-10 thông tin chuyên sâu (insights) về cụm pháp lý. 

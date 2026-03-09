@@ -2,6 +2,7 @@ import re
 
 import pandas as pd
 from tqdm import tqdm
+import uuid
 
 from backend.tools.graph_rag.read_file import ingest_documents_to_df
 
@@ -187,11 +188,31 @@ def get_law_texts():
 
 if __name__ == "__main__":
     law_texts_df = get_law_texts()
-    print(f"law_texts_df: {law_texts_df}")
+    # print(f"law_texts_df: {law_texts_df}")
 
     law_texts_df["chunk"] = law_texts_df["content"].apply(chunk_civil_code_markdown)
-    print(f"law_texts_df: {law_texts_df}")
-    # law_text = law_texts_df["content"][0]
-    # print(f"law_text: {law_text}")
+
+    # law_texts_df = get_law_texts_external()
+    # law_texts_df["chunk"] = law_texts_df["content"].apply(chunk_civil_code_markdown)
+
+    new_df = law_texts_df.explode('chunk', ignore_index=True)
+
+    # 2. (Tùy chọn) Nếu bạn muốn bung các key trong dict của chunk 
+    # (như 'chuong', 'dieu') ra thành các cột riêng biệt:
+    chunk_details = pd.json_normalize(new_df['chunk'])
+
+    # 3. Đổi tên cột 'content' thành 'chunk' (nếu trong dict key là 'content')
+    chunk_details = chunk_details.rename(columns={'content': 'chunk'})
+
+    final_df = pd.concat([new_df[['file_name']], chunk_details], axis=1)
+    # thêm id cho mỗi chunk
+    ids = [f"chunk-{uuid.uuid4()}" for _ in range(len(final_df))]
+
+    # 2. Chèn vào vị trí đầu tiên (index 0)
+    # Tham số: (vị trí, tên_cột, dữ_liệu)
+    final_df.insert(0, 'id', ids)
+    print(f"law_texts_df: {final_df}")
+    # law_text = law_texts_df["content"][1]
+    # # print(f"law_text: {law_text}")
     # df_chunks = chunk_civil_code_markdown(law_text)
-    # print(f"df_chunks: {df_chunks}")
+    # print(f"df_chunks: {df_chunks[0]}")
