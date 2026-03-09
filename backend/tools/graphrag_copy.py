@@ -352,6 +352,16 @@ if __name__ == '__main__':
     total_communities = len(hierarchy)
     print(f"Có {total_communities} communities")
 
+    full_context = {
+        "total_communities": total_communities,
+        "community_mapping": result, # {level: {node: cluster_id}}
+        "community_hierarchy": hierarchy # {cluster_id: parent_id}
+    }
+
+    communities_file_name = f"outputs_10030018/communities.txt"
+    with open(communities_file_name, 'w', encoding='utf-8') as f:
+        json.dump(full_context, f, ensure_ascii=False, indent=4)
+
     # print(type(data)) # Kiểm tra kiểu dữ liệu (dict, list, DataFrame...)
     # print(data)
     # asyncio.run(main())
