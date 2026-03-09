@@ -278,7 +278,7 @@ async def generate_hierarchical_community_reports_unsloth(
 
                     Output:"""
                 tokens = tokenizer.encode(full_prompt)
-                print(f"Chiều dài thực tế của Prompt: {len(tokens)} tokens")
+                print(f"Chiều dài thực tế của Prompt của cluster {cid}: {len(tokens)} tokens")
                 prompts.append(full_prompt)
 
             # --- Thực thi LLM ---
