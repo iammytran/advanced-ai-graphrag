@@ -127,10 +127,10 @@ def extract_entities_unsloth(
     tokenizer,
     prompt_template: str,
     entity_types: str,
-    batch_size: int = 16, # Điều chỉnh dựa trên VRAM (4, 8, 16...)
+    batch_size: int = 32, # Điều chỉnh dựa trên VRAM (4, 8, 16...)
+    max_seq_length: int = 4096,
     max_new_tokens: int = 1500
 ):
-
     all_entities = []
     all_relationships = []
 
@@ -185,7 +185,7 @@ def extract_entities_unsloth(
             return_tensors="pt", 
             padding=True, 
             truncation=True, 
-            max_length=4096 # Giới hạn context length
+            max_length=max_seq_length - max_new_tokens # Giới hạn context length
         ).to("cuda")
         
         # Dùng inference_mode thay vì no_grad để tối ưu tốc độ

@@ -141,7 +141,7 @@ async def generate_hierarchical_community_reports_unsloth(
         # print(f"clusters: {clusters}")
 
         level_comms = list(clusters.items())
-        batch_size = 4 
+        batch_size = 8
         input_text = ""
         
         # Xử lý 1 batch gồm 4 cluster
