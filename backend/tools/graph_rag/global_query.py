@@ -7,6 +7,7 @@ from unsloth import FastLanguageModel
 from transformers import AutoTokenizer
 import logging
 import warnings
+from datetime import datetime
 
 # Ẩn các cảnh báo tương lai (FutureWarnings)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -247,7 +248,7 @@ if __name__ == '__main__':
         print("File không đúng định dạng JSON!")
 
     # Bước 2: Map
-    query = "Chơi game bắn cá ăn xu sẽ bị xử lý như thế nào?"
+    query = "Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?"
     map_results = asyncio.run(run_map_step(query, chunks, model, tokenizer))
     if not map_results:
         print("Không tìm thấy thông tin liên quan.")
@@ -255,7 +256,10 @@ if __name__ == '__main__':
     # Bước 3: Reduce
     final_answer = asyncio.run(run_reduce_step(query, map_results, model, tokenizer))
     # Định nghĩa tên file (có thể đặt tên theo câu hỏi hoặc thời gian)
-    file_name = "final_answer.txt"
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # 2. Tạo tên file kết hợp với timestamp
+    file_name = f"final_answer_{timestamp}.txt"
 
     with open(file_name, "w", encoding="utf-8") as f:
         f.write(f"CÂU HỎI: {query}\n")
