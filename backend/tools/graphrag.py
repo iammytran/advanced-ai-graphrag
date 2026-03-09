@@ -120,61 +120,54 @@ GRAPH_PROMPT = """
 	######################
 	Output:"""
 
+
 def extract_entities_unsloth(
     text_units: pd.DataFrame,
     model,
     tokenizer,
     prompt_template: str,
-    entity_types: list,
-    batch_size: int = 4 # Tùy vào VRAM của bạn
+    entity_types: str,
+    batch_size: int = 8, # Điều chỉnh dựa trên VRAM (4, 8, 16...)
+    max_new_tokens: int = 1500
 ):
-    # Kích hoạt chế độ suy luận nhanh của Unsloth
-    FastLanguageModel.for_inference(model)
 
     all_entities = []
     all_relationships = []
 
+    # Hàm parse nội bộ
     def parse_graph_output(raw_text):
-        entities = []
-        relationships = []
-        # Tách theo delimiter của bạn (ở đây là ##)
+        entities, relationships = [], []
         segments = raw_text.split("##")
-        
         for seg in segments:
-            seg = seg.strip()
-            if not seg or "<|COMPLETE|>" in seg: continue
-            
-            # Tách phần tử bằng <|>
             parts = seg.strip("() ").split("<|>")
             tag = parts[0].replace('"', '').strip().lower()
-
             if tag == "entity" and len(parts) >= 4:
                 entities.append({
-                    "name": parts[1].strip(),
-                    "type": parts[2].strip(),
+                    "name": parts[1].strip(), 
+                    "type": parts[2].strip(), 
                     "description": parts[3].strip()
                 })
             elif tag == "relationship" and len(parts) >= 5:
                 relationships.append({
-                    "source": parts[1].strip(),
-                    "target": parts[2].strip(),
-                    "description": parts[3].strip(),
+                    "source": parts[1].strip(), 
+                    "target": parts[2].strip(), 
+                    "description": parts[3].strip(), 
                     "weight": float(parts[4].strip()) if parts[4].strip().replace('.','',1).isdigit() else 1.0
                 })
         return entities, relationships
 
-    # Chia data thành các batch để tận dụng tốc độ của GPU
-    for i in tqdm(range(0, len(text_units), batch_size), desc="Processing Batches"):
+    # Vòng lặp xử lý theo Batch
+    for i in tqdm(range(0, len(text_units), batch_size), desc="Batch Inferencing"):
         batch_rows = text_units.iloc[i : i + batch_size]
         
         prompts = []
         for _, row in batch_rows.iterrows():
+            # Lấy tên file làm ngữ cảnh
             doc = row.get('file_name', 'Văn bản gốc')
             doc_name = os.path.splitext(doc)[0]
-            text_content = row['chunk']
+            text_content = row.get('chunk', '') # Đảm bảo key là 'chunk' như code bạn dùng
             
-            # Format prompt theo cấu trúc của Unsloth/Llama3
-            # Nhớ đưa các quy tắc "không dùng từ đây/đó" vào prompt_template
+
             full_prompt = prompt_template.format(
                 ENTITY_TYPES=entity_types,
                 doc_name=doc_name,
@@ -183,29 +176,40 @@ def extract_entities_unsloth(
                 completion_delimiter=completion_delimiter,
                 record_delimiter=record_delimiter
             )
+            
             prompts.append(full_prompt)
 
-        # Tokenize và Generate hàng loạt
-        inputs = tokenizer(prompts, return_tensors="pt", padding=True).to("cuda")
+        # Tokenize toàn bộ batch
+        inputs = tokenizer(
+            prompts, 
+            return_tensors="pt", 
+            padding=True, 
+            truncation=True, 
+            max_length=4096 # Giới hạn context length
+        ).to("cuda")
         
-        with torch.no_grad():
+        # Dùng inference_mode thay vì no_grad để tối ưu tốc độ
+        with torch.inference_mode():
             outputs = model.generate(
                 **inputs, 
-                max_new_tokens=1500, # Pháp luật thường dài nên để cao
+                max_new_tokens=max_new_tokens,
                 use_cache=True,
-                temperature=0.1 # Để thấp cho độ chính xác cao
+                temperature=0.1,
+                pad_token_id=tokenizer.pad_token_id
             )
         
-        decoded_outputs = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        # Chỉ lấy phần AI vừa sinh ra, bỏ qua phần prompt đầu vào
+        input_len = inputs.input_ids.shape[1]
+        decoded_outputs = tokenizer.batch_decode(outputs[:, input_len:], skip_special_tokens=True)
 
-        # Parse kết quả sau khi Model sinh xong
-        for raw_output in decoded_outputs:
-            # Lấy phần text AI sinh ra (loại bỏ phần prompt lặp lại)
-            actual_gen = raw_output.split("Output:")[-1] if "Output:" in raw_output else raw_output
-            
+        for actual_gen in decoded_outputs:
             entities, relations = parse_graph_output(actual_gen)
             all_entities.extend(entities)
             all_relationships.extend(relations)
+            
+        # Giải phóng bộ nhớ tạm sau mỗi batch (tùy chọn nhưng an toàn cho GPU)
+        del inputs, outputs
+        torch.cuda.empty_cache()
 
     return all_entities, all_relationships
 
