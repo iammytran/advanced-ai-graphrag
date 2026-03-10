@@ -204,6 +204,7 @@ def extract_entities_unsloth(
         decoded_outputs = tokenizer.batch_decode(outputs[:, input_len:], skip_special_tokens=True)
 
         debug_log_path = f"{folder_name}/entities_relations.txt" 
+        print(f"Writing extract outputs or batch {i} to file...")
         for idx, actual_gen in enumerate(decoded_outputs):
             with open(debug_log_path, "a", encoding="utf-8") as f:
                 f.write(f"\n{'='*50}\n")
