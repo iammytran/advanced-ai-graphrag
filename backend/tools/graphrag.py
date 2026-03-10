@@ -129,7 +129,7 @@ def extract_entities_unsloth(
     entity_types: str,
     folder_name: str,
     stop_token_ids,
-    batch_size: int = 32, # Điều chỉnh dựa trên VRAM (4, 8, 16...)
+    batch_size: int = 8, # Điều chỉnh dựa trên VRAM (4, 8, 16...)
     max_seq_length: int = 4096,
     max_new_tokens: int = 1500
 ):
@@ -207,35 +207,6 @@ def extract_entities_unsloth(
             eos_token_id=tokenizer.eos_token_id
         )
 
-        # outputs = model.generate(
-        #     input_ids = inputs.input_ids,
-        #     attention_mask=inputs.attention_mask, # Quan trọng: để model lờ đi phần pad_token
-        #     max_new_tokens=max_new_tokens,           # Giới hạn tối đa
-            
-        #     # Tham số kiểm soát chất lượng
-        #     temperature=0.1,               # Càng thấp càng tốt cho trích xuất dữ liệu (cần sự chính xác, không cần sáng tạo)
-        #     # repetition_penalty=1.2,        # Phạt nặng nếu model bắt đầu lặp lại rác "the <|..."
-            
-        #     # Tham số dừng
-        #     pad_token_id=tokenizer.pad_token_id,
-        #     eos_token_id=tokenizer.eos_token_id
-            
-        #     # do_sample=False                # Với bài toán trích xuất thực thể, dùng Greedy Search (False) thường ổn định hơn
-        # )
-        
-        # # Dùng inference_mode thay vì no_grad để tối ưu tốc độ
-        # with torch.inference_mode():
-        #     outputs = model.generate(
-        #         **inputs, 
-        #         max_new_tokens=max_new_tokens,
-        #         use_cache=True,
-        #         temperature=0.1,
-        #         eos_token_id=tokenizer.eos_token_id,
-        #         pad_token_id=tokenizer.pad_token_id
-        #     )
-        
-        # Chỉ lấy phần AI vừa sinh ra, bỏ qua phần prompt đầu vào
-        # input_len = inputs.input_ids.shape[1]
         debug_log_path = f"{folder_name}/entities_relations.txt" 
         decoded_outputs = tokenizer.batch_decode(outputs, skip_special_tokens=True)
         with open(debug_log_path, "a", encoding="utf-8") as f:
@@ -243,7 +214,6 @@ def extract_entities_unsloth(
                 f.write(f"{decoded_outputs}")
                 f.write(f"\n{'='*50}\n")
 
-        debug_log_path = f"{folder_name}/entities_relations.txt" 
         print(f"Writing extract outputs or batch {(i // batch_size) + 1} to file...")
         for idx, actual_gen in enumerate(decoded_outputs):
             with open(debug_log_path, "a", encoding="utf-8") as f:
