@@ -66,9 +66,9 @@ GRAPH_PROMPT = """
     #### 1. Cấu trúc văn bản (Phân cấp & Claims)
     - Thực thể Gốc: Tạo 01 thực thể đại diện cho tiêu đề văn bản (Ví dụ: "Điều 15 Luật Đất đai").
     - Các thực thể đích: Trích xuất các nội dung pháp lý trong văn bản đó thành các thực thể loại "QUY_ĐỊNH_CỤ_THỂ" theo quy tắc sau:
-        - name: Phải là một câu khẳng định đầy đủ ý nghĩa, diễn giải chi tiết (Ví dụ: "Cá nhân có nghĩa vụ đăng ký đất đai tại cơ quan có thẩm quyền").
-        - description: Lặp lại hoặc diễn giải chi tiết hơn câu khẳng định đó để tăng cường ngữ nghĩa.
-        - type: Bắt buộc là "QUY_ĐỊNH_CỤ_THỂ".
+        - entity_name: Phải là một câu khẳng định đầy đủ ý nghĩa, diễn giải chi tiết (Ví dụ: "Cá nhân có nghĩa vụ đăng ký đất đai tại cơ quan có thẩm quyền").
+        - entity_description: Lặp lại hoặc diễn giải chi tiết hơn câu khẳng định đó để tăng cường ngữ nghĩa.
+        - entity_type: Bắt buộc là "QUY_ĐỊNH_CỤ_THỂ".
     - Liên kết: Thiết lập quan hệ "quy định" từ Thực thể Gốc đến các QUY_ĐỊNH_CỤ_THỂ này.
 
     #### 2. Trích xuất thực thể (Entities):
@@ -127,6 +127,7 @@ def extract_entities_unsloth(
     tokenizer,
     prompt_template: str,
     entity_types: str,
+    folder_name: str,
     batch_size: int = 32, # Điều chỉnh dựa trên VRAM (4, 8, 16...)
     max_seq_length: int = 4096,
     max_new_tokens: int = 1500
@@ -202,7 +203,14 @@ def extract_entities_unsloth(
         input_len = inputs.input_ids.shape[1]
         decoded_outputs = tokenizer.batch_decode(outputs[:, input_len:], skip_special_tokens=True)
 
-        for actual_gen in decoded_outputs:
+        debug_log_path = f"{folder_name}/raw_generation_log.txt" 
+        for idx, actual_gen in enumerate(decoded_outputs):
+            with open(debug_log_path, "a", encoding="utf-8") as f:
+                f.write(f"\n{'='*50}\n")
+                f.write(f"BATCH START - INDEX: {i + idx}\n")
+                f.write(f"{'-'*20} RAW OUTPUT {'-'*20}\n")
+                f.write(actual_gen)
+                f.write(f"\n{'='*50}\n")
             entities, relations = parse_graph_output(actual_gen)
             all_entities.extend(entities)
             all_relationships.extend(relations)
@@ -263,7 +271,8 @@ async def main():
         model=model,
         tokenizer=tokenizer,
         prompt_template=GRAPH_PROMPT,
-        entity_types=ENTITY_TYPES # Biến bạn đã định nghĩa ở trên
+        entity_types=ENTITY_TYPES, # Biến bạn đã định nghĩa ở trên,
+        folder_name=new_folder_name
     )
     print("Extract entities và relationships thành công!")
 
