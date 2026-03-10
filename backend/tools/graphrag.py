@@ -219,6 +219,7 @@ def extract_entities_unsloth(
             with open(debug_log_path, "a", encoding="utf-8") as f:
                 f.write(f"\n{'='*50}\n")
                 f.write(f"PROMPT: {full_prompt}")
+                f.write(f"\n{'='*20}\n")
                 f.write(f"BATCH START - INDEX: {i + idx}\n")
                 f.write(f"{'-'*20} RAW OUTPUT {'-'*20}\n")
                 f.write(actual_gen)
