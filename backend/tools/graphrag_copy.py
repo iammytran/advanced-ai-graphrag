@@ -347,6 +347,7 @@ if __name__ == '__main__':
     relationships_df = None
     if isinstance(relationships, list):
         relationships_df = pd.DataFrame(relationships)
+    print(relationships_df)
 
     result, hierarchy = _compute_leiden_communities(relationships_df, max_cluster_size=10, use_lcc=False)
     total_communities = len(hierarchy)
