@@ -32,9 +32,6 @@ function Courtroom() {
         { key: 'riskWarning', icon: '⚠️', label: 'Cảnh báo rủi ro' }
     ]
 
-    // Left panel suggestions
-    const [botSuggestions, setBotSuggestions] = useState([])
-
     const messagesEndRef = useRef(null)
 
     // Initialize session
@@ -59,18 +56,7 @@ function Courtroom() {
             text: `Phiên tòa bắt đầu!\n\nVụ án: ${sc?.name}\nVai trò của bạn: ${sess.role === 'defendant' ? 'Luật sư bào chữa' : 'Luật sư nguyên đơn'}\n\nHãy trình bày luận điểm mở đầu của bạn.`
         }
         setMessages([openingMessage])
-
-        // Load initial bot suggestions
-        const suggestions = getBotSuggestions(1, sess.coach?.type || 'normal', sess.coach?.options || {})
-        setBotSuggestions(suggestions)
     }, [navigate])
-
-    // Update suggestions when round changes
-    useEffect(() => {
-        if (!session) return
-        const suggestions = getBotSuggestions(currentRound, session.coach?.type || 'normal', session.coach?.options || {})
-        setBotSuggestions(suggestions)
-    }, [currentRound, session])
 
     // Timer countdown
     useEffect(() => {
@@ -534,75 +520,6 @@ function Courtroom() {
                                 Đã hiểu
                             </button>
                         </div>
-
-                        {!strategy ? (
-                            <div className="strategy-empty">
-                                <span>📝</span>
-                                <p>Không có chiến lược được xây dựng trước</p>
-                            </div>
-                        ) : (
-                            <div className="strategy-content-panel">
-                                {/* Arguments */}
-                                {/* Arguments — each clickable, with linked evidences shown inline */}
-                                {strategy.arguments?.length > 0 && (
-                                    <div className="strategy-block">
-                                        <div className="strategy-block-title">💬 Luận điểm · click để dán vào chat</div>
-                                        {strategy.arguments.map((arg, i) => {
-                                            if (!arg.text) return null
-                                            // Find evidences linked to this argument
-                                            const linked = (strategy.evidences || []).filter(
-                                                ev => ev.linkedArguments?.includes(arg.id)
-                                            )
-                                            return (
-                                                <button
-                                                    key={arg.id || i}
-                                                    className={`strategy-arg-card ${linked.length > 0 ? 'has-evidence' : ''}`}
-                                                    onClick={() => handleArgumentClick(arg, linked)}
-                                                    title="Click để dán luận điểm + chứng cứ vào ô nhập liệu"
-                                                >
-                                                    <div className="strategy-arg-top">
-                                                        <span className="strategy-num">{i + 1}</span>
-                                                        <span className="strategy-arg-text">{arg.text}</span>
-                                                    </div>
-                                                    {linked.length > 0 && (
-                                                        <div className="strategy-arg-evidences">
-                                                            {linked.map(ev => (
-                                                                <span key={ev.id} className="strategy-ev-tag" title={ev.name}>
-                                                                    <span className="ev-icon">📄</span>
-                                                                    <span className="ev-name">{ev.name}</span>
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                    <div className="strategy-arg-hint">↗ Dán vào chat</div>
-                                                </button>
-                                            )
-                                        })}
-                                    </div>
-                                )}
-
-                                {/* Standalone evidences (not linked to any argument) */}
-                                {strategy.evidences?.some(ev => !ev.linkedArguments?.length) && (
-                                    <div className="strategy-block">
-                                        <div className="strategy-block-title">📎 Chứng cứ khác</div>
-                                        {strategy.evidences.filter(ev => !ev.linkedArguments?.length).map((ev, i) => (
-                                            <div key={ev.id || i} className="strategy-evidence-item">
-                                                <span>📄</span>
-                                                <span>{ev.name}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* Requirements */}
-                                {strategy.requirements && (
-                                    <div className="strategy-block">
-                                        <div className="strategy-block-title">🎯 Yêu cầu</div>
-                                        <p className="strategy-requirements">{strategy.requirements}</p>
-                                    </div>
-                                )}
-                            </div>
-                        )}
                     </div>
                 </div>
             )}
