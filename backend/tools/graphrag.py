@@ -128,6 +128,7 @@ def extract_entities_unsloth(
     prompt_template: str,
     entity_types: str,
     folder_name: str,
+    stop_token_ids,
     batch_size: int = 32, # Điều chỉnh dựa trên VRAM (4, 8, 16...)
     max_seq_length: int = 4096,
     max_new_tokens: int = 1500
@@ -168,7 +169,6 @@ def extract_entities_unsloth(
             doc_name = os.path.splitext(doc)[0]
             text_content = row.get('chunk', '') # Đảm bảo key là 'chunk' như code bạn dùng
             
-
             full_prompt = prompt_template.format(
                 ENTITY_TYPES=entity_types,
                 doc_name=doc_name,
@@ -196,7 +196,23 @@ def extract_entities_unsloth(
             use_cache = True,
             temperature = 0.1,
             pad_token_id = tokenizer.pad_token_id
-            )
+        )
+
+        outputs = model.generate(
+            input_ids = inputs.input_ids,
+            attention_mask=inputs.attention_mask, # Quan trọng: để model lờ đi phần pad_token
+            max_new_tokens=max_new_tokens,           # Giới hạn tối đa
+            
+            # Tham số kiểm soát chất lượng
+            temperature=0.1,               # Càng thấp càng tốt cho trích xuất dữ liệu (cần sự chính xác, không cần sáng tạo)
+            # repetition_penalty=1.2,        # Phạt nặng nếu model bắt đầu lặp lại rác "the <|..."
+            
+            # Tham số dừng
+            eos_token_id=stop_token_ids,   # Thấy 1 trong 3 cái kia là dừng ngay
+            pad_token_id=tokenizer.pad_token_id,
+            
+            # do_sample=False                # Với bài toán trích xuất thực thể, dùng Greedy Search (False) thường ổn định hơn
+        )
         
         # # Dùng inference_mode thay vì no_grad để tối ưu tốc độ
         # with torch.inference_mode():
@@ -257,9 +273,14 @@ async def main():
     FastLanguageModel.for_inference(model)
 
     # 4. Cấu hình Tokenizer để chạy Batch
-    tokenizer.padding_side = "left"
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.pad_token = "<|reserved_special_token_0|>" 
+    tokenizer.padding_side = "left" # Bắt buộc phải là left cho decoder-only model như Llama
+    # Tập hợp các biển báo dừng "quyền lực" nhất
+    stop_words = ["<|end_of_text|>", "<|eot_id|>", "<|COMPLETE|>"]
+    stop_token_ids = [tokenizer.convert_tokens_to_ids(word) for word in stop_words]
+
+    # Lọc bỏ các None nếu token không tồn tại trong vocab
+    stop_token_ids = [ids for ids in stop_token_ids if ids is not None]
 
     # 5. Chunking
     print("Chunking...")
@@ -285,7 +306,8 @@ async def main():
         tokenizer=tokenizer,
         prompt_template=GRAPH_PROMPT,
         entity_types=ENTITY_TYPES, # Biến bạn đã định nghĩa ở trên,
-        folder_name=new_folder_name
+        folder_name=new_folder_name,
+        stop_token_ids=stop_token_ids
     )
     print("Extract entities và relationships thành công!")
 
