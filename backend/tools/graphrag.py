@@ -133,6 +133,8 @@ def extract_entities_unsloth(
     max_seq_length: int = 4096,
     max_new_tokens: int = 1500
 ):
+    
+    FastLanguageModel.for_inference(model)
     all_entities = []
     all_relationships = []
 
@@ -180,11 +182,11 @@ def extract_entities_unsloth(
 
             prompts.append(full_prompt)
         
-        messages = [
-            {"role": "system", "content": "Bạn là chuyên gia phân tích dữ liệu pháp luật. Trích xuất thực thể theo định dạng (entity<|>...)"},
-            {"role": "user", "content": f"Text: {text_content}"}
-        ]
-        input_ids = tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt").to("cuda")
+        # messages = [
+        #     {"role": "system", "content": "Bạn là chuyên gia phân tích dữ liệu pháp luật. Trích xuất thực thể theo định dạng (entity<|>...)"},
+        #     {"role": "user", "content": f"Text: {text_content}"}
+        # ]
+        # input_ids = tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt").to("cuda")
 
         # Tokenize toàn bộ batch
         inputs = tokenizer(
@@ -234,7 +236,12 @@ def extract_entities_unsloth(
         
         # Chỉ lấy phần AI vừa sinh ra, bỏ qua phần prompt đầu vào
         # input_len = inputs.input_ids.shape[1]
+        debug_log_path = f"{folder_name}/entities_relations.txt" 
         decoded_outputs = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        with open(debug_log_path, "a", encoding="utf-8") as f:
+                f.write("decoded_outputs:\n")
+                f.write(f"{decoded_outputs}")
+                f.write(f"\n{'='*50}\n")
 
         debug_log_path = f"{folder_name}/entities_relations.txt" 
         print(f"Writing extract outputs or batch {(i // batch_size) + 1} to file...")
