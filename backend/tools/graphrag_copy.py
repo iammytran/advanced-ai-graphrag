@@ -338,6 +338,8 @@ if __name__ == '__main__':
     entities = None
     with open(entities_path, 'rb') as f:
         entities = pickle.load(f)
+
+    print(entities)
     
     relationships_path = 'outputs_10030018/relationships.pkl'
     relationships = None
