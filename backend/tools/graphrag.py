@@ -188,21 +188,30 @@ def extract_entities_unsloth(
             truncation=True, 
             max_length=max_seq_length - max_new_tokens # Giới hạn context length
         ).to("cuda")
-        
-        # Dùng inference_mode thay vì no_grad để tối ưu tốc độ
-        with torch.inference_mode():
-            outputs = model.generate(
-                **inputs, 
-                max_new_tokens=max_new_tokens,
-                use_cache=True,
-                temperature=0.1,
-                eos_token_id=tokenizer.eos_token_id,
-                pad_token_id=tokenizer.pad_token_id
+
+        outputs = model.generate(
+            input_ids = inputs.input_ids,
+            attention_mask = inputs.attention_mask, # Truyền rõ ràng mask ở đây
+            max_new_tokens = max_new_tokens,
+            use_cache = True,
+            temperature = 0.1,
+            pad_token_id = tokenizer.pad_token_id
             )
         
+        # # Dùng inference_mode thay vì no_grad để tối ưu tốc độ
+        # with torch.inference_mode():
+        #     outputs = model.generate(
+        #         **inputs, 
+        #         max_new_tokens=max_new_tokens,
+        #         use_cache=True,
+        #         temperature=0.1,
+        #         eos_token_id=tokenizer.eos_token_id,
+        #         pad_token_id=tokenizer.pad_token_id
+        #     )
+        
         # Chỉ lấy phần AI vừa sinh ra, bỏ qua phần prompt đầu vào
-        input_len = inputs.input_ids.shape[1]
-        decoded_outputs = tokenizer.batch_decode(outputs[:, input_len:], skip_special_tokens=True)
+        # input_len = inputs.input_ids.shape[1]
+        decoded_outputs = tokenizer.batch_decode(outputs, skip_special_tokens=True)
 
         debug_log_path = f"{folder_name}/entities_relations.txt" 
         print(f"Writing extract outputs or batch {(i // batch_size) + 1} to file...")
