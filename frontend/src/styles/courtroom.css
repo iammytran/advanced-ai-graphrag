@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800&display=swap');
+
 /* ===========================================
    Virtual Courtroom Styles
    =========================================== */
@@ -426,187 +428,2737 @@
     cursor: pointer;
 }
 
-/* Strategy Builder */
-.strategy-content {
-    display: grid;
-    grid-template-columns: 1fr 300px;
-    gap: var(--spacing-xl);
+/* ===========================================
+   Setup Pages — Redesigned (vc-)
+   =========================================== */
+
+/* --- Base --- */
+.vc-page {
+    min-height: 100vh;
+    background: var(--bg-primary);
+    font-family: 'Be Vietnam Pro', -apple-system, sans-serif;
+    color: var(--text-primary);
+    position: relative;
 }
 
-.main-content {
+.vc-page::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at 20% 0%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 100%, rgba(139, 92, 246, 0.06) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.vc-page > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* --- Step Indicator --- */
+.vc-steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    padding: var(--spacing-md) var(--spacing-xl);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.vc-step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.vc-step-dot {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-color);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    transition: all var(--transition-normal);
+    flex-shrink: 0;
+}
+
+.vc-step.active .vc-step-dot {
+    background: var(--accent-gradient);
+    border-color: transparent;
+    color: white;
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+}
+
+.vc-step.active {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.vc-step.done .vc-step-dot {
+    background: #22c55e;
+    border-color: transparent;
+    color: white;
+}
+
+.vc-step.done {
+    color: var(--text-secondary);
+}
+
+.vc-step-line {
+    width: 40px;
+    height: 2px;
+    background: var(--border-color);
+    margin: 0 6px;
+    flex-shrink: 0;
+    transition: background var(--transition-normal);
+}
+
+.vc-step-line.done {
+    background: #22c55e;
+}
+
+/* --- Page Content Container --- */
+.vc-content {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: var(--spacing-xl) var(--spacing-lg);
+}
+
+/* --- Section --- */
+.vc-section {
+    margin-bottom: var(--spacing-xl);
+}
+
+.vc-section-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: var(--spacing-md);
+}
+
+.vc-section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-color);
+}
+
+/* --- Navigation --- */
+.vc-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: var(--spacing-lg);
+    border-top: 1px solid var(--border-color);
+    margin-top: var(--spacing-xl);
+}
+
+.vc-btn-back {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.vc-btn-back:hover {
+    border-color: var(--text-muted);
+    color: var(--text-primary);
+}
+
+.vc-btn-next {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    background: var(--accent-gradient);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.88rem;
+    font-weight: 600;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.vc-btn-next:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(99, 102, 241, 0.35);
+}
+
+.vc-btn-next:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* --- Top Nav Bar --- */
+.vc-topnav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* =============== ScenarioList (Landing) =============== */
+.vc-landing-header {
+    text-align: center;
+    padding: 48px var(--spacing-lg) 36px;
+    animation: vcFadeDown 0.5s ease forwards;
+}
+
+@keyframes vcFadeDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.vc-landing-badge {
+    display: inline-block;
+    padding: 4px 16px;
+    background: rgba(99, 102, 241, 0.12);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: var(--radius-full);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+    letter-spacing: 0.04em;
+    margin-bottom: var(--spacing-md);
+}
+
+.vc-landing-header h1 {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+}
+
+.vc-landing-header p {
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.vc-scenario-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-lg) var(--spacing-xl);
+}
+
+.vc-scenario-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 0;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    overflow: hidden;
+    animation: vcSlideUp 0.4s ease forwards;
+    opacity: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-xl);
 }
 
-.argument-item {
+@keyframes vcSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.vc-scenario-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(99, 102, 241, 0.3);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(99, 102, 241, 0.1);
+}
+
+.vc-sc-accent {
+    height: 3px;
+    width: 100%;
+    transition: height var(--transition-fast);
+}
+
+.vc-sc-accent--easy { background: linear-gradient(90deg, #22c55e, #4ade80); }
+.vc-sc-accent--medium { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.vc-sc-accent--hard { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+.vc-scenario-card:hover .vc-sc-accent {
+    height: 4px;
+}
+
+.vc-sc-body {
+    padding: var(--spacing-lg);
+    flex: 1;
     display: flex;
-    gap: var(--spacing-md);
-    align-items: flex-start;
+    flex-direction: column;
 }
 
-.arg-number {
-    width: 30px;
-    height: 30px;
+.vc-sc-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-md);
+}
+
+.vc-sc-difficulty {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    letter-spacing: 0.02em;
+}
+
+.vc-sc-difficulty--easy {
+    background: rgba(34, 197, 94, 0.12);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.vc-sc-difficulty--medium {
+    background: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.vc-sc-difficulty--hard {
+    background: rgba(239, 68, 68, 0.12);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.vc-sc-duration {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.vc-sc-name {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.vc-sc-desc {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: var(--spacing-md);
+    flex: 1;
+}
+
+.vc-sc-skills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: var(--spacing-md);
+}
+
+.vc-sc-skill {
+    font-size: 0.68rem;
+    font-weight: 500;
+    padding: 3px 10px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    color: var(--text-secondary);
+}
+
+.vc-sc-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 10px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.vc-scenario-card:hover .vc-sc-action {
+    background: var(--accent-gradient);
+    border-color: transparent;
+    color: white;
+}
+
+.vc-landing-footer {
+    text-align: center;
+    padding: 0 var(--spacing-lg) var(--spacing-xl);
+}
+
+/* =============== ScenarioDetail =============== */
+.vc-detail-title {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+    animation: vcFadeDown 0.4s ease forwards;
+}
+
+.vc-detail-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    animation: vcFadeDown 0.4s ease 0.05s forwards;
+    opacity: 0;
+}
+
+.vc-detail-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 12px;
+    border-radius: var(--radius-full);
+}
+
+.vc-detail-duration {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.vc-summary-box {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    animation: vcSlideUp 0.4s ease 0.1s forwards;
+    opacity: 0;
+}
+
+.vc-summary-box p {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.75;
+    margin-bottom: var(--spacing-sm);
+}
+
+.vc-summary-box p:last-child {
+    margin-bottom: 0;
+}
+
+.vc-role-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+}
+
+.vc-role-card {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    text-align: center;
+    animation: vcSlideUp 0.4s ease forwards;
+    opacity: 0;
+}
+
+.vc-role-card:hover {
+    border-color: rgba(99, 102, 241, 0.3);
+    background: rgba(99, 102, 241, 0.04);
+}
+
+.vc-role-card.selected {
+    border-color: var(--accent-primary);
+    background: rgba(99, 102, 241, 0.08);
+    box-shadow: 0 0 24px rgba(99, 102, 241, 0.12);
+}
+
+.vc-role-icon {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--spacing-md);
+    background: var(--bg-tertiary);
+    border-radius: 50%;
+    font-size: 1.5rem;
+    transition: all var(--transition-normal);
+}
+
+.vc-role-card.selected .vc-role-icon {
+    background: rgba(99, 102, 241, 0.15);
+}
+
+.vc-role-name {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.vc-role-desc {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.vc-role-check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--border-color);
+    border-radius: 50%;
+    margin-top: var(--spacing-sm);
+    transition: all var(--transition-fast);
+}
+
+.vc-role-card.selected .vc-role-check {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+}
+
+/* =============== CoachSelection =============== */
+.vc-coach-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+}
+
+.vc-coach-card {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    animation: vcSlideUp 0.35s ease forwards;
+    opacity: 0;
+}
+
+.vc-coach-card:hover {
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.vc-coach-card.selected {
+    border-color: var(--accent-primary);
+    background: rgba(99, 102, 241, 0.06);
+}
+
+.vc-coach-avatar {
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-tertiary);
+    border-radius: 50%;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    transition: all var(--transition-normal);
+}
+
+.vc-coach-card.selected .vc-coach-avatar {
+    background: rgba(99, 102, 241, 0.12);
+}
+
+.vc-coach-text h3 {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 4px;
+}
+
+.vc-coach-text p {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Tone slider */
+.vc-tone-box {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    animation: vcSlideUp 0.35s ease 0.1s forwards;
+    opacity: 0;
+}
+
+.vc-tone-labels {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-sm);
+}
+
+.vc-tone-label {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.vc-tone-label.active {
+    color: var(--accent-primary);
+    font-weight: 600;
+}
+
+.vc-tone-slider {
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+    outline: none;
+    margin: var(--spacing-sm) 0;
+}
+
+.vc-tone-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    background: var(--accent-gradient);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+    transition: transform var(--transition-fast);
+}
+
+.vc-tone-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+}
+
+.vc-tone-value {
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--accent-primary);
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+/* Features grid */
+.vc-features-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-sm);
+}
+
+.vc-feature-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    animation: vcSlideUp 0.3s ease forwards;
+    opacity: 0;
+}
+
+.vc-feature-card:hover {
+    border-color: rgba(99, 102, 241, 0.2);
+}
+
+.vc-feature-card.active {
+    border-color: var(--accent-primary);
+    background: rgba(99, 102, 241, 0.06);
+}
+
+.vc-feature-card input[type="checkbox"] {
+    display: none;
+}
+
+.vc-feature-toggle {
+    width: 36px;
+    height: 20px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+    position: relative;
+    flex-shrink: 0;
+    transition: background var(--transition-fast);
+}
+
+.vc-feature-toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 14px;
+    height: 14px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    transition: all var(--transition-fast);
+}
+
+.vc-feature-card.active .vc-feature-toggle {
+    background: var(--accent-primary);
+}
+
+.vc-feature-card.active .vc-feature-toggle::after {
+    left: 19px;
+    background: white;
+}
+
+.vc-feature-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.vc-feature-label {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    flex: 1;
+}
+
+.vc-feature-card.active .vc-feature-label {
+    color: var(--text-primary);
+}
+
+/* =============== CaseFile =============== */
+.vc-case-title {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    animation: vcFadeDown 0.4s ease forwards;
+}
+
+.vc-case-scenario {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-lg);
+    animation: vcFadeDown 0.4s ease 0.05s forwards;
+    opacity: 0;
+}
+
+/* Facts */
+.vc-facts-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.vc-fact-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    animation: vcSlideUp 0.3s ease forwards;
+    opacity: 0;
+}
+
+.vc-fact-num {
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent-gradient);
+    border-radius: 50%;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.vc-fact-text {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+/* Objectives */
+.vc-objective-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+}
+
+.vc-objective-card {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    text-align: center;
+    animation: vcSlideUp 0.35s ease forwards;
+    opacity: 0;
+}
+
+.vc-objective-card:hover {
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.vc-objective-card.selected {
+    border-color: var(--accent-primary);
+    background: rgba(99, 102, 241, 0.06);
+}
+
+.vc-objective-card input[type="radio"] {
+    display: none;
+}
+
+.vc-objective-icon {
+    font-size: 2rem;
+    margin-bottom: var(--spacing-sm);
+}
+
+.vc-objective-name {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.vc-objective-desc {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+/* Settings */
+.vc-settings-box {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    animation: vcSlideUp 0.35s ease forwards;
+    opacity: 0;
+}
+
+.vc-setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+}
+
+.vc-setting-label {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.vc-setting-label span:first-child {
+    font-size: 1rem;
+}
+
+.vc-setting-select {
+    padding: 8px 14px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    cursor: pointer;
+    min-width: 140px;
+    transition: border-color var(--transition-fast);
+}
+
+.vc-setting-select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+/* Toggle switch for settings */
+.vc-toggle {
+    width: 42px;
+    height: 24px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background var(--transition-fast);
+    border: 1px solid var(--border-color);
+}
+
+.vc-toggle.on {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+}
+
+.vc-toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    transition: all var(--transition-fast);
+}
+
+.vc-toggle.on::after {
+    left: 21px;
+    background: white;
+}
+
+.vc-toggle input {
+    display: none;
+}
+
+/* =============== Responsive =============== */
+@media (max-width: 768px) {
+    .vc-scenario-grid {
+        grid-template-columns: 1fr;
+    }
+    .vc-role-grid,
+    .vc-coach-grid,
+    .vc-objective-grid {
+        grid-template-columns: 1fr;
+    }
+    .vc-features-grid {
+        grid-template-columns: 1fr;
+    }
+    .vc-steps {
+        gap: 0;
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
+    .vc-step-line {
+        width: 20px;
+    }
+    .vc-step span:not(.vc-step-dot) {
+        display: none;
+    }
+    .vc-content {
+        padding: var(--spacing-lg) var(--spacing-md);
+    }
+    .vc-landing-header h1 {
+        font-size: 1.4rem;
+    }
+}
+
+/* ===========================================
+   Courtroom Session — Redesigned (vc-)
+   =========================================== */
+
+.vc-session {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.vc-session::before {
+    display: none;
+}
+
+/* --- Session Header --- */
+.vc-session-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    z-index: 10;
+}
+
+.vc-session-header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    min-width: 0;
+}
+
+.vc-session-round-badge {
+    padding: 4px 14px;
+    background: var(--accent-gradient);
+    color: white;
+    border-radius: var(--radius-full);
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.vc-session-case-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    min-width: 0;
+}
+
+.vc-session-case-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vc-session-role-tag {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 10px;
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--accent-primary);
+    border-radius: var(--radius-full);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.vc-session-header-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 120px;
+}
+
+.vc-timer {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.vc-timer-value {
+    font-family: 'Be Vietnam Pro', monospace;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: 0.02em;
+}
+
+.vc-timer--warning .vc-timer-value {
+    color: #f59e0b;
+}
+
+.vc-timer--critical .vc-timer-value {
+    color: #ef4444;
+    animation: vcTimerPulse 1s infinite;
+}
+
+@keyframes vcTimerPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.vc-timer-paused {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    background: #f59e0b;
+    color: #000;
+    border-radius: var(--radius-sm);
+    animation: vcTimerPulse 1.5s infinite;
+}
+
+.vc-timer-bar {
+    width: 100%;
+    max-width: 200px;
+    height: 3px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.vc-timer-bar-fill {
+    height: 100%;
+    background: var(--accent-gradient);
+    border-radius: var(--radius-full);
+    transition: width 1s linear;
+}
+
+.vc-timer--warning .vc-timer-bar-fill {
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.vc-timer--critical .vc-timer-bar-fill {
+    background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+.vc-session-header-right {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    flex-shrink: 0;
+}
+
+.vc-session-meta {
+    display: flex;
+    gap: 6px;
+}
+
+.vc-session-meta-item {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    padding: 2px 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    white-space: nowrap;
+}
+
+.vc-session-end-btn {
+    padding: 6px 16px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.vc-session-end-btn:hover {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+}
+
+/* --- Session Body (30/70) --- */
+.vc-session-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* --- Sidebar (Left 30%) --- */
+.vc-session-sidebar {
+    width: 30%;
+    min-width: 260px;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border-color);
+    background: var(--bg-glass);
+    backdrop-filter: blur(12px);
+    overflow: hidden;
+}
+
+.vc-session-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.vc-session-panel + .vc-session-panel {
+    border-top: 2px solid var(--border-color);
+}
+
+.vc-session-panel-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.vc-session-panel-icon {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.vc-session-panel-title {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.vc-session-panel-sub {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.vc-session-panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-sm) var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.vc-session-case-title {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.3;
+}
+
+.vc-session-case-desc {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.vc-session-info-block {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.vc-session-info-label {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--accent-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.vc-session-info-text {
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+    white-space: pre-line;
+}
+
+.vc-session-facts {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.vc-session-facts li {
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    padding-left: 12px;
+    position: relative;
+}
+
+.vc-session-facts li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 7px;
+    width: 4px;
+    height: 4px;
+    background: var(--accent-primary);
+    border-radius: 50%;
+}
+
+.vc-session-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: var(--spacing-xl);
+    gap: var(--spacing-sm);
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    text-align: center;
+}
+
+.vc-session-empty span {
+    font-size: 1.8rem;
+    opacity: 0.4;
+}
+
+/* Strategy cards in sidebar */
+.vc-session-arg-card {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: var(--spacing-sm);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    text-align: left;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    transition: all var(--transition-fast);
+    margin-bottom: 4px;
+}
+
+.vc-session-arg-card:hover {
+    background: rgba(99, 102, 241, 0.08);
+    border-color: var(--accent-primary);
+    transform: translateX(2px);
+}
+
+.vc-session-arg-card.has-evidence {
+    border-left: 3px solid var(--accent-primary);
+}
+
+.vc-session-arg-top {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+}
+
+.vc-session-arg-num {
+    width: 18px;
+    height: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: var(--accent-gradient);
     color: white;
     border-radius: 50%;
-    font-weight: bold;
+    font-size: 0.65rem;
+    font-weight: 700;
     flex-shrink: 0;
 }
 
-.argument-item textarea {
-    flex: 1;
-    padding: var(--spacing-md);
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    color: var(--text-primary);
-    font-size: 0.95rem;
-    min-height: 80px;
-    resize: vertical;
-}
-
-.remove-btn {
-    padding: var(--spacing-sm);
-    background: rgba(239, 68, 68, 0.2);
-    border: none;
-    border-radius: var(--radius-sm);
-    color: #ef4444;
-    cursor: pointer;
-    font-size: 1.2rem;
-}
-
-.remove-btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-}
-
-.add-btn {
-    padding: var(--spacing-sm) var(--spacing-md);
-    background: var(--bg-tertiary);
-    border: 1px dashed var(--border-color);
-    border-radius: var(--radius-md);
+.vc-session-arg-text {
+    font-size: 0.78rem;
     color: var(--text-secondary);
-    cursor: pointer;
-    transition: all var(--transition-normal);
+    line-height: 1.4;
+    flex: 1;
+    word-break: break-word;
 }
 
-.add-btn:hover {
-    border-color: var(--accent-primary);
+.vc-session-arg-card:hover .vc-session-arg-text {
+    color: var(--text-primary);
+}
+
+.vc-session-arg-evs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding-left: 26px;
+}
+
+.vc-session-ev-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 1px 8px;
+    background: rgba(99, 102, 241, 0.12);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: var(--radius-full);
+    font-size: 0.65rem;
     color: var(--accent-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 
-.evidence-list {
+.vc-session-ev-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    padding: 3px 0;
+}
+
+/* --- Main Chat (Right 70%) --- */
+.vc-session-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+}
+
+/* Messages */
+.vc-session-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-lg);
     display: flex;
     flex-direction: column;
     gap: var(--spacing-md);
 }
 
-.evidence-item {
-    padding: var(--spacing-md);
-    background: var(--bg-secondary);
-    border-radius: var(--radius-md);
+.vc-msg {
+    display: flex;
+    gap: var(--spacing-sm);
+    max-width: 80%;
+    animation: vcMsgIn 0.3s ease forwards;
 }
 
-.evidence-name {
+@keyframes vcMsgIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.vc-msg--user {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+
+.vc-msg--opponent {
+    align-self: flex-start;
+}
+
+.vc-msg--system {
+    align-self: center;
+    max-width: 90%;
+    background: rgba(99, 102, 241, 0.08);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+}
+
+.vc-msg--objection {
+    align-self: center;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+}
+
+.vc-msg-avatar {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.vc-msg--user .vc-msg-avatar {
+    background: var(--accent-gradient);
+    border-color: transparent;
+}
+
+.vc-msg-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.vc-msg-sender {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.7rem;
     font-weight: 600;
+    color: var(--text-muted);
+}
+
+.vc-msg--user .vc-msg-sender {
+    text-align: right;
+    color: var(--accent-primary);
+}
+
+.vc-msg-sender--system {
+    color: var(--accent-primary);
+}
+
+.vc-msg-text {
+    font-size: 0.88rem;
+    line-height: 1.65;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    white-space: pre-line;
+}
+
+.vc-msg--user .vc-msg-text {
+    background: var(--accent-gradient);
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+.vc-msg--opponent .vc-msg-text {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-bottom-left-radius: 4px;
+}
+
+.vc-msg--system .vc-msg-text,
+.vc-msg--objection .vc-msg-text {
+    padding: 0;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.vc-msg-typing {
+    display: flex;
+    gap: 5px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    border-bottom-left-radius: 4px;
+}
+
+.vc-msg-typing span {
+    width: 7px;
+    height: 7px;
+    background: var(--accent-primary);
+    border-radius: 50%;
+    animation: sbDotPulse 1.2s ease infinite;
+}
+
+.vc-msg-typing span:nth-child(2) { animation-delay: 0.2s; }
+.vc-msg-typing span:nth-child(3) { animation-delay: 0.4s; }
+
+/* --- Coach Bar --- */
+.vc-session-coach-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-md);
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.vc-session-coach-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.vc-session-coach-icon {
+    font-size: 1rem;
+}
+
+.vc-session-coach-name {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.vc-session-coach-actions {
+    display: flex;
+    gap: 6px;
+    margin-left: auto;
+    flex-wrap: wrap;
+}
+
+.vc-session-coach-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+}
+
+.vc-session-coach-btn:hover:not(:disabled) {
+    background: rgba(99, 102, 241, 0.12);
+    border-color: var(--accent-primary);
+    color: var(--text-primary);
+}
+
+.vc-session-coach-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.vc-session-coach-btn.used {
+    opacity: 0.35;
+}
+
+/* --- Input Area --- */
+.vc-session-input {
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    padding: var(--spacing-sm) var(--spacing-lg) var(--spacing-md);
+    flex-shrink: 0;
+}
+
+.vc-session-input-controls {
+    display: flex;
+    gap: var(--spacing-sm);
     margin-bottom: var(--spacing-sm);
 }
 
-.evidence-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-sm);
-    align-items: center;
-}
-
-.link-label {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-}
-
-.link-checkbox {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.8rem;
-    padding: 2px 8px;
-    background: var(--bg-tertiary);
+.vc-session-ctrl-btn {
+    padding: 5px 14px;
+    border: none;
     border-radius: var(--radius-sm);
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
     cursor: pointer;
+    transition: all var(--transition-fast);
 }
 
-.empty-state {
-    color: var(--text-muted);
-    font-style: italic;
-    text-align: center;
-    padding: var(--spacing-lg);
+.vc-session-ctrl-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
-.requirements-section textarea {
-    width: 100%;
-    padding: var(--spacing-md);
-    background: var(--bg-secondary);
+.vc-session-ctrl-btn--pause {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+}
+
+.vc-session-ctrl-btn--pause:hover:not(:disabled) {
+    background: rgba(245, 158, 11, 0.25);
+}
+
+.vc-session-ctrl-btn--pause.active {
+    animation: vcTimerPulse 1.5s ease infinite;
+}
+
+.vc-session-input-row {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.vc-session-textarea {
+    flex: 1;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     color: var(--text-primary);
-    min-height: 100px;
-    resize: vertical;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    resize: none;
+    min-height: 52px;
+    transition: border-color var(--transition-fast);
 }
 
-/* Coach Panel */
-.coach-panel {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-xl);
-    padding: var(--spacing-lg);
-    height: fit-content;
-    position: sticky;
-    top: var(--spacing-lg);
+.vc-session-textarea:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
 }
 
-.coach-panel h2 {
-    font-size: 1rem;
-    margin-bottom: var(--spacing-md);
+.vc-session-textarea::placeholder {
+    color: var(--text-muted);
 }
 
-.get-feedback-btn {
-    width: 100%;
-    padding: var(--spacing-md);
+.vc-session-send-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: var(--spacing-sm) var(--spacing-lg);
     background: var(--accent-gradient);
     color: white;
     border: none;
     border-radius: var(--radius-md);
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    white-space: nowrap;
+}
+
+.vc-session-send-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+}
+
+.vc-session-send-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.vc-session-conclude-btn {
+    width: 100%;
+    margin-top: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.88rem;
     font-weight: 600;
     cursor: pointer;
     transition: all var(--transition-normal);
 }
 
-.get-feedback-btn:disabled {
-    opacity: 0.5;
+.vc-session-conclude-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(34, 197, 94, 0.35);
+}
+
+.vc-session-disclaimer {
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: var(--spacing-xs);
+}
+
+/* --- Modal (shared) --- */
+.vc-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: vcModalFadeIn 0.2s ease;
+}
+
+@keyframes vcModalFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.vc-modal {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    width: 90%;
+    max-width: 520px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    animation: vcModalSlideUp 0.25s ease;
+}
+
+@keyframes vcModalSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.vc-modal-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.vc-modal-icon {
+    font-size: 1.3rem;
+}
+
+.vc-modal-header h3 {
+    flex: 1;
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.vc-modal-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.vc-modal-close:hover {
+    background: rgba(239, 68, 68, 0.12);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.vc-modal-body {
+    padding: var(--spacing-lg);
+    overflow-y: auto;
+    flex: 1;
+}
+
+.vc-modal-sender {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.vc-modal-text {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.75;
+    margin: 0;
+    white-space: pre-line;
+}
+
+.vc-modal-footer {
+    padding: var(--spacing-sm) var(--spacing-lg) var(--spacing-md);
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* --- Session Responsive --- */
+@media (max-width: 900px) {
+    .vc-session-body {
+        flex-direction: column;
+    }
+    .vc-session-sidebar {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        max-height: 35vh;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .vc-session-header {
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+    }
+    .vc-session-meta {
+        display: none;
+    }
+    .vc-session-coach-actions {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+    }
+}
+
+/* ===========================================
+   Strategy Builder — Redesigned
+   =========================================== */
+
+/* Override page padding for strategy builder */
+.strategy-builder.courtroom-page {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* --- Header --- */
+.sb-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.sb-header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    flex: 1;
+    min-width: 0;
+}
+
+.sb-back-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.sb-back-btn:hover {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border-color: var(--accent-primary);
+}
+
+.sb-header-info h1 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    background: none;
+    -webkit-text-fill-color: unset;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.sb-case-tag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.sb-case-icon {
+    font-size: 0.85rem;
+}
+
+.sb-role-badge {
+    padding: 1px 8px;
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--accent-primary);
+    border-radius: var(--radius-full);
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+/* Progress indicators */
+.sb-progress {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex-shrink: 0;
+}
+
+.sb-progress-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 52px;
+}
+
+.sb-progress-num {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-tertiary);
+    border: 1.5px solid var(--border-color);
+    border-radius: 50%;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    transition: all var(--transition-normal);
+}
+
+.sb-progress-item.done .sb-progress-num {
+    background: var(--accent-gradient);
+    border-color: transparent;
+    color: white;
+}
+
+.sb-progress-label {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.sb-progress-divider {
+    width: 20px;
+    height: 1px;
+    background: var(--border-color);
+    margin-bottom: 14px;
+}
+
+/* Start button */
+.sb-start-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    background: var(--accent-gradient);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.sb-start-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+}
+
+.sb-start-btn:disabled {
+    opacity: 0.4;
     cursor: not-allowed;
 }
 
+/* --- Two-column body --- */
+.sb-body {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+.sb-col-left {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.sb-col-right {
+    width: 340px;
+    min-width: 300px;
+    border-left: 1px solid var(--border-color);
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
+/* --- Sections --- */
+.sb-section {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    animation: sbFadeIn 0.3s ease forwards;
+}
+
+@keyframes sbFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.sb-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-md);
+}
+
+.sb-section-title {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.sb-section-icon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.sb-section-icon--args {
+    background: rgba(99, 102, 241, 0.15);
+}
+
+.sb-section-icon--ev {
+    background: rgba(34, 197, 94, 0.15);
+}
+
+.sb-section-title h2 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.sb-section-title p {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.sb-add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 14px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.sb-add-btn:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    background: rgba(99, 102, 241, 0.08);
+}
+
+/* --- Argument Cards --- */
+.sb-arguments-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.sb-arg-card {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: flex-start;
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    transition: all var(--transition-fast);
+    animation: sbSlideIn 0.25s ease forwards;
+    opacity: 0;
+}
+
+@keyframes sbSlideIn {
+    from { opacity: 0; transform: translateX(-12px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.sb-arg-card:hover,
+.sb-arg-card:focus-within {
+    background: rgba(99, 102, 241, 0.04);
+    border-color: var(--border-color);
+}
+
+.sb-arg-card.has-content {
+    border-left: 3px solid var(--accent-primary);
+}
+
+.sb-arg-index {
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    margin-top: 6px;
+    transition: all var(--transition-fast);
+}
+
+.sb-arg-card.has-content .sb-arg-index {
+    background: var(--accent-gradient);
+    border-color: transparent;
+    color: white;
+}
+
+.sb-arg-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.sb-arg-body textarea {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    font-family: inherit;
+    line-height: 1.5;
+    resize: vertical;
+    min-height: 48px;
+    transition: border-color var(--transition-fast);
+}
+
+.sb-arg-body textarea:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+}
+
+.sb-arg-body textarea::placeholder {
+    color: var(--text-muted);
+}
+
+.sb-arg-evidence-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+}
+
+.sb-arg-ev-tag {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    background: rgba(34, 197, 94, 0.12);
+    color: #22c55e;
+    border-radius: var(--radius-full);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.sb-arg-remove {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+    opacity: 0;
+    margin-top: 6px;
+    flex-shrink: 0;
+}
+
+.sb-arg-card:hover .sb-arg-remove {
+    opacity: 1;
+}
+
+.sb-arg-remove:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.sb-arg-remove:disabled {
+    opacity: 0 !important;
+    cursor: default;
+}
+
+/* --- Evidence --- */
+.sb-evidence-input-row {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+    animation: sbFadeIn 0.2s ease forwards;
+}
+
+.sb-evidence-input-row input {
+    flex: 1;
+    padding: 8px 12px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--accent-primary);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-family: inherit;
+}
+
+.sb-evidence-input-row input:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+
+.sb-ev-confirm {
+    padding: 6px 14px;
+    background: var(--accent-primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity var(--transition-fast);
+}
+
+.sb-ev-confirm:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.sb-ev-cancel {
+    padding: 6px 14px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.sb-evidence-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.sb-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: var(--spacing-xl) var(--spacing-md);
+    color: var(--text-muted);
+}
+
+.sb-empty-icon {
+    font-size: 1.8rem;
+    opacity: 0.4;
+}
+
+.sb-empty p {
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+.sb-empty-hint {
+    font-size: 0.75rem;
+    opacity: 0.6;
+}
+
+.sb-ev-card {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    animation: sbSlideIn 0.25s ease forwards;
+    opacity: 0;
+}
+
+.sb-ev-top {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: 6px;
+}
+
+.sb-ev-icon {
+    font-size: 0.9rem;
+}
+
+.sb-ev-name {
+    flex: 1;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.sb-ev-remove {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    opacity: 0;
+    transition: all var(--transition-fast);
+}
+
+.sb-ev-card:hover .sb-ev-remove {
+    opacity: 1;
+}
+
+.sb-ev-remove:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.sb-ev-links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.sb-ev-link-chip {
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+}
+
+.sb-ev-link-chip:hover {
+    border-color: var(--accent-primary);
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.sb-ev-link-chip.active {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+}
+
+.sb-ev-link-num {
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.sb-ev-link-chip.active .sb-ev-link-num {
+    display: none;
+}
+
+.sb-ev-link-hint {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-left: 4px;
+}
+
+/* --- Coach Panel (Right sidebar) --- */
+.sb-coach-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--bg-secondary);
+}
+
+.sb-coach-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sb-coach-avatar {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-tertiary);
+    border-radius: 50%;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+
+.sb-coach-info h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.sb-coach-tone {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+}
+
+.sb-coach-body {
+    flex: 1;
+    padding: var(--spacing-md) var(--spacing-lg);
+    overflow-y: auto;
+}
+
+.sb-coach-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 6px;
+    padding: var(--spacing-lg) 0;
+}
+
+.sb-coach-empty-icon {
+    font-size: 2rem;
+    opacity: 0.5;
+}
+
+.sb-coach-empty p {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.sb-coach-empty-hint {
+    font-size: 0.73rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.sb-coach-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-xl) 0;
+}
+
+.sb-coach-loading p {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.sb-coach-loading-dots {
+    display: flex;
+    gap: 6px;
+}
+
+.sb-coach-loading-dots span {
+    width: 8px;
+    height: 8px;
+    background: var(--accent-primary);
+    border-radius: 50%;
+    animation: sbDotPulse 1.2s ease infinite;
+}
+
+.sb-coach-loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.sb-coach-loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes sbDotPulse {
+    0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+    40% { opacity: 1; transform: scale(1); }
+}
+
+.sb-coach-feedback {
+    animation: sbFadeIn 0.4s ease forwards;
+}
+
+.sb-coach-feedback p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin: 0;
+    white-space: pre-line;
+}
+
+.sb-coach-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: calc(100% - var(--spacing-lg) * 2);
+    margin: 0 var(--spacing-lg) var(--spacing-md);
+    padding: 10px;
+    background: var(--accent-gradient);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    flex-shrink: 0;
+}
+
+.sb-coach-btn:hover:not(:disabled) {
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+    transform: translateY(-1px);
+}
+
+.sb-coach-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Case summary at bottom of coach panel */
+.sb-coach-case {
+    margin: 0 var(--spacing-lg) var(--spacing-lg);
+    padding: var(--spacing-md);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+}
+
+.sb-coach-case-title {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: var(--spacing-xs);
+}
+
+.sb-coach-case-summary {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0 0 var(--spacing-sm);
+}
+
+.sb-coach-facts {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.sb-coach-facts li {
+    font-size: 0.73rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+    padding-left: 12px;
+    position: relative;
+}
+
+.sb-coach-facts li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 7px;
+    width: 4px;
+    height: 4px;
+    background: var(--accent-primary);
+    border-radius: 50%;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .sb-body {
+        flex-direction: column;
+    }
+    .sb-col-right {
+        width: 100%;
+        min-width: 0;
+        border-left: none;
+        border-top: 1px solid var(--border-color);
+        max-height: 400px;
+    }
+    .sb-progress {
+        display: none;
+    }
+}
+
+/* --- Keep shared styles below --- */
+
+.loading-spinner-small {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--bg-tertiary);
+    border-top: 2px solid var(--accent-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--bg-tertiary);
+    border-top: 3px solid var(--accent-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 .feedback-content {
-    margin-top: var(--spacing-lg);
+    margin-top: var(--spacing-sm);
     padding: var(--spacing-md);
     background: var(--bg-tertiary);
     border-radius: var(--radius-md);
+    border-left: 3px solid var(--accent-primary);
 }
 
-.feedback-content .coach-avatar {
-    font-size: 1.5rem;
+.feedback-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
     margin-bottom: var(--spacing-sm);
+}
+
+.feedback-header .coach-avatar {
+    font-size: 1.2rem;
+}
+
+.feedback-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
 
 .feedback-content p {
     font-size: 0.9rem;
     color: var(--text-secondary);
     line-height: 1.6;
+    margin: 0;
 }
 
 /* ===========================================
@@ -762,6 +3314,37 @@
     text-align: center;
 }
 
+/* --- Shared coach styles --- */
+.tone-track {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.tone-fill {
+    height: 100%;
+    background: var(--accent-gradient);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.coach-option-tag {
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+}
+
+.coach-option-tag.active {
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--accent-primary);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
 /* --- BOTTOM: Strategy Info --- */
 .session-strategy-info {
     flex: 1;
@@ -833,6 +3416,9 @@
     color: var(--text-secondary);
     line-height: 1.4;
     flex: 1;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 
 .strategy-arg-card:hover .strategy-arg-text {
@@ -950,79 +3536,235 @@
     min-width: 0;
 }
 
-/* --- Coach suggestions bar (above input) --- */
-.session-coach-suggestions-bar {
+/* --- Coach info bar (above input) --- */
+.session-coach-info-bar {
     background: var(--bg-secondary);
     border-top: 1px solid var(--border-color);
     padding: var(--spacing-xs) var(--spacing-md);
 }
 
-.coach-suggestions-header {
+.coach-info-bar-header {
     display: flex;
     align-items: center;
-    gap: var(--spacing-xs);
-    font-size: 0.72rem;
-    color: var(--text-muted);
-    margin-bottom: var(--spacing-xs);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.coach-suggestions-chips {
-    display: flex;
-    gap: var(--spacing-xs);
-    flex-wrap: wrap;
-    overflow-x: auto;
-    padding-bottom: 2px;
-}
-
-.coach-chip {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 5px var(--spacing-sm);
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-full);
-    cursor: pointer;
-    font-size: 0.75rem;
+    gap: var(--spacing-sm);
+    font-size: 0.8rem;
     color: var(--text-secondary);
-    white-space: nowrap;
-    transition: all var(--transition-fast);
-    max-width: 280px;
+    margin-bottom: var(--spacing-xs);
 }
 
-.coach-chip:hover {
+.coach-info-bar-icon {
+    font-size: 1.1rem;
+}
+
+.coach-info-bar-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.coach-tone-bar-inline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-left: auto;
+}
+
+.coach-tone-bar-inline .tone-track {
+    width: 60px;
+}
+
+.coach-info-bar-actions {
+    display: flex;
+    gap: 6px;
+    margin-left: auto;
+}
+
+.coach-action-btn-small {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+}
+
+.coach-action-btn-small:hover {
     background: rgba(99, 102, 241, 0.15);
     border-color: var(--accent-primary);
     color: var(--text-primary);
-    transform: translateY(-1px);
 }
 
-.coach-chip-warning {
-    border-color: rgba(245, 158, 11, 0.3);
-    color: #f59e0b;
+.coach-action-btn-small:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
-.coach-chip-warning:hover {
-    background: rgba(245, 158, 11, 0.12);
-    border-color: #f59e0b;
+.session-feedback-content {
+    margin-top: var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--accent-primary);
 }
 
-.coach-chip-evidence {
-    border-color: rgba(34, 197, 94, 0.3);
-    color: var(--normal-color);
+.session-feedback-content .feedback-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    margin-bottom: 4px;
 }
 
-.coach-chip-evidence:hover {
+.session-feedback-content p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+/* Coach button type indicators */
+.coach-action-btn-small.paste-type:hover {
     background: rgba(34, 197, 94, 0.12);
-    border-color: var(--normal-color);
+    border-color: #22c55e;
+    color: #22c55e;
 }
 
-.coach-chip-text {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 240px;
+.coach-action-btn-small.modal-type:hover {
+    background: rgba(251, 191, 36, 0.12);
+    border-color: #fbbf24;
+    color: #fbbf24;
+}
+
+/* --- Coach Modal --- */
+.coach-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: coachModalFadeIn 0.2s ease;
+}
+
+@keyframes coachModalFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.coach-modal {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    width: 90%;
+    max-width: 520px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    animation: coachModalSlideUp 0.25s ease;
+}
+
+@keyframes coachModalSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.coach-modal-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.coach-modal-icon {
+    font-size: 1.3rem;
+}
+
+.coach-modal-header h3 {
+    flex: 1;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.coach-modal-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.coach-modal-close:hover {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.coach-modal-body {
+    padding: var(--spacing-lg);
+    overflow-y: auto;
+    flex: 1;
+}
+
+.coach-modal-sender {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.coach-modal-text {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.75;
+    margin: 0;
+    white-space: pre-line;
+}
+
+.coach-modal-footer {
+    padding: var(--spacing-sm) var(--spacing-lg) var(--spacing-md);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.coach-modal-btn {
+    padding: 8px 24px;
+    background: var(--accent-gradient);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.coach-modal-btn:hover {
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+    transform: translateY(-1px);
 }
 
 .courtroom-header {
@@ -1050,6 +3792,28 @@
 .scenario-name {
     color: var(--text-secondary);
     font-size: 0.9rem;
+}
+
+/* Session settings badge */
+.session-settings-badge {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-sm);
+}
+
+.settings-badge-item {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    padding: 2px 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+}
+
+.settings-badge-divider {
+    color: var(--border-color);
+    font-size: 0.7rem;
 }
 
 /* Timer */
@@ -1227,6 +3991,20 @@
 .pause-btn {
     background: rgba(245, 158, 11, 0.2);
     color: #f59e0b;
+}
+
+.pause-btn:hover:not(:disabled) {
+    background: rgba(245, 158, 11, 0.3);
+}
+
+.pause-btn.active {
+    background: rgba(245, 158, 11, 0.3);
+    animation: pausePulse 1.5s ease infinite;
+}
+
+@keyframes pausePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
 }
 
 .objection-btn {
@@ -1581,14 +4359,6 @@ section h2 {
 
 /* Responsive */
 @media (max-width: 768px) {
-    .strategy-content {
-        grid-template-columns: 1fr;
-    }
-
-    .coach-panel {
-        position: static;
-    }
-
     .score-item {
         grid-template-columns: 40px 1fr;
         grid-template-rows: auto auto;
@@ -1601,5 +4371,345 @@ section h2 {
 
     .scenario-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+/* ===========================================
+   Results Page — Redesigned (vc-)
+   =========================================== */
+
+/* Grade hero */
+.vc-result-hero {
+    text-align: center;
+    padding: 40px var(--spacing-lg) 32px;
+    animation: vcFadeDown 0.5s ease forwards;
+}
+
+.vc-result-grade {
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--spacing-md);
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    border: 3px solid var(--grade-color, var(--accent-primary));
+    box-shadow: 0 0 40px color-mix(in srgb, var(--grade-color, var(--accent-primary)) 25%, transparent);
+    animation: vcGradePulse 2s ease-in-out infinite;
+}
+
+@keyframes vcGradePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.vc-result-grade-letter {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 3rem;
+    font-weight: 900;
+    color: var(--grade-color, var(--accent-primary));
+}
+
+.vc-result-grade-label {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.vc-result-total {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.vc-result-total strong {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.vc-result-scenario {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* Score rows */
+.vc-result-scores {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.vc-result-score-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: 10px var(--spacing-md);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    animation: vcSlideUp 0.35s ease forwards;
+    opacity: 0;
+}
+
+.vc-result-score-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    width: 28px;
+    text-align: center;
+}
+
+.vc-result-score-label {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    min-width: 140px;
+    flex-shrink: 0;
+}
+
+.vc-result-bar {
+    flex: 1;
+    height: 8px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.vc-result-bar-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vc-result-score-num {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    min-width: 32px;
+    text-align: right;
+}
+
+/* Badges earned */
+.vc-result-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+}
+
+.vc-result-badge-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: 10px var(--spacing-md);
+    background: rgba(99, 102, 241, 0.08);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: var(--radius-full);
+    opacity: 0;
+    transform: scale(0);
+    transition: all var(--transition-normal);
+}
+
+.vc-result-badges.animate .vc-result-badge-card {
+    animation: badgePop 0.5s ease forwards;
+}
+
+.vc-result-badge-icon {
+    font-size: 1.2rem;
+}
+
+.vc-result-badge-name {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+}
+
+/* Session stats */
+.vc-result-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-sm);
+}
+
+.vc-result-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: var(--spacing-md);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    animation: vcSlideUp 0.35s ease forwards;
+    opacity: 0;
+}
+
+.vc-result-stat-value {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.vc-result-stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* ===========================================
+   Badge Collection — Redesigned (vc-)
+   =========================================== */
+
+/* Stats row */
+.vc-badge-stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+.vc-badge-stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: var(--spacing-lg);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    animation: vcSlideUp 0.35s ease forwards;
+    opacity: 0;
+}
+
+.vc-badge-stat-icon {
+    font-size: 1.5rem;
+}
+
+.vc-badge-stat-num {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.vc-badge-stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* Progress bar */
+.vc-badge-progress {
+    margin-bottom: var(--spacing-sm);
+}
+
+.vc-badge-progress-bar {
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.vc-badge-progress-fill {
+    height: 100%;
+    background: var(--accent-gradient);
+    border-radius: var(--radius-full);
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Badge grid */
+.vc-badge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--spacing-sm);
+}
+
+.vc-badge-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: var(--spacing-lg) var(--spacing-md);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    transition: all var(--transition-normal);
+    animation: vcSlideUp 0.3s ease forwards;
+    opacity: 0;
+}
+
+.vc-badge-card.unlocked {
+    border-color: rgba(99, 102, 241, 0.3);
+    background: rgba(99, 102, 241, 0.04);
+}
+
+.vc-badge-card.unlocked:hover {
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.15);
+}
+
+.vc-badge-card.locked {
+    opacity: 0.45;
+}
+
+.vc-badge-card-icon {
+    font-size: 2rem;
+}
+
+.vc-badge-card-name {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.3;
+}
+
+.vc-badge-card.locked .vc-badge-card-name {
+    color: var(--text-muted);
+}
+
+.vc-badge-card-desc {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.vc-badge-card-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 0.65rem;
+    color: var(--accent-primary);
+    font-weight: 500;
+    margin-top: 2px;
+}
+
+/* ===========================================
+   Results & Badges — Responsive
+   =========================================== */
+@media (max-width: 768px) {
+    .vc-result-score-row {
+        flex-wrap: wrap;
+    }
+    .vc-result-score-label {
+        min-width: auto;
+        flex: 1;
+    }
+    .vc-result-bar {
+        width: 100%;
+        order: 4;
+    }
+    .vc-result-stats {
+        grid-template-columns: 1fr;
+    }
+    .vc-badge-stats-row {
+        grid-template-columns: 1fr;
+    }
+    .vc-badge-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
     }
 }

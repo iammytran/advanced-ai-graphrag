@@ -34,6 +34,44 @@ export async function sendMessage(question, options = {}) {
 }
 
 /**
+ * Evaluate courtroom session performance via backend AI
+ * Sends full session data to server and receives scores for 5 categories
+ *
+ * @param {object} sessionData - The courtroom session data
+ * @param {string} sessionData.scenarioId - ID of the scenario
+ * @param {string} sessionData.role - 'defendant' or 'plaintiff'
+ * @param {object} sessionData.scenario - Scenario info (name, summary, facts)
+ * @param {object[]} sessionData.messages - Chat messages (type: user/opponent/system)
+ * @param {object} sessionData.strategy - Prepared arguments and evidences
+ * @param {number} sessionData.roundsCompleted - Number of rounds completed
+ * @param {number} sessionData.totalRounds - Total rounds configured
+ * @param {number} sessionData.timeRemaining - Seconds remaining
+ * @param {number} sessionData.totalTime - Total seconds configured
+ * @returns {Promise<object>} - Scores: { legalAccuracy, evidenceUse, persuasion, timeManagement, etiquette }
+ */
+export async function evaluateSession(sessionData) {
+    try {
+        const response = await fetch(`${API_Base_URL}/courtroom/evaluate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(sessionData)
+        });
+
+        if (!response.ok) {
+            throw new Error(`API Error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Error calling evaluate API:", error);
+        throw error;
+    }
+}
+
+/**
  * Get example/suggested questions
  * @returns {string[]}
  */

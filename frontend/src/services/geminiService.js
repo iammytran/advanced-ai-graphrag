@@ -10,9 +10,7 @@ if (!apiKey) {
 
 const genAI = new GoogleGenerativeAI(apiKey || "dummy_key");
 
-// Khởi tạo model (Sử dụng gemini-1.5-flash làm mặc định vì gemini-2.0-flash chưa được support native trên SDK cũ, hoặc dùng 1.5 flash an toàn hơn)
-// Bạn có thể đổi sang 'gemini-2.0-flash' nếu SDK VITE đã update. Ở đây dùng gemini-1.5-flash vì nó free tier ổn định.
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 /**
  * Gọi Gemini API để sinh câu trả lời
@@ -27,11 +25,15 @@ export const generateGeminiResponse = async (prompt, fallback = "Lỗi kết n�
     }
 
     try {
+        console.log('[Gemini] Request:', { model: 'gemini-2.5-flash', prompt });
+        const startTime = Date.now();
         const result = await model.generateContent(prompt);
         const response = await result.response;
-        return response.text();
+        const text = response.text();
+        console.log('[Gemini] Response:', { text, duration: `${Date.now() - startTime}ms` });
+        return text;
     } catch (error) {
-        console.error("Lỗi khi gọi Gemini API:", error);
+        console.error("[Gemini] Error:", error);
         
         // Check lỗi quota
         if (error.message?.includes('429') || error.message?.includes('EXHAUSTED')) {
