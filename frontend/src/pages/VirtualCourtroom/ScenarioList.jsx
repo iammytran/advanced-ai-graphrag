@@ -1,63 +1,74 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { scenarios } from '../../services/courtroomMockApi'
 
+const difficultyMap = {
+    1: { class: 'easy', label: 'Dễ' },
+    2: { class: 'medium', label: 'Trung bình' },
+    3: { class: 'hard', label: 'Khó' }
+}
+
 function ScenarioList() {
     const navigate = useNavigate()
-    const [selectedId, setSelectedId] = useState(null)
-
-    const getDifficultyStars = (level) => {
-        return '⭐'.repeat(level)
-    }
 
     const handleSelect = (scenario) => {
-        setSelectedId(scenario.id)
-        // Navigate to detail page
         navigate(`/courtroom/scenario/${scenario.id}`)
     }
 
     return (
-        <div className="courtroom-page scenario-list">
-            <header className="page-header">
-                <h1>🏛️ Chọn Kịch Bản Phiên Tòa</h1>
-                <p>Chọn một kịch bản để bắt đầu luyện tập</p>
-            </header>
-
-            <div className="scenario-grid">
-                {scenarios.map(scenario => (
-                    <div
-                        key={scenario.id}
-                        className={`scenario-card ${selectedId === scenario.id ? 'selected' : ''}`}
-                        onClick={() => handleSelect(scenario)}
-                    >
-                        <div className="scenario-difficulty">
-                            <span className="stars">{getDifficultyStars(scenario.difficulty)}</span>
-                            <span className="label">{scenario.difficultyLabel}</span>
-                        </div>
-
-                        <h3 className="scenario-name">{scenario.name}</h3>
-
-                        <p className="scenario-description">{scenario.description}</p>
-
-                        <div className="scenario-meta">
-                            <span className="duration">⏱️ {scenario.duration} phút</span>
-                        </div>
-
-                        <div className="scenario-skills">
-                            {scenario.skills.map((skill, i) => (
-                                <span key={i} className="skill-tag">{skill}</span>
-                            ))}
-                        </div>
-
-                        <button className="select-btn">Chọn kịch bản này →</button>
-                    </div>
-                ))}
-            </div>
-
-            <div className="navigation-buttons">
-                <button className="btn-secondary" onClick={() => navigate('/')}>
+        <div className="vc-page">
+            {/* Top nav bar */}
+            <nav className="vc-topnav">
+                <button className="vc-btn-back" onClick={() => navigate('/')}>
                     ← Quay lại Chatbot
                 </button>
+                <button className="vc-btn-back" onClick={() => navigate('/courtroom/badges')}>
+                    🏅 Huy hiệu
+                </button>
+            </nav>
+
+            {/* Landing header */}
+            <header className="vc-landing-header">
+                <div className="vc-landing-badge">Phòng tập luyện</div>
+                <h1>Phiên Tòa Giả Định</h1>
+                <p>Chọn một kịch bản để rèn luyện kỹ năng tranh tụng</p>
+            </header>
+
+            {/* Scenario grid */}
+            <div className="vc-scenario-grid">
+                {scenarios.map((scenario, idx) => {
+                    const diff = difficultyMap[scenario.difficulty] || difficultyMap[1]
+                    return (
+                        <div
+                            key={scenario.id}
+                            className="vc-scenario-card"
+                            style={{ animationDelay: `${0.08 + idx * 0.1}s` }}
+                            onClick={() => handleSelect(scenario)}
+                        >
+                            <div className={`vc-sc-accent vc-sc-accent--${diff.class}`} />
+                            <div className="vc-sc-body">
+                                <div className="vc-sc-top">
+                                    <span className={`vc-sc-difficulty vc-sc-difficulty--${diff.class}`}>
+                                        {diff.label}
+                                    </span>
+                                    <span className="vc-sc-duration">⏱️ {scenario.duration} phút</span>
+                                </div>
+
+                                <div className="vc-sc-name">{scenario.name}</div>
+                                <div className="vc-sc-desc">{scenario.description}</div>
+
+                                <div className="vc-sc-skills">
+                                    {scenario.skills.map((skill, i) => (
+                                        <span key={i} className="vc-sc-skill">{skill}</span>
+                                    ))}
+                                </div>
+
+                                <button className="vc-sc-action">
+                                    Bắt đầu luyện tập →
+                                </button>
+                            </div>
+                        </div>
+                    )
+                })}
             </div>
         </div>
     )

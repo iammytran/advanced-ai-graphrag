@@ -13,7 +13,6 @@ function CoachSelection() {
         autoObjection: false,
         riskWarning: true
     })
-    const [recapStyle, setRecapStyle] = useState('detailed')
 
     useEffect(() => {
         const stored = sessionStorage.getItem('courtroomSession')
@@ -34,153 +33,143 @@ function CoachSelection() {
             coach: {
                 type: coachType,
                 tone: toneValue,
-                options,
-                recapStyle
+                options
             }
         }
         sessionStorage.setItem('courtroomSession', JSON.stringify(updatedSession))
         navigate('/courtroom/case')
     }
 
+    const steps = [
+        { label: 'Kịch bản', done: true },
+        { label: 'Vai trò', done: true },
+        { label: 'Huấn luyện viên', active: true },
+        { label: 'Hồ sơ vụ án' },
+        { label: 'Chiến lược' }
+    ]
+
+    const features = [
+        { key: 'openingSuggestion', icon: '💡', label: 'Gợi ý câu mở đầu' },
+        { key: 'evidenceReminder', icon: '📎', label: 'Nhắc chứng cứ phù hợp' },
+        { key: 'autoObjection', icon: '✋', label: 'Tự động soạn phản đối' },
+        { key: 'riskWarning', icon: '⚠️', label: 'Cảnh báo rủi ro pháp lý' }
+    ]
+
     return (
-        <div className="courtroom-page coach-selection">
-            <header className="page-header">
-                <div className="breadcrumb">
-                    <span onClick={() => navigate('/courtroom')}>Kịch bản</span>
-                    <span> → Chi tiết → </span>
-                    <span>Coach</span>
-                </div>
-                <h1>🧑‍🏫 Chọn Coach Hỗ Trợ</h1>
-                <p>Coach sẽ đưa ra gợi ý và phản hồi trong suốt phiên tòa</p>
-            </header>
-
-            <section className="coach-type-section">
-                <h2>Loại Coach</h2>
-                <div className="coach-options">
-                    <div
-                        className={`coach-card ${coachType === 'lawyer' ? 'selected' : ''}`}
-                        onClick={() => setCoachType('lawyer')}
-                    >
-                        <div className="coach-icon">👨‍⚖️</div>
-                        <h3>Luật sư</h3>
-                        <p>Phản hồi chuyên nghiệp, trích dẫn điều luật</p>
+        <div className="vc-page">
+            {/* Step indicator */}
+            <nav className="vc-steps">
+                {steps.map((step, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center' }}>
+                        {i > 0 && (
+                            <div className={`vc-step-line${step.done || step.active ? ' done' : ''}`} />
+                        )}
+                        <div className={`vc-step${step.done ? ' done' : ''}${step.active ? ' active' : ''}`}>
+                            <span className="vc-step-dot">
+                                {step.done ? '✓' : i + 1}
+                            </span>
+                            <span>{step.label}</span>
+                        </div>
                     </div>
+                ))}
+            </nav>
 
-                    <div
-                        className={`coach-card ${coachType === 'normal' ? 'selected' : ''}`}
-                        onClick={() => setCoachType('normal')}
-                    >
-                        <div className="coach-icon">😊</div>
-                        <h3>Người bình thường</h3>
-                        <p>Phản hồi thân thiện, dễ hiểu</p>
+            <div className="vc-content">
+                {/* Coach type selection */}
+                <div className="vc-section">
+                    <div className="vc-section-label">Chọn loại huấn luyện viên</div>
+                    <div className="vc-coach-grid">
+                        <div
+                            className={`vc-coach-card${coachType === 'lawyer' ? ' selected' : ''}`}
+                            onClick={() => setCoachType('lawyer')}
+                            style={{ animationDelay: '0.05s' }}
+                        >
+                            <div className="vc-coach-avatar">👨‍⚖️</div>
+                            <div className="vc-coach-text">
+                                <h3>Luật sư cố vấn</h3>
+                                <p>Phản hồi chuyên nghiệp, trích dẫn điều luật cụ thể, phân tích sắc bén</p>
+                            </div>
+                        </div>
+
+                        <div
+                            className={`vc-coach-card${coachType === 'normal' ? ' selected' : ''}`}
+                            onClick={() => setCoachType('normal')}
+                            style={{ animationDelay: '0.12s' }}
+                        >
+                            <div className="vc-coach-avatar">😊</div>
+                            <div className="vc-coach-text">
+                                <h3>Người bạn đồng hành</h3>
+                                <p>Phản hồi thân thiện, dễ hiểu, chia sẻ từ kinh nghiệm thực tế</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </section>
 
-            <section className="tone-section">
-                <h2>Tone Phản Hồi</h2>
-                <div className="tone-slider">
-                    <span>🗣️ Đời thường</span>
-                    <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={toneValue}
-                        onChange={(e) => setToneValue(parseInt(e.target.value))}
-                    />
-                    <span>⚖️ Pháp lý</span>
+                {/* Tone slider */}
+                <div className="vc-section">
+                    <div className="vc-section-label">Phong cách phản hồi</div>
+                    <div className="vc-tone-box" style={{ animationDelay: '0.15s' }}>
+                        <div className="vc-tone-labels">
+                            <span className={`vc-tone-label${toneValue < 40 ? ' active' : ''}`}>
+                                🗣️ Đời thường
+                            </span>
+                            <span className={`vc-tone-label${toneValue >= 40 && toneValue <= 60 ? ' active' : ''}`}>
+                                Cân bằng
+                            </span>
+                            <span className={`vc-tone-label${toneValue > 60 ? ' active' : ''}`}>
+                                ⚖️ Pháp lý
+                            </span>
+                        </div>
+                        <input
+                            type="range"
+                            className="vc-tone-slider"
+                            min="0"
+                            max="100"
+                            value={toneValue}
+                            onChange={(e) => setToneValue(parseInt(e.target.value))}
+                        />
+                        <div className="vc-tone-value">
+                            {toneValue < 30 ? 'Rất đời thường' :
+                             toneValue < 50 ? 'Thiên đời thường' :
+                             toneValue === 50 ? 'Cân bằng' :
+                             toneValue < 70 ? 'Thiên pháp lý' :
+                             'Rất chuyên nghiệp'} — {toneValue}%
+                        </div>
+                    </div>
                 </div>
-                <div className="tone-value">{toneValue}%</div>
-            </section>
 
-            <section className="options-section">
-                <h2>Hỗ Trợ Trong Phiên</h2>
-                <div className="options-grid">
-                    <label className={`option-item ${options.openingSuggestion ? 'active' : ''}`}>
-                        <input
-                            type="checkbox"
-                            checked={options.openingSuggestion}
-                            onChange={() => handleOptionChange('openingSuggestion')}
-                        />
-                        <span className="icon">💡</span>
-                        <span>Gợi ý câu mở đầu</span>
-                    </label>
-
-                    <label className={`option-item ${options.evidenceReminder ? 'active' : ''}`}>
-                        <input
-                            type="checkbox"
-                            checked={options.evidenceReminder}
-                            onChange={() => handleOptionChange('evidenceReminder')}
-                        />
-                        <span className="icon">📎</span>
-                        <span>Nhắc chứng cứ phù hợp</span>
-                    </label>
-
-                    <label className={`option-item ${options.autoObjection ? 'active' : ''}`}>
-                        <input
-                            type="checkbox"
-                            checked={options.autoObjection}
-                            onChange={() => handleOptionChange('autoObjection')}
-                        />
-                        <span className="icon">✋</span>
-                        <span>Tự động soạn phản đối</span>
-                    </label>
-
-                    <label className={`option-item ${options.riskWarning ? 'active' : ''}`}>
-                        <input
-                            type="checkbox"
-                            checked={options.riskWarning}
-                            onChange={() => handleOptionChange('riskWarning')}
-                        />
-                        <span className="icon">⚠️</span>
-                        <span>Cảnh báo rủi ro pháp lý</span>
-                    </label>
+                {/* Feature toggles */}
+                <div className="vc-section">
+                    <div className="vc-section-label">Hỗ trợ trong phiên tòa</div>
+                    <div className="vc-features-grid">
+                        {features.map((f, i) => (
+                            <label
+                                key={f.key}
+                                className={`vc-feature-card${options[f.key] ? ' active' : ''}`}
+                                style={{ animationDelay: `${0.18 + i * 0.05}s` }}
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={options[f.key]}
+                                    onChange={() => handleOptionChange(f.key)}
+                                />
+                                <span className="vc-feature-icon">{f.icon}</span>
+                                <span className="vc-feature-label">{f.label}</span>
+                                <span className="vc-feature-toggle" />
+                            </label>
+                        ))}
+                    </div>
                 </div>
-            </section>
 
-            <section className="recap-section">
-                <h2>Phong Cách Recap</h2>
-                <div className="recap-options">
-                    <label className={recapStyle === 'detailed' ? 'selected' : ''}>
-                        <input
-                            type="radio"
-                            name="recap"
-                            value="detailed"
-                            checked={recapStyle === 'detailed'}
-                            onChange={(e) => setRecapStyle(e.target.value)}
-                        />
-                        <span>📝 Chi tiết</span>
-                    </label>
-                    <label className={recapStyle === 'summary' ? 'selected' : ''}>
-                        <input
-                            type="radio"
-                            name="recap"
-                            value="summary"
-                            checked={recapStyle === 'summary'}
-                            onChange={(e) => setRecapStyle(e.target.value)}
-                        />
-                        <span>📋 Tóm tắt</span>
-                    </label>
-                    <label className={recapStyle === 'visual' ? 'selected' : ''}>
-                        <input
-                            type="radio"
-                            name="recap"
-                            value="visual"
-                            checked={recapStyle === 'visual'}
-                            onChange={(e) => setRecapStyle(e.target.value)}
-                        />
-                        <span>🖼️ Hình ảnh</span>
-                    </label>
+                {/* Navigation */}
+                <div className="vc-nav">
+                    <button className="vc-btn-back" onClick={() => navigate(-1)}>
+                        ← Quay lại
+                    </button>
+                    <button className="vc-btn-next" onClick={handleContinue}>
+                        Tiếp tục → Hồ sơ vụ án
+                    </button>
                 </div>
-            </section>
-
-            <div className="navigation-buttons">
-                <button className="btn-secondary" onClick={() => navigate(-1)}>
-                    ← Quay lại
-                </button>
-                <button className="btn-primary" onClick={handleContinue}>
-                    Tiếp tục →
-                </button>
             </div>
         </div>
     )

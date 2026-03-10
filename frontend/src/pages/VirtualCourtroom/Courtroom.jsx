@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { scenarios, getOpponentResponse, getBotSuggestions } from '../../services/courtroomMockApi'
+import { scenarios, getOpponentResponse, getCoachFeedback } from '../../services/courtroomMockApi'
 
 function Courtroom() {
     const navigate = useNavigate()
@@ -15,14 +15,22 @@ function Courtroom() {
 
     // Round state
     const [currentRound, setCurrentRound] = useState(1)
-    const [totalRounds] = useState(4)
+    const [totalRounds, setTotalRounds] = useState(4)
     const [messages, setMessages] = useState([])
     const [userInput, setUserInput] = useState('')
     const [isOpponentTurn, setIsOpponentTurn] = useState(false)
-    const [objectionsUsed, setObjectionsUsed] = useState(0)
 
-    // Left panel suggestions
-    const [botSuggestions, setBotSuggestions] = useState([])
+    // Coach feedback in session
+    const [sessionLoadingKey, setSessionLoadingKey] = useState(null)
+    const [coachModal, setCoachModal] = useState(null)
+    const [usedCoachKeys, setUsedCoachKeys] = useState(new Set())
+
+    const sessionCoachButtons = [
+        { key: 'openingSuggestion', icon: '💡', label: 'Gợi ý câu mở đầu' },
+        { key: 'evidenceReminder', icon: '📎', label: 'Nhắc chứng cứ' },
+        { key: 'autoObjection', icon: '✋', label: 'Soạn phản đối' },
+        { key: 'riskWarning', icon: '⚠️', label: 'Cảnh báo rủi ro' }
+    ]
 
     const messagesEndRef = useRef(null)
 
@@ -38,35 +46,21 @@ function Courtroom() {
         const sc = scenarios.find(s => s.id === sess.scenarioId)
         setScenario(sc)
 
-        // Set timer based on settings
         const timeInSeconds = (sess.settings?.timeLimit || 10) * 60
         setTimeRemaining(timeInSeconds)
+        setTotalRounds(sess.settings?.roundLimit || 4)
 
-        // Start with opening statement from plaintiff
         const openingMessage = {
             id: Date.now(),
             type: 'system',
-            text: `📢 Phiên tòa bắt đầu!\n\nVụ án: ${sc?.name}\nVai trò của bạn: ${sess.role === 'defendant' ? 'Luật sư bào chữa' : 'Luật sư nguyên đơn'}\n\nHãy trình bày luận điểm mở đầu của bạn.`
+            text: `Phiên tòa bắt đầu!\n\nVụ án: ${sc?.name}\nVai trò của bạn: ${sess.role === 'defendant' ? 'Luật sư bào chữa' : 'Luật sư nguyên đơn'}\n\nHãy trình bày luận điểm mở đầu của bạn.`
         }
         setMessages([openingMessage])
-
-        // Load initial bot suggestions
-        const suggestions = getBotSuggestions(1, sess.coach?.type || 'normal', sess.coach?.options || {})
-        setBotSuggestions(suggestions)
     }, [navigate])
-
-    // Update suggestions when round changes
-    useEffect(() => {
-        if (!session) return
-        const suggestions = getBotSuggestions(currentRound, session.coach?.type || 'normal', session.coach?.options || {})
-        setBotSuggestions(suggestions)
-    }, [currentRound, session])
 
     // Timer countdown
     useEffect(() => {
-        if (timeRemaining <= 0 || isPaused) {
-            return
-        }
+        if (timeRemaining <= 0 || isPaused) return
 
         timerRef.current = setInterval(() => {
             setTimeRemaining(prev => {
@@ -91,7 +85,7 @@ function Courtroom() {
         setMessages(prev => [...prev, {
             id: Date.now(),
             type: 'system',
-            text: '⏰ Hết thời gian! Phiên tòa kết thúc.'
+            text: 'Hết thời gian! Phiên tòa kết thúc.'
         }])
         setTimeout(() => endSession(), 2000)
     }
@@ -103,8 +97,8 @@ function Courtroom() {
     }
 
     const getTimeClass = () => {
-        if (timeRemaining <= 60) return 'critical'
-        if (timeRemaining <= 180) return 'warning'
+        if (timeRemaining <= 60) return 'vc-timer--critical'
+        if (timeRemaining <= 180) return 'vc-timer--warning'
         return ''
     }
 
@@ -114,19 +108,14 @@ function Courtroom() {
             alert('Bạn đã sử dụng hết lượt tạm dừng!')
             return
         }
-
         setIsPaused(true)
         setPausesUsed(prev => prev + 1)
-
-        setTimeout(() => {
-            setIsPaused(false)
-        }, 10000)
+        setTimeout(() => setIsPaused(false), 10000)
     }
 
     const handleSendMessage = async () => {
         if (!userInput.trim() || isOpponentTurn) return
 
-        // Add user message
         const userMessage = {
             id: Date.now(),
             type: 'user',
@@ -137,10 +126,8 @@ function Courtroom() {
         setUserInput('')
         setIsOpponentTurn(true)
 
-        // Get opponent response
         try {
-            const response = await getOpponentResponse(currentRound, userInput, scenario)
-
+            const response = await getOpponentResponse(currentRound, userInput, scenario, session.role, messages)
             const opponentMessage = {
                 id: Date.now() + 1,
                 type: 'opponent',
@@ -149,12 +136,11 @@ function Courtroom() {
             }
             setMessages(prev => [...prev, opponentMessage])
 
-            // Check if round complete
             if (currentRound >= totalRounds) {
                 setMessages(prev => [...prev, {
                     id: Date.now() + 2,
                     type: 'system',
-                    text: '📋 Đã hoàn thành 4 vòng tranh luận. Hãy đưa ra kết luận cuối cùng.'
+                    text: `Đã hoàn thành ${totalRounds} vòng tranh luận. Hãy đưa ra kết luận cuối cùng.`
                 }])
             } else {
                 setCurrentRound(prev => prev + 1)
@@ -164,20 +150,6 @@ function Courtroom() {
         } finally {
             setIsOpponentTurn(false)
         }
-    }
-
-    const handleObjection = () => {
-        if (objectionsUsed >= (session?.settings?.objectionLimit || 3)) {
-            alert('Đã hết lượt phản đối!')
-            return
-        }
-
-        setObjectionsUsed(prev => prev + 1)
-        setMessages(prev => [...prev, {
-            id: Date.now(),
-            type: 'objection',
-            text: '✋ PHẢN ĐỐI! Lập luận không có căn cứ pháp lý.'
-        }])
     }
 
     const endSession = useCallback(() => {
@@ -198,89 +170,132 @@ function Courtroom() {
         }
     }
 
-    // Click suggestion → fill input
-    const handleSuggestionClick = (suggestionText) => {
-        // Strip the icon prefix and quotes for cleaner input
-        const cleaned = suggestionText.replace(/^[^\s]+\s*"?/, '').replace(/"$/, '')
-        setUserInput(cleaned)
-    }
-
-    // Click argument card → paste argument + linked evidences into input
     const handleArgumentClick = (arg, linkedEvidences) => {
         let text = arg.text
         if (linkedEvidences.length > 0) {
             const evidenceList = linkedEvidences.map(ev => `"${ev.name}"`).join(', ')
-            text += `\n\n📎 Chứng cứ đính kèm: ${evidenceList}`
+            text += `\n\nChứng cứ đính kèm: ${evidenceList}`
         }
         setUserInput(text)
     }
 
+    const getSessionCoachAdvice = async (key) => {
+        if (!session?.coach) return
+        setSessionLoadingKey(key)
+        const content = JSON.stringify({
+            arguments: session?.strategy?.arguments || [],
+            evidences: session?.strategy?.evidences || []
+        })
+        try {
+            const feedback = await getCoachFeedback(
+                content,
+                session.coach.type,
+                session.coach.tone,
+                scenario,
+                session.role,
+                key,
+                messages
+            )
+            setUsedCoachKeys(prev => new Set([...prev, key]))
+            const btn = sessionCoachButtons.find(b => b.key === key)
+            setCoachModal({ key, icon: btn?.icon, label: btn?.label, text: feedback.text })
+        } catch (error) {
+            console.error(error)
+        } finally {
+            setSessionLoadingKey(null)
+        }
+    }
+
     if (!scenario) {
-        return <div className="courtroom-page">Loading...</div>
+        return (
+            <div className="vc-page">
+                <div className="vc-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+                    <div className="vc-session-loading">
+                        <div className="sb-coach-loading-dots"><span /><span /><span /></div>
+                        <p style={{ marginTop: 12, color: 'var(--text-muted)', fontSize: '0.85rem' }}>Đang tải phiên tòa...</p>
+                    </div>
+                </div>
+            </div>
+        )
     }
 
     const strategy = session?.strategy
     const coach = session?.coach
+    const timeProgress = (timeRemaining / ((session?.settings?.timeLimit || 10) * 60)) * 100
 
     return (
-        <div className="courtroom-page courtroom-session">
-            {/* Timer Header */}
-            <header className="courtroom-header">
-                <div className="round-info">
-                    <span className="round-label">Vòng {currentRound}/{totalRounds}</span>
-                    <span className="scenario-name">{scenario.name}</span>
+        <div className="vc-page vc-session">
+            {/* Session Header */}
+            <header className="vc-session-header">
+                <div className="vc-session-header-left">
+                    <div className="vc-session-round-badge">
+                        Vòng {currentRound}/{totalRounds}
+                    </div>
+                    <div className="vc-session-case-info">
+                        <span className="vc-session-case-name">{scenario.name}</span>
+                        <span className="vc-session-role-tag">
+                            {session?.role === 'defendant' ? '🛡️ Bào chữa' : '⚔️ Nguyên đơn'}
+                        </span>
+                    </div>
                 </div>
 
-                <div className={`timer ${getTimeClass()}`}>
-                    <span className="timer-icon">⏱️</span>
-                    <span className="timer-value">{formatTime(timeRemaining)}</span>
-                    {isPaused && <span className="paused-label">TẠM DỪNG</span>}
+                <div className="vc-session-header-center">
+                    <div className={`vc-timer ${getTimeClass()}`}>
+                        <span className="vc-timer-value">{formatTime(timeRemaining)}</span>
+                        {isPaused && <span className="vc-timer-paused">TẠM DỪNG</span>}
+                    </div>
+                    <div className="vc-timer-bar">
+                        <div className="vc-timer-bar-fill" style={{ width: `${timeProgress}%` }} />
+                    </div>
                 </div>
 
-                <div className="timer-progress">
-                    <div
-                        className="progress-bar"
-                        style={{
-                            width: `${(timeRemaining / ((session?.settings?.timeLimit || 10) * 60)) * 100}%`
-                        }}
-                    />
+                <div className="vc-session-header-right">
+                    <div className="vc-session-meta">
+                        <span className="vc-session-meta-item">🔄 {totalRounds} vòng</span>
+                        <span className="vc-session-meta-item">⏱️ {session?.settings?.timeLimit || 10}p</span>
+                        {session?.settings?.pauseEnabled && (
+                            <span className="vc-session-meta-item">⏸️ {3 - pausesUsed} lượt</span>
+                        )}
+                    </div>
+                    <button className="vc-session-end-btn" onClick={handleEndEarly}>
+                        Kết thúc
+                    </button>
                 </div>
             </header>
 
-            {/* Main Body - 30/70 Split */}
-            <div className="courtroom-body">
+            {/* Main Body */}
+            <div className="vc-session-body">
 
-                {/* LEFT PANEL — 30% */}
-                <div className="session-left-panel">
+                {/* LEFT PANEL */}
+                <div className="vc-session-sidebar">
 
-                    {/* TOP: Scenario Info */}
-                    <div className="session-scenario-info">
-                        <div className="panel-title">
-                            <span className="panel-title-icon">🏛️</span>
+                    {/* Scenario Info */}
+                    <div className="vc-session-panel">
+                        <div className="vc-session-panel-header">
+                            <span className="vc-session-panel-icon">🏛️</span>
                             <div>
-                                <h3>Tình huống</h3>
-                                <p>{session?.role === 'defendant' ? 'Luật sư bào chữa' : 'Luật sư nguyên đơn'}</p>
+                                <div className="vc-session-panel-title">Tình huống</div>
+                                <div className="vc-session-panel-sub">
+                                    {session?.role === 'defendant' ? 'Luật sư bào chữa' : 'Luật sư nguyên đơn'}
+                                </div>
                             </div>
                         </div>
 
-                        <div className="scenario-detail-content">
-                            <div className="scenario-detail-name">{scenario.name}</div>
-                            <p className="scenario-detail-desc">{scenario.description}</p>
+                        <div className="vc-session-panel-body">
+                            <div className="vc-session-case-title">{scenario.name}</div>
+                            <p className="vc-session-case-desc">{scenario.description}</p>
 
-                            <div className="scenario-detail-section">
-                                <div className="scenario-detail-label">📋 Tóm tắt vụ án</div>
-                                <p className="scenario-detail-summary">{scenario.summary}</p>
+                            <div className="vc-session-info-block">
+                                <div className="vc-session-info-label">Tóm tắt vụ án</div>
+                                <p className="vc-session-info-text">{scenario.summary}</p>
                             </div>
 
                             {scenario.facts?.length > 0 && (
-                                <div className="scenario-detail-section">
-                                    <div className="scenario-detail-label">🔍 Sự kiện pháp lý</div>
-                                    <ul className="scenario-facts-list">
+                                <div className="vc-session-info-block">
+                                    <div className="vc-session-info-label">Sự kiện pháp lý</div>
+                                    <ul className="vc-session-facts">
                                         {scenario.facts.map((fact, i) => (
-                                            <li key={i}>
-                                                <span className="fact-dot">•</span>
-                                                <span>{fact}</span>
-                                            </li>
+                                            <li key={i}>{fact}</li>
                                         ))}
                                     </ul>
                                 </div>
@@ -288,176 +303,166 @@ function Courtroom() {
                         </div>
                     </div>
 
-                    {/* BOTTOM: Strategy Info */}
-                    <div className="session-strategy-info">
-                        <div className="panel-title">
-                            <span className="panel-title-icon">📋</span>
+                    {/* Strategy Info */}
+                    <div className="vc-session-panel">
+                        <div className="vc-session-panel-header">
+                            <span className="vc-session-panel-icon">📋</span>
                             <div>
-                                <h3>Chiến lược của bạn</h3>
-                                <p>Đã xây dựng trước phiên tòa</p>
+                                <div className="vc-session-panel-title">Chiến lược</div>
+                                <div className="vc-session-panel-sub">Đã xây dựng trước phiên tòa</div>
                             </div>
                         </div>
 
                         {!strategy ? (
-                            <div className="strategy-empty">
+                            <div className="vc-session-empty">
                                 <span>📝</span>
-                                <p>Không có chiến lược được xây dựng trước</p>
+                                <p>Không có chiến lược</p>
                             </div>
                         ) : (
-                            <div className="strategy-content-panel">
-                                {/* Arguments */}
-                                {/* Arguments — each clickable, with linked evidences shown inline */}
+                            <div className="vc-session-panel-body">
                                 {strategy.arguments?.length > 0 && (
-                                    <div className="strategy-block">
-                                        <div className="strategy-block-title">💬 Luận điểm · click để dán vào chat</div>
+                                    <div className="vc-session-info-block">
+                                        <div className="vc-session-info-label">Luận điểm · click để dán</div>
                                         {strategy.arguments.map((arg, i) => {
                                             if (!arg.text) return null
-                                            // Find evidences linked to this argument
                                             const linked = (strategy.evidences || []).filter(
                                                 ev => ev.linkedArguments?.includes(arg.id)
                                             )
                                             return (
                                                 <button
                                                     key={arg.id || i}
-                                                    className={`strategy-arg-card ${linked.length > 0 ? 'has-evidence' : ''}`}
+                                                    className={`vc-session-arg-card ${linked.length > 0 ? 'has-evidence' : ''}`}
                                                     onClick={() => handleArgumentClick(arg, linked)}
-                                                    title="Click để dán luận điểm + chứng cứ vào ô nhập liệu"
+                                                    title="Click để dán vào ô nhập liệu"
                                                 >
-                                                    <div className="strategy-arg-top">
-                                                        <span className="strategy-num">{i + 1}</span>
-                                                        <span className="strategy-arg-text">{arg.text}</span>
+                                                    <div className="vc-session-arg-top">
+                                                        <span className="vc-session-arg-num">{i + 1}</span>
+                                                        <span className="vc-session-arg-text">{arg.text}</span>
                                                     </div>
                                                     {linked.length > 0 && (
-                                                        <div className="strategy-arg-evidences">
+                                                        <div className="vc-session-arg-evs">
                                                             {linked.map(ev => (
-                                                                <span key={ev.id} className="strategy-ev-tag" title={ev.name}>
-                                                                    <span className="ev-icon">📄</span>
-                                                                    <span className="ev-name">{ev.name}</span>
+                                                                <span key={ev.id} className="vc-session-ev-tag" title={ev.name}>
+                                                                    📄 {ev.name}
                                                                 </span>
                                                             ))}
                                                         </div>
                                                     )}
-                                                    <div className="strategy-arg-hint">↗ Dán vào chat</div>
                                                 </button>
                                             )
                                         })}
                                     </div>
                                 )}
 
-                                {/* Standalone evidences (not linked to any argument) */}
                                 {strategy.evidences?.some(ev => !ev.linkedArguments?.length) && (
-                                    <div className="strategy-block">
-                                        <div className="strategy-block-title">📎 Chứng cứ khác</div>
+                                    <div className="vc-session-info-block">
+                                        <div className="vc-session-info-label">Chứng cứ khác</div>
                                         {strategy.evidences.filter(ev => !ev.linkedArguments?.length).map((ev, i) => (
-                                            <div key={ev.id || i} className="strategy-evidence-item">
-                                                <span>📄</span>
-                                                <span>{ev.name}</span>
+                                            <div key={ev.id || i} className="vc-session-ev-item">
+                                                <span>📄</span> {ev.name}
                                             </div>
                                         ))}
                                     </div>
                                 )}
 
-                                {/* Requirements */}
                                 {strategy.requirements && (
-                                    <div className="strategy-block">
-                                        <div className="strategy-block-title">🎯 Yêu cầu</div>
-                                        <p className="strategy-requirements">{strategy.requirements}</p>
+                                    <div className="vc-session-info-block">
+                                        <div className="vc-session-info-label">Yêu cầu</div>
+                                        <p className="vc-session-info-text">{strategy.requirements}</p>
                                     </div>
                                 )}
                             </div>
                         )}
                     </div>
-
                 </div>
 
-                {/* RIGHT PANEL — 70% */}
-                <div className="session-right-panel">
-                    {/* Messages Area */}
-                    <div className="courtroom-messages">
+                {/* RIGHT PANEL — Chat */}
+                <div className="vc-session-main">
+                    {/* Messages */}
+                    <div className="vc-session-messages">
                         {messages.map(msg => (
-                            <div key={msg.id} className={`courtroom-message ${msg.type}`}>
-                                <div className="message-avatar">
-                                    {msg.type === 'user' && '👤'}
-                                    {msg.type === 'opponent' && '🤖'}
-                                    {msg.type === 'system' && '⚖️'}
-                                    {msg.type === 'objection' && '✋'}
-                                </div>
-                                <div className="message-content">
-                                    {msg.type === 'user' && <span className="sender">Bạn</span>}
-                                    {msg.type === 'opponent' && <span className="sender">Đối phương</span>}
-                                    <p>{msg.text}</p>
+                            <div key={msg.id} className={`vc-msg vc-msg--${msg.type}`}>
+                                {msg.type !== 'system' && (
+                                    <div className="vc-msg-avatar">
+                                        {msg.type === 'user' && '👤'}
+                                        {msg.type === 'opponent' && '🤖'}
+                                        {msg.type === 'objection' && '✋'}
+                                    </div>
+                                )}
+                                <div className="vc-msg-body">
+                                    {msg.type === 'user' && <span className="vc-msg-sender">Bạn</span>}
+                                    {msg.type === 'opponent' && <span className="vc-msg-sender">Đối phương</span>}
+                                    {msg.type === 'system' && <span className="vc-msg-sender vc-msg-sender--system">⚖️ Hệ thống</span>}
+                                    <div className="vc-msg-text">{msg.text}</div>
                                 </div>
                             </div>
                         ))}
 
                         {isOpponentTurn && (
-                            <div className="courtroom-message opponent typing">
-                                <div className="message-avatar">🤖</div>
-                                <div className="message-content">
-                                    <span className="typing-indicator">Đang phản hồi...</span>
+                            <div className="vc-msg vc-msg--opponent">
+                                <div className="vc-msg-avatar">🤖</div>
+                                <div className="vc-msg-body">
+                                    <span className="vc-msg-sender">Đối phương</span>
+                                    <div className="vc-msg-typing">
+                                        <span /><span /><span />
+                                    </div>
                                 </div>
                             </div>
                         )}
-
                         <div ref={messagesEndRef} />
                     </div>
 
-                    {/* Coach Suggestions — above input */}
-                    {botSuggestions.length > 0 && (
-                        <div className="session-coach-suggestions-bar">
-                            <div className="coach-suggestions-header">
-                                <span>{coach?.type === 'lawyer' ? '👨‍⚖️' : '😊'}</span>
-                                <span>Gợi ý coach · Vòng {currentRound}</span>
+                    {/* Coach Bar */}
+                    {coach && (
+                        <div className="vc-session-coach-bar">
+                            <div className="vc-session-coach-info">
+                                <span className="vc-session-coach-icon">
+                                    {coach.type === 'lawyer' ? '👨‍⚖️' : '😊'}
+                                </span>
+                                <span className="vc-session-coach-name">
+                                    {coach.type === 'lawyer' ? 'Luật sư cố vấn' : 'Coach'}
+                                </span>
                             </div>
-                            <div className="coach-suggestions-chips">
-                                {botSuggestions.map((sug, idx) => (
-                                    <button
-                                        key={idx}
-                                        className={`coach-chip coach-chip-${sug.type}`}
-                                        onClick={() => handleSuggestionClick(sug.text)}
-                                        title={sug.text}
-                                    >
-                                        <span>{sug.icon}</span>
-                                        <span className="coach-chip-text">{sug.text}</span>
-                                    </button>
-                                ))}
+                            <div className="vc-session-coach-actions">
+                                {sessionCoachButtons
+                                    .filter(btn => coach.options?.[btn.key])
+                                    .map(btn => (
+                                        <button
+                                            key={btn.key}
+                                            className={`vc-session-coach-btn ${usedCoachKeys.has(btn.key) ? 'used' : ''}`}
+                                            onClick={() => getSessionCoachAdvice(btn.key)}
+                                            disabled={sessionLoadingKey !== null || usedCoachKeys.has(btn.key)}
+                                            title={usedCoachKeys.has(btn.key) ? 'Đã sử dụng' : btn.label}
+                                        >
+                                            {sessionLoadingKey === btn.key ? (
+                                                <><span className="loading-spinner-small" /> Đang xử lý</>
+                                            ) : (
+                                                <>{btn.icon} {btn.label}</>
+                                            )}
+                                        </button>
+                                    ))}
                             </div>
-                            {coach?.options?.autoObjection && (
-                                <div className="auto-objection-hint">✋ Tự động phản đối BẬT</div>
-                            )}
                         </div>
                     )}
 
-                    {/* Input Area */}
-                    <div className="courtroom-input">
-                        <div className="input-controls">
-                            <button
-                                className="control-btn pause-btn"
-                                onClick={handlePause}
-                                disabled={!session?.settings?.pauseEnabled || pausesUsed >= 3 || isPaused}
-                            >
-                                ⏸️ Tạm dừng ({3 - pausesUsed} lượt)
-                            </button>
-
-                            <button
-                                className="control-btn objection-btn"
-                                onClick={handleObjection}
-                                disabled={objectionsUsed >= (session?.settings?.objectionLimit || 3)}
-                            >
-                                ✋ Phản đối ({(session?.settings?.objectionLimit || 3) - objectionsUsed} lượt)
-                            </button>
-
-                            <button
-                                className="control-btn end-btn"
-                                onClick={handleEndEarly}
-                            >
-                                ⏹️ Kết thúc
-                            </button>
+                    {/* Input */}
+                    <div className="vc-session-input">
+                        <div className="vc-session-input-controls">
+                            {session?.settings?.pauseEnabled && (
+                                <button
+                                    className={`vc-session-ctrl-btn vc-session-ctrl-btn--pause ${isPaused ? 'active' : ''}`}
+                                    onClick={handlePause}
+                                    disabled={isPaused || pausesUsed >= 3}
+                                >
+                                    {isPaused ? `⏸️ Đang tạm dừng...` : `⏸️ Tạm dừng (${3 - pausesUsed})`}
+                                </button>
+                            )}
                         </div>
 
-                        <div className="input-row">
+                        <div className="vc-session-input-row">
                             <textarea
-                                placeholder="Nhập lập luận của bạn... (hoặc click gợi ý Coach phía trên)"
+                                className="vc-session-textarea"
+                                placeholder="Nhập lập luận của bạn..."
                                 value={userInput}
                                 onChange={(e) => setUserInput(e.target.value)}
                                 disabled={isOpponentTurn || currentRound > totalRounds}
@@ -469,22 +474,55 @@ function Courtroom() {
                                 }}
                             />
                             <button
-                                className="send-btn"
+                                className="vc-session-send-btn"
                                 onClick={handleSendMessage}
                                 disabled={isOpponentTurn || !userInput.trim() || currentRound > totalRounds}
                             >
-                                ➡️ Gửi
+                                Gửi
+                                <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                                    <path d="M4 10L16 10M16 10L10 4M16 10L10 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
                             </button>
                         </div>
 
                         {currentRound > totalRounds && (
-                            <button className="conclude-btn" onClick={endSession}>
+                            <button className="vc-session-conclude-btn" onClick={endSession}>
                                 📋 Đưa ra kết luận cuối cùng
                             </button>
                         )}
+                        <p className="vc-session-disclaimer">AI có thể mắc lỗi. Hãy kiểm tra lại những thông tin quan trọng.</p>
                     </div>
                 </div>
             </div>
+
+            {/* Coach Modal */}
+            {coachModal && (
+                <div className="vc-modal-overlay" onClick={() => setCoachModal(null)}>
+                    <div className="vc-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="vc-modal-header">
+                            <span className="vc-modal-icon">{coachModal.icon}</span>
+                            <h3>{coachModal.label}</h3>
+                            <button className="vc-modal-close" onClick={() => setCoachModal(null)}>
+                                <svg width="16" height="16" viewBox="0 0 14 14" fill="none">
+                                    <path d="M3.5 3.5L10.5 10.5M10.5 3.5L3.5 10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="vc-modal-body">
+                            <div className="vc-modal-sender">
+                                <span>{coach?.type === 'lawyer' ? '👨‍⚖️' : '😊'}</span>
+                                <span>{coach?.type === 'lawyer' ? 'Luật sư cố vấn' : 'Coach'}</span>
+                            </div>
+                            <p className="vc-modal-text">{coachModal.text}</p>
+                        </div>
+                        <div className="vc-modal-footer">
+                            <button className="vc-btn-next" onClick={() => setCoachModal(null)}>
+                                Đã hiểu
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
