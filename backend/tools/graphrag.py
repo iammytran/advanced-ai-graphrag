@@ -205,10 +205,11 @@ def extract_entities_unsloth(
         decoded_outputs = tokenizer.batch_decode(outputs[:, input_len:], skip_special_tokens=True)
 
         debug_log_path = f"{folder_name}/entities_relations.txt" 
-        print(f"Writing extract outputs or batch {i} to file...")
+        print(f"Writing extract outputs or batch {(i // batch_size) + 1} to file...")
         for idx, actual_gen in enumerate(decoded_outputs):
             with open(debug_log_path, "a", encoding="utf-8") as f:
                 f.write(f"\n{'='*50}\n")
+                f.write(f"PROMPT: {full_prompt}")
                 f.write(f"BATCH START - INDEX: {i + idx}\n")
                 f.write(f"{'-'*20} RAW OUTPUT {'-'*20}\n")
                 f.write(actual_gen)
