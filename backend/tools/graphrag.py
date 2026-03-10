@@ -205,7 +205,8 @@ def extract_entities_unsloth(
             use_cache = True,
             temperature = 0.1,
             pad_token_id=tokenizer.pad_token_id,
-            eos_token_id=tokenizer.eos_token_id
+            eos_token_id=tokenizer.eos_token_id,
+            do_sample=False
         )
 
         debug_log_path = f"{folder_name}/entities_relations.txt" 
