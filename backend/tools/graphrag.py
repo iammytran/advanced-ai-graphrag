@@ -129,12 +129,13 @@ def extract_entities_unsloth(
     entity_types: str,
     folder_name: str,
     stop_token_ids,
-    batch_size: int = 8, # Điều chỉnh dựa trên VRAM (4, 8, 16...)
+    batch_size: int = 1, # Điều chỉnh dựa trên VRAM (4, 8, 16...)
     max_seq_length: int = 4096,
     max_new_tokens: int = 1500
 ):
     
     FastLanguageModel.for_inference(model)
+    tokenizer.padding_side = 'left'
     all_entities = []
     all_relationships = []
 
