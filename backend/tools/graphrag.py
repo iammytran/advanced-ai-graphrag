@@ -179,6 +179,12 @@ def extract_entities_unsloth(
             )
 
             prompts.append(full_prompt)
+        
+        messages = [
+            {"role": "system", "content": "Bạn là chuyên gia phân tích dữ liệu pháp luật. Trích xuất thực thể theo định dạng (entity<|>...)"},
+            {"role": "user", "content": f"Text: {text_content}"}
+        ]
+        input_ids = tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt").to("cuda")
 
         # Tokenize toàn bộ batch
         inputs = tokenizer(
@@ -195,24 +201,25 @@ def extract_entities_unsloth(
             max_new_tokens = max_new_tokens,
             use_cache = True,
             temperature = 0.1,
-            pad_token_id = tokenizer.pad_token_id
-        )
-
-        outputs = model.generate(
-            input_ids = inputs.input_ids,
-            attention_mask=inputs.attention_mask, # Quan trọng: để model lờ đi phần pad_token
-            max_new_tokens=max_new_tokens,           # Giới hạn tối đa
-            
-            # Tham số kiểm soát chất lượng
-            temperature=0.1,               # Càng thấp càng tốt cho trích xuất dữ liệu (cần sự chính xác, không cần sáng tạo)
-            # repetition_penalty=1.2,        # Phạt nặng nếu model bắt đầu lặp lại rác "the <|..."
-            
-            # Tham số dừng
             pad_token_id=tokenizer.pad_token_id,
             eos_token_id=tokenizer.eos_token_id
-            
-            # do_sample=False                # Với bài toán trích xuất thực thể, dùng Greedy Search (False) thường ổn định hơn
         )
+
+        # outputs = model.generate(
+        #     input_ids = inputs.input_ids,
+        #     attention_mask=inputs.attention_mask, # Quan trọng: để model lờ đi phần pad_token
+        #     max_new_tokens=max_new_tokens,           # Giới hạn tối đa
+            
+        #     # Tham số kiểm soát chất lượng
+        #     temperature=0.1,               # Càng thấp càng tốt cho trích xuất dữ liệu (cần sự chính xác, không cần sáng tạo)
+        #     # repetition_penalty=1.2,        # Phạt nặng nếu model bắt đầu lặp lại rác "the <|..."
+            
+        #     # Tham số dừng
+        #     pad_token_id=tokenizer.pad_token_id,
+        #     eos_token_id=tokenizer.eos_token_id
+            
+        #     # do_sample=False                # Với bài toán trích xuất thực thể, dùng Greedy Search (False) thường ổn định hơn
+        # )
         
         # # Dùng inference_mode thay vì no_grad để tối ưu tốc độ
         # with torch.inference_mode():
