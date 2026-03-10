@@ -208,8 +208,8 @@ def extract_entities_unsloth(
             # repetition_penalty=1.2,        # Phạt nặng nếu model bắt đầu lặp lại rác "the <|..."
             
             # Tham số dừng
-            eos_token_id=stop_token_ids,   # Thấy 1 trong 3 cái kia là dừng ngay
             pad_token_id=tokenizer.pad_token_id,
+            eos_token_id=tokenizer.eos_token_id
             
             # do_sample=False                # Với bài toán trích xuất thực thể, dùng Greedy Search (False) thường ổn định hơn
         )
@@ -259,7 +259,7 @@ async def main():
 
     # 1. Cấu hình thông số
     model_name = "unsloth/meta-llama-3.1-8b-instruct-bnb-4bit"
-    max_seq_length = 10000
+    max_seq_length = 4096
     max_new_tokens=2048
 
     # 2. Load model và tokenizer
