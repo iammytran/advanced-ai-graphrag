@@ -110,16 +110,16 @@ Bạn PHẢI trả về JSON duy nhất theo cấu trúc:
     raw_responses = await processor.generate_batch(prompts, temperature=0.1, max_tokens=1024)
     # print(f"raw_responses: {raw_responses}")
     
-    results = []
+    parsed_data = []
     for res in raw_responses:
         try:
             # 1. Làm sạch chuỗi
             clean_res = res.replace("```json", "").replace("```", "").strip()
             data = json.loads(clean_res)
 
-            # Giả sử bạn muốn lưu từng response của LLM để kiểm tra
-            with open('debug_llm_response.json', 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=4)
+            results = []
+
+            parsed_data.append(data) # Thêm vào danh sách tổng
             
             # 2. Thay vì chỉ lấy "points", hãy lấy toàn bộ object 
             # để giữ lại "score" (hoặc "rating") cho bước Reduce sau này
@@ -135,6 +135,10 @@ Bạn PHẢI trả về JSON duy nhất theo cấu trúc:
         except Exception as e:
             print(f"Lỗi parse JSON: {e}")
             continue
+
+    # Sau khi thoát vòng lặp, ghi tất cả vào file
+    with open('all_map_results.json', 'w', encoding='utf-8') as f:
+        json.dump(parsed_data, f, ensure_ascii=False, indent=4)
 
     return results
 
