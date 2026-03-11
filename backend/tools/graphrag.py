@@ -121,38 +121,162 @@ GRAPH_PROMPT = """
 	Output:"""
 
 
+# def extract_entities_unsloth(
+#     text_units: pd.DataFrame,
+#     model,
+#     tokenizer,
+#     prompt_template: str,
+#     entity_types: str,
+#     folder_name: str,
+#     stop_token_ids,
+#     batch_size: int = 4, # Điều chỉnh dựa trên VRAM (4, 8, 16...)
+#     max_seq_length: int = 4096,
+#     max_new_tokens: int = 1500
+# ):
+    
+#     FastLanguageModel.for_inference(model)
+#     tokenizer.padding_side = 'left'
+#     all_entities = []
+#     all_relationships = []
+
+#     # Hàm parse nội bộ
+#     def parse_graph_output(raw_text):
+#         entities, relationships = [], []
+#         segments = raw_text.split("##")
+#         for seg in segments:
+#             parts = seg.strip("() ").split("<|>")
+#             tag = parts[0].replace('"', '').strip().lower()
+#             if tag == "entity" and len(parts) >= 4:
+#                 entities.append({
+#                     "name": parts[1].strip(), 
+#                     "type": parts[2].strip(), 
+#                     "description": parts[3].strip()
+#                 })
+#             elif tag == "relationship" and len(parts) >= 5:
+#                 relationships.append({
+#                     "source": parts[1].strip(), 
+#                     "target": parts[2].strip(), 
+#                     "description": parts[3].strip(), 
+#                     "weight": float(parts[4].strip()) if parts[4].strip().replace('.','',1).isdigit() else 1.0
+#                 })
+#         return entities, relationships
+
+#     # Vòng lặp xử lý theo Batch
+#     for i in tqdm(range(0, len(text_units), batch_size), desc="Batch Inferencing"):
+#         batch_rows = text_units.iloc[i : i + batch_size]
+        
+#         prompts = []
+#         for _, row in batch_rows.iterrows():
+#             # Lấy tên file làm ngữ cảnh
+#             doc = row.get('file_name', 'Văn bản gốc')
+#             doc_name = os.path.splitext(doc)[0]
+#             text_content = row.get('chunk', '') # Đảm bảo key là 'chunk' như code bạn dùng
+            
+#             full_prompt = prompt_template.format(
+#                 ENTITY_TYPES=entity_types,
+#                 doc_name=doc_name,
+#                 input_text=text_content,
+#                 tuple_delimiter=tuple_delimiter,
+#                 completion_delimiter=completion_delimiter,
+#                 record_delimiter=record_delimiter
+#             )
+
+#             prompts.append(full_prompt)
+        
+#         # messages = [
+#         #     {"role": "system", "content": "Bạn là chuyên gia phân tích dữ liệu pháp luật. Trích xuất thực thể theo định dạng (entity<|>...)"},
+#         #     {"role": "user", "content": f"Text: {text_content}"}
+#         # ]
+#         # input_ids = tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt").to("cuda")
+
+#         # Tokenize toàn bộ batch
+#         inputs = tokenizer(
+#             prompts, 
+#             return_tensors="pt", 
+#             padding=True, 
+#             truncation=True, 
+#             max_length=max_seq_length - max_new_tokens # Giới hạn context length
+#         ).to("cuda")
+
+#         outputs = model.generate(
+#             input_ids = inputs.input_ids,
+#             attention_mask = inputs.attention_mask, # Truyền rõ ràng mask ở đây
+#             max_new_tokens = max_new_tokens,
+#             use_cache = True,
+#             temperature = 0.1,
+#             pad_token_id=tokenizer.pad_token_id,
+#             eos_token_id=tokenizer.eos_token_id,
+#             do_sample=False
+#         )
+
+#         debug_log_path = f"{folder_name}/entities_relations.txt" 
+#         decoded_outputs = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+#         with open(debug_log_path, "a", encoding="utf-8") as f:
+#                 f.write("decoded_outputs:\n")
+#                 f.write(f"{decoded_outputs}")
+#                 f.write(f"\n{'='*50}\n")
+
+#         print(f"Writing extract outputs or batch {(i // batch_size) + 1} to file...")
+#         for idx, actual_gen in enumerate(decoded_outputs):
+#             with open(debug_log_path, "a", encoding="utf-8") as f:
+#                 f.write(f"\n{'='*50}\n")
+#                 f.write(f"PROMPT: {full_prompt}")
+#                 f.write(f"\n{'='*20}\n")
+#                 f.write(f"BATCH START - INDEX: {i + idx}\n")
+#                 f.write(f"{'-'*20} RAW OUTPUT {'-'*20}\n")
+#                 f.write(actual_gen)
+#                 f.write(f"\n{'='*50}\n")
+#             entities, relations = parse_graph_output(actual_gen)
+#             all_entities.extend(entities)
+#             all_relationships.extend(relations)
+            
+#         # Giải phóng bộ nhớ tạm sau mỗi batch (tùy chọn nhưng an toàn cho GPU)
+#         del inputs, outputs
+#         torch.cuda.empty_cache()
+
+#     return all_entities, all_relationships
+
 def extract_entities_unsloth(
     text_units: pd.DataFrame,
     model,
     tokenizer,
-    prompt_template: str,
     entity_types: str,
     folder_name: str,
     stop_token_ids,
-    batch_size: int = 4, # Điều chỉnh dựa trên VRAM (4, 8, 16...)
-    max_seq_length: int = 4096,
+    batch_size: int = 4, # Giảm batch_size xuống để tăng độ tập trung cho bản 4-bit
+    max_seq_length: int = 8192,
     max_new_tokens: int = 1500
 ):
-    
+    # from unsloth import FastLanguageModel
     FastLanguageModel.for_inference(model)
-    tokenizer.padding_side = 'left'
+    
     all_entities = []
     all_relationships = []
+    
+    # Cấu hình Tokenizer BẮT BUỘC
+    tokenizer.padding_side = "left" 
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = "<|reserved_special_token_0|>"
 
-    # Hàm parse nội bộ
     def parse_graph_output(raw_text):
         entities, relationships = [], []
+        # Tách theo record_delimiter đã định nghĩa là ##
         segments = raw_text.split("##")
         for seg in segments:
-            parts = seg.strip("() ").split("<|>")
-            tag = parts[0].replace('"', '').strip().lower()
-            if tag == "entity" and len(parts) >= 4:
+            # Làm sạch các ký tự rác xung quanh
+            parts = seg.strip("() \n\t").split("<|>")
+            if not parts or len(parts) < 1: 
+                continue
+            
+            tag = parts[0].replace('"', '').replace('“', '').replace('”', '').strip().lower()
+            
+            if "entity" in tag and len(parts) >= 4:
                 entities.append({
                     "name": parts[1].strip(), 
                     "type": parts[2].strip(), 
                     "description": parts[3].strip()
                 })
-            elif tag == "relationship" and len(parts) >= 5:
+            elif "relationship" in tag and len(parts) >= 5:
                 relationships.append({
                     "source": parts[1].strip(), 
                     "target": parts[2].strip(), 
@@ -161,76 +285,110 @@ def extract_entities_unsloth(
                 })
         return entities, relationships
 
-    # Vòng lặp xử lý theo Batch
     for i in tqdm(range(0, len(text_units), batch_size), desc="Batch Inferencing"):
         batch_rows = text_units.iloc[i : i + batch_size]
+        batch_messages = []
         
-        prompts = []
         for _, row in batch_rows.iterrows():
-            # Lấy tên file làm ngữ cảnh
-            doc = row.get('file_name', 'Văn bản gốc')
-            doc_name = os.path.splitext(doc)[0]
-            text_content = row.get('chunk', '') # Đảm bảo key là 'chunk' như code bạn dùng
+            doc_name = os.path.splitext(row.get('file_name', 'Văn bản gốc'))[0]
+            # Làm sạch text đầu vào: loại bỏ xuống dòng thừa gây nhiễu
+            text_content = str(row.get('chunk', '')).replace('\n', ' ').strip()
+
+            # Chat Template với lệnh cấm đếm số
+            messages = [
+                {
+                    "role": "system", 
+                    "content": f"""Bạn là chuyên gia phân tích dữ liệu pháp luật. Hãy trích xuất các thực thể và mối quan hệ từ văn bản luật được cung cấp để xây dựng một đồ thị tri thức (Knowledge Graph) chính xác và có tính liên kết cao.
+
+                        ### QUY TẮC TRÍCH XUẤT
+
+                        #### 1. Cấu trúc văn bản (Phân cấp & Claims)
+                        - Thực thể Gốc: Tạo 01 thực thể đại diện cho tiêu đề văn bản (Ví dụ: "Điều 15 Luật Đất đai").
+                        - Các thực thể đích: Trích xuất các nội dung pháp lý trong văn bản đó thành các thực thể loại "QUY_ĐỊNH_CỤ_THỂ" theo quy tắc sau:
+                            - entity_name: Phải là một câu khẳng định đầy đủ ý nghĩa, diễn giải chi tiết (Ví dụ: "Cá nhân có nghĩa vụ đăng ký đất đai tại cơ quan có thẩm quyền").
+                            - entity_description: Lặp lại hoặc diễn giải chi tiết hơn câu khẳng định đó để tăng cường ngữ nghĩa.
+                            - entity_type: Bắt buộc là "QUY_ĐỊNH_CỤ_THỂ".
+                        - Liên kết: Thiết lập quan hệ "quy định" từ Thực thể Gốc đến các QUY_ĐỊNH_CỤ_THỂ này.
+
+                        #### 2. Trích xuất thực thể (Entities):
+                        Trích xuất mọi thực thể quan trọng xuất hiện trong văn bản thuộc danh sách: [{ENTITY_TYPES}].
+                        - entity_name: Tên của thực thể (ví dụ: Tên cơ quan, Tên điều luật, Tên hành vi). Lưu ý viết hoa toàn bộ. 
+                            + QUY TẮC QUAN TRỌNG: Đối với các ĐIỀU, KHOẢN, MỤC, chương, phải đính kèm mã hiệu văn bản trong ngoặc đơn.
+                            Định dạng: "ĐIỀU [Số] ({{doc_name}})" hoặc "KHOẢN [Số] ĐIỀU [Số] ({{doc_name}})".
+                            Định dạng: "ĐIỀU [Số] ([Mã hiệu văn bản])"
+                            Ví dụ: Nếu nguồn là 'Thông tư 01/2020', thực thể phải là "ĐIỀU 1 (TT 01/2020)".
+                        - entity_type: Một trong các loại sau: [{ENTITY_TYPES}]
+                        - entity_description: Mô tả chi tiết về chức năng, quyền hạn, nghĩa vụ hoặc nội dung quy định của thực thể đó trong ngữ cảnh văn bản. Tuyệt đối không sử dụng các đại từ chỉ định hoặc từ thay thế (như: đây, đó, này, họ, nó, quy định ấy...). Thay vào đó, phải lặp lại chính xác tên thực thể hoặc nội 	dung cụ thể để đảm bảo mỗi mô tả đều có ý nghĩa độc lập.
+
+                        Định dạng mỗi thực thể là: ("entity"{tuple_delimiter}<entity_name>{tuple_delimiter}<entity_type>{tuple_delimiter}<entity_description>){record_delimiter}
+
+
+                        #### 3. Trích xuất quan hệ (Relationships)
+                        - Từ các thực thể ở bước 2, xác định các cặp (source_entity, target_entity) (thẩm quyền, căn cứ, hình phạt, đối tượng tác động...).
+                        - Đối với mỗi cặp, trích xuất:
+                            - source_entity: Tên thực thể nguồn (từ bước 1).
+                            - target_entity: Tên thực thể đích (từ bước 1).
+                            - relationship_description: Giải thích rõ lý do tại sao hai thực thể này có quan hệ (ví dụ: "Cơ quan A ban hành Quy định B", "Điều X quy định hình phạt cho Hành vi Y"). Tuyệt đối không sử dụng các đại từ chỉ định hoặc từ thay thế (như: đây, đó, này, họ, nó, quy định 	ấy...). Thay vào đó, phải lặp lại chính xác tên thực thể hoặc nội dung cụ thể để đảm bảo mỗi mô tả đều có ý nghĩa độc lập.
+                            - relationship_strength: Điểm số từ 1-10 thể hiện mức độ chặt chẽ của mối liên kết pháp lý.
+                        - Đặc biệt: Cho mọi trường hợp văn bản nhắc đến một Điều, Khoản hoặc Văn bản luật khác (kể cả dẫn chiếu nội bộ), bắt buộc tạo quan hệ "dẫn chiếu tới"
+
+                        Định dạng mỗi quan hệ là: ("relationship"{tuple_delimiter}<source_entity>{tuple_delimiter}<target_entity>{tuple_delimiter}<relationship_description>{tuple_delimiter}<relationship_strength>){record_delimiter}
+
+                        ---
+
+                        ### ĐỊNH DẠNG ĐẦU RA (JSON BẮT BUỘC)
+                        - Trả về danh sách duy nhất, các phần tử cách nhau bởi dấu ##.
+                        - Ngôn ngữ: TIẾNG VIỆT hoàn toàn.
+                        - Kết thúc bằng: {completion_delimiter}
+
+                        ### VÍ DỤ MẪU ĐỂ BẠN LÀM THEO:
+                        Text: Chính phủ ban hành Nghị định 123/2024/NĐ-CP. Theo đó, người điều khiển xe máy điện không đội mũ bảo hiểm sẽ bị phạt tiền từ 400.000 đến 600.000 đồng. 
+                        Output: 
+                        ("entity"{tuple_delimiter}NGHỊ ĐỊNH 123/2024/NĐ-CP{tuple_delimiter}VĂN_BẢN_PHÁP_LUẬT{tuple_delimiter}Nghị định 123/2024/NĐ-CP quy định về xử phạt vi phạm hành chính trong lĩnh vực giao thông đường bộ) {record_delimiter} 
+                        (“entity"{tuple_delimiter}KHÔNG ĐỘI MŨ BẢO HIỂM{tuple_delimiter}HÀNH_VI_VI_PHẠM{tuple_delimiter}Hành vi người điều khiển xe máy điện không đội mũ bảo hiểm cho người đi mô tô, xe máy) {record_delimiter}
+                        ("entity"{tuple_delimiter}PHẠT TIỀN TỪ 400.000 ĐẾN 600.000 ĐỒNG{tuple_delimiter}CHẾ_TÀI_PHÁP_LÝ{tuple_delimiter}Mức phạt tiền từ 400.000 đồng đến 600.000 đồng áp dụng cho hành vi vi phạm giao thông cụ thể) {record_delimiter} 
+                        ("relationship"{tuple_delimiter}NGHỊ ĐỊNH 123/2024/NĐ-CP{tuple_delimiter}KHÔNG ĐỘI MŨ BẢO HIỂM{tuple_delimiter}Nghị định 123/2024/NĐ-CP xác định hành vi không đội mũ bảo hiểm là hành vi vi phạm pháp luật{tuple_delimiter}9) {record_delimiter} 
+                        ("relationship"{tuple_delimiter}KHÔNG ĐỘI MŨ BẢO HIỂM{tuple_delimiter}PHẠT TIỀN TỪ 400.000 ĐẾN 600.000 ĐỒNG{tuple_delimiter}Hành vi không đội mũ bảo hiểm dẫn đến hình thức xử phạt tiền từ 400.000 đến 600.000 đồng{tuple_delimiter}10) {completion_delimiter}
+                        """
+                },
+                {
+                    "role": "user", 
+                    "content": f"Văn bản gốc: {doc_name}\nNội dung cần trích xuất: {text_content}\n\nOutput:"
+                }
+            ]
             
-            full_prompt = prompt_template.format(
-                ENTITY_TYPES=entity_types,
-                doc_name=doc_name,
-                input_text=text_content,
-                tuple_delimiter=tuple_delimiter,
-                completion_delimiter=completion_delimiter,
-                record_delimiter=record_delimiter
-            )
+            prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+            batch_messages.append(prompt)
 
-            prompts.append(full_prompt)
-        
-        # messages = [
-        #     {"role": "system", "content": "Bạn là chuyên gia phân tích dữ liệu pháp luật. Trích xuất thực thể theo định dạng (entity<|>...)"},
-        #     {"role": "user", "content": f"Text: {text_content}"}
-        # ]
-        # input_ids = tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt").to("cuda")
+        inputs = tokenizer(batch_messages, return_tensors="pt", padding=True, truncation=True, max_length=max_seq_length-max_new_tokens).to("cuda")
 
-        # Tokenize toàn bộ batch
-        inputs = tokenizer(
-            prompts, 
-            return_tensors="pt", 
-            padding=True, 
-            truncation=True, 
-            max_length=max_seq_length - max_new_tokens # Giới hạn context length
-        ).to("cuda")
-
+        # GENERATION CONFIG - KỶ LUẬT THÉP
         outputs = model.generate(
-            input_ids = inputs.input_ids,
-            attention_mask = inputs.attention_mask, # Truyền rõ ràng mask ở đây
-            max_new_tokens = max_new_tokens,
-            use_cache = True,
-            temperature = 0.1,
-            pad_token_id=tokenizer.pad_token_id,
+            **inputs,
+            max_new_tokens=max_new_tokens,
+            use_cache=True,
+            do_sample=False,            # Greedy Search để ổn định nhất
+            repetition_penalty=1.5,     # Phạt nặng để không dám đếm số 1.0, 2.0
+            temperature=0,              # Triệt tiêu sự sáng tạo rác
             eos_token_id=tokenizer.eos_token_id,
-            do_sample=False
+            pad_token_id=tokenizer.pad_token_id
         )
 
-        debug_log_path = f"{folder_name}/entities_relations.txt" 
-        decoded_outputs = tokenizer.batch_decode(outputs, skip_special_tokens=True)
-        with open(debug_log_path, "a", encoding="utf-8") as f:
-                f.write("decoded_outputs:\n")
-                f.write(f"{decoded_outputs}")
-                f.write(f"\n{'='*50}\n")
+        input_len = inputs.input_ids.shape[1]
+        decoded_outputs = tokenizer.batch_decode(outputs[:, input_len:], skip_special_tokens=True)
 
-        print(f"Writing extract outputs or batch {(i // batch_size) + 1} to file...")
+        # Lưu Log để debug
+        os.makedirs(folder_name, exist_ok=True)
+        debug_log_path = os.path.join(folder_name, "debug_log.txt")
+        
         for idx, actual_gen in enumerate(decoded_outputs):
             with open(debug_log_path, "a", encoding="utf-8") as f:
-                f.write(f"\n{'='*50}\n")
-                f.write(f"PROMPT: {full_prompt}")
-                f.write(f"\n{'='*20}\n")
-                f.write(f"BATCH START - INDEX: {i + idx}\n")
-                f.write(f"{'-'*20} RAW OUTPUT {'-'*20}\n")
-                f.write(actual_gen)
-                f.write(f"\n{'='*50}\n")
+                f.write(f"\n--- BATCH {i+idx} ---\n{actual_gen}\n{'-'*30}\n")
+            
             entities, relations = parse_graph_output(actual_gen)
             all_entities.extend(entities)
             all_relationships.extend(relations)
-            
-        # Giải phóng bộ nhớ tạm sau mỗi batch (tùy chọn nhưng an toàn cho GPU)
+
         del inputs, outputs
         torch.cuda.empty_cache()
 
@@ -245,7 +403,7 @@ async def main():
 
     # 1. Cấu hình thông số
     model_name = "unsloth/meta-llama-3.1-8b-instruct-bnb-4bit"
-    max_seq_length = 4096
+    max_seq_length = 8192
     max_new_tokens=2048
 
     # 2. Load model và tokenizer
