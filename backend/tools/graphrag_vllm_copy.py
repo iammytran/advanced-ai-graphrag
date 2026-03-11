@@ -286,135 +286,129 @@ def route_graphrag_query(query: str, llm):
         return {"search_type": "local", "reason": "error fallback"}
 
 # Ví dụ cách chạy indexing
-async def main():
-    # # 0. Create folder contains everything of current timestamp
-    # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    # new_folder_name = f"outputs_{timestamp}"
-    # Path(new_folder_name).mkdir(parents=True, exist_ok=True)
+async def main(output_folder):
+    new_folder_name = output_folder
+    # 5. Chunking
+    print("Chunking...")
+    law_texts_df = get_law_texts_external()
+    law_texts_df["chunk"] = law_texts_df["content"].apply(chunk_civil_code_markdown)
 
-    # # 5. Chunking
-    # print("Chunking...")
-    # law_texts_df = get_law_texts_external()
-    # law_texts_df["chunk"] = law_texts_df["content"].apply(chunk_civil_code_markdown)
+    new_df = law_texts_df.explode('chunk', ignore_index=True)
 
-    # new_df = law_texts_df.explode('chunk', ignore_index=True)
+    # 6. (Tùy chọn) Nếu bạn muốn bung các key trong dict của chunk 
+    # (như 'chuong', 'dieu') ra thành các cột riêng biệt:
+    chunk_details = pd.json_normalize(new_df['chunk'])
 
-    # # 6. (Tùy chọn) Nếu bạn muốn bung các key trong dict của chunk 
-    # # (như 'chuong', 'dieu') ra thành các cột riêng biệt:
-    # chunk_details = pd.json_normalize(new_df['chunk'])
+    # 7. Đổi tên cột 'content' thành 'chunk' (nếu trong dict key là 'content')
+    chunk_details = chunk_details.rename(columns={'content': 'chunk'})
 
-    # # 7. Đổi tên cột 'content' thành 'chunk' (nếu trong dict key là 'content')
-    # chunk_details = chunk_details.rename(columns={'content': 'chunk'})
+    final_df = pd.concat([new_df[['file_name']], chunk_details], axis=1)
+    print("Ready for extracting entities and relationships...")
 
-    # final_df = pd.concat([new_df[['file_name']], chunk_details], axis=1)
-    # print("Ready for extracting entities and relationships...")
+    tuple_delimiter = "<|>"
+    record_delimiter = " ## "
+    completion_delimiter = "<|COMPLETE|>"
 
-    # tuple_delimiter = "<|>"
-    # record_delimiter = " ## "
-    # completion_delimiter = "<|COMPLETE|>"
-
-    # # Đường dẫn model (vLLM hỗ trợ load trực tiếp từ HuggingFace hoặc thư mục local)
-    # model_path = "Qwen/Qwen2.5-7B-Instruct" # Hoặc bản 14B/32B tùy GPU của My
+    # Đường dẫn model (vLLM hỗ trợ load trực tiếp từ HuggingFace hoặc thư mục local)
+    model_path = "Qwen/Qwen2.5-7B-Instruct" # Hoặc bản 14B/32B tùy GPU của My
 
 
-    # # Gọi hàm xử lý
-    # entities_df, relationships_df, claims_df = extract_info_from_chunk(
-    #     text_units = final_df,    
-    #     folder_path = new_folder_name,
-    #     model_path = model_path, 
-    #     entity_types = ENTITY_TYPES,
-    #     tuple_delimiter = tuple_delimiter,
-    #     record_delimiter = record_delimiter,
-    #     completion_delimiter = completion_delimiter
-    # )
+    # Gọi hàm xử lý
+    entities_df, relationships_df, claims_df = extract_info_from_chunk(
+        text_units = final_df,    
+        folder_path = new_folder_name,
+        model_path = model_path, 
+        entity_types = ENTITY_TYPES,
+        tuple_delimiter = tuple_delimiter,
+        record_delimiter = record_delimiter,
+        completion_delimiter = completion_delimiter
+    )
 
-    # # 9. Lưu entities và relations sang pickle file
-    # with open(f'{new_folder_name}/entities.pkl', 'wb') as f:
-    #     pickle.dump(entities_df, f)
-    # with open(f'{new_folder_name}/relationships.pkl', 'wb') as f:
-    #     pickle.dump(relationships_df, f)
-    # with open(f'{new_folder_name}/claims.pkl', 'wb') as f:
-    #     pickle.dump(claims_df, f)
-    # print("Lưu entities, relationships và claims thành công!")
+    # 9. Lưu entities và relations sang pickle file
+    with open(f'{new_folder_name}/entities.pkl', 'wb') as f:
+        pickle.dump(entities_df, f)
+    with open(f'{new_folder_name}/relationships.pkl', 'wb') as f:
+        pickle.dump(relationships_df, f)
+    with open(f'{new_folder_name}/claims.pkl', 'wb') as f:
+        pickle.dump(claims_df, f)
+    print("Lưu entities, relationships và claims thành công!")
 
-    # # 10. Encode các entities
-    # print("Embed các entities...")
-    # entity_embeddings_folder_name = f"{new_folder_name}/entity_embeddings"
-    # embedding_model_name="keepitreal/vietnamese-sbert"
-    # embed_model = SentenceTransformer(embedding_model_name)
-    # entity_name_embeddings = embed_model.encode(entities_df['name'].tolist(), show_progress_bar=True, convert_to_numpy=True)
-    # # 4. Lưu lại
-    # np.save(entity_embeddings_folder_name, entity_name_embeddings)
-    # logging.info(f"Đã lưu embeddings của entities tại: {entity_embeddings_folder_name}")
+    # 10. Encode các entities
+    print("Embed các entities...")
+    entity_embeddings_folder_name = f"{new_folder_name}/entity_embeddings"
+    embedding_model_name="keepitreal/vietnamese-sbert"
+    embed_model = SentenceTransformer(embedding_model_name)
+    entity_name_embeddings = embed_model.encode(entities_df['name'].tolist(), show_progress_bar=True, convert_to_numpy=True)
+    # 4. Lưu lại
+    np.save(entity_embeddings_folder_name, entity_name_embeddings)
+    logging.info(f"Đã lưu embeddings của entities tại: {entity_embeddings_folder_name}")
 
-    # # 10. Vẽ đồ thị
-    # # print("creating graphs...")
-    # # graph = nx.from_pandas_edgelist(relationships_df, edge_attr=["description", "weight"])
-    # # # graphml = "\n".join(nx.generate_graphml(graph))
-    # # # nx.write_graphml(graph, "graph.graphml", encoding="utf-8", prettyprint=True)
-    # # # Cách 2: Nếu bạn muốn lấy chuỗi string để xử lý tiếp
-    # # graphml_string = "\n".join(nx.generate_graphml(graph))
-    # # if not graphml_string.startswith("<?xml"):
-    # #     header = '<?xml version="1.0" encoding="utf-8"?>\n'
-    # #     graphml_string = header + graphml_string
+    # 10. Vẽ đồ thị
+    # print("creating graphs...")
+    # graph = nx.from_pandas_edgelist(relationships_df, edge_attr=["description", "weight"])
+    # # graphml = "\n".join(nx.generate_graphml(graph))
+    # # nx.write_graphml(graph, "graph.graphml", encoding="utf-8", prettyprint=True)
+    # # Cách 2: Nếu bạn muốn lấy chuỗi string để xử lý tiếp
+    # graphml_string = "\n".join(nx.generate_graphml(graph))
+    # if not graphml_string.startswith("<?xml"):
+    #     header = '<?xml version="1.0" encoding="utf-8"?>\n'
+    #     graphml_string = header + graphml_string
 
-    # # with open("graph.graphml", "w", encoding="utf-8") as f:
-    # #     f.write(graphml_string)
-    # # print("Done creating graphs!")
+    # with open("graph.graphml", "w", encoding="utf-8") as f:
+    #     f.write(graphml_string)
+    # print("Done creating graphs!")
 
-    # # # # Thiết lập kích thước hình vẽ
-    # # # plt.figure(figsize=(10, 8))
-    # # # pos = nx.spring_layout(graph) # Thuật toán sắp xếp vị trí các nút
-    # # # nx.draw(graph, pos, with_labels=True, node_color='lightblue', 
-    # # #         edge_color='gray', node_size=2000, font_size=10)
+    # # # Thiết lập kích thước hình vẽ
+    # # plt.figure(figsize=(10, 8))
+    # # pos = nx.spring_layout(graph) # Thuật toán sắp xếp vị trí các nút
+    # # nx.draw(graph, pos, with_labels=True, node_color='lightblue', 
+    # #         edge_color='gray', node_size=2000, font_size=10)
 
-    # # # # Vẽ trọng số (weight) lên cạnh
-    # # # labels = nx.get_edge_attributes(graph, 'weight')
-    # # # nx.draw_networkx_edge_labels(graph, pos, edge_labels=labels)
-    # # plt.show()
+    # # # Vẽ trọng số (weight) lên cạnh
+    # # labels = nx.get_edge_attributes(graph, 'weight')
+    # # nx.draw_networkx_edge_labels(graph, pos, edge_labels=labels)
+    # plt.show()
 
-    # # 10. Compute leiden communities
-    # result, hierarchy = _compute_leiden_communities(relationships_df, max_cluster_size=10, use_lcc=False)
-    # total_communities = len(hierarchy)
+    # 10. Compute leiden communities
+    result, hierarchy = _compute_leiden_communities(relationships_df, max_cluster_size=10, use_lcc=False)
+    total_communities = len(hierarchy)
 
-    # full_context = {
-    #     "total_communities": total_communities,
-    #     "community_mapping": result, # {level: {node: cluster_id}}
-    #     "community_hierarchy": hierarchy # {cluster_id: parent_id}
-    # }
+    full_context = {
+        "total_communities": total_communities,
+        "community_mapping": result, # {level: {node: cluster_id}}
+        "community_hierarchy": hierarchy # {cluster_id: parent_id}
+    }
 
-    # communities_file_name = f"{new_folder_name}/communities.txt"
-    # with open(communities_file_name, 'w', encoding='utf-8') as f:
-    #     json.dump(full_context, f, ensure_ascii=False, indent=4)
+    communities_file_name = f"{new_folder_name}/communities.txt"
+    with open(communities_file_name, 'w', encoding='utf-8') as f:
+        json.dump(full_context, f, ensure_ascii=False, indent=4)
 
-    # # 11. Tạo community summary
-    # reports = generate_hierarchical_community_reports(
-    #     community_results=result,
-    #     community_hierarchy=hierarchy,
-    #     entities_df=entities_df,
-    #     relationships_df=relationships_df,
-    #     claims_df=claims_df,
-    #     model_name=model_path,
-    #     folder_for_debug=new_folder_name
-    # )
+    # 11. Tạo community summary
+    reports = generate_hierarchical_community_reports(
+        community_results=result,
+        community_hierarchy=hierarchy,
+        entities_df=entities_df,
+        relationships_df=relationships_df,
+        claims_df=claims_df,
+        model_name=model_path,
+        folder_for_debug=new_folder_name
+    )
 
-    # summaries_path = f"{new_folder_name}/community_summaries.json"
-    # with open(summaries_path, "w", encoding="utf-8") as f:
-    #     json.dump(reports, f, ensure_ascii=False, indent=4)
-    # print("Extract community summaries thành công!")
+    summaries_path = f"{new_folder_name}/community_summaries.json"
+    with open(summaries_path, "w", encoding="utf-8") as f:
+        json.dump(reports, f, ensure_ascii=False, indent=4)
+    print("Extract community summaries thành công!")
     # summaries_path = "outputs_10030018/community_summaries.json"
-
-    new_folder_name = "outputs_20260311_163339"
 
     # print("Run global search...\n")
     # print(await run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path))
 
-    print("Run local search...\n")
-    print(await run_local_search("Đang hưởng án treo có được thay đổi nơi cư trú không?", new_folder_name))
+    # print("Run local search...\n")
+    # print(await run_local_search("Đang hưởng án treo có được thay đổi nơi cư trú không?", new_folder_name))
 
 
 @tool
-async def graphrag_retrieval(query: str) -> str:
+async def graphrag_retrieval(query: str, output_folder: str) -> str:
     """Retrieves information using the GraphRAG system."""
     model_path = "Qwen/Qwen2.5-14B-Instruct" 
     graphrag_manager = LLM(model=model_path, tensor_parallel_size=1)
@@ -426,14 +420,19 @@ async def graphrag_retrieval(query: str) -> str:
     # Tích hợp gọi GraphRAG
     response = None
     if result['search_type'] == "local":
-        summaries_path = f"{new_folder_name}/community_summaries.json"
-        response = await run_local_search(query, summaries_path)
+        response = await run_local_search(query, output_folder)
     else:
-        response = await run_global_search(query, new_folder_name)
+        summaries_path = f"{output_folder}/community_summaries.json"
+        response = await run_global_search(query, summaries_path)
     return response
     
 if __name__ == '__main__':
-    asyncio.run(main())
+    # 0. Create folder contains everything of current timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_folder = f"outputs_{timestamp}"
+    Path(output_folder).mkdir(parents=True, exist_ok=True)
 
-    # query = "Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?"
-    # print(graphrag_retrieval.invoke({"query": f"{query}"}))
+    asyncio.run(main(output_folder))
+
+    query = "Đang hưởng án treo có được thay đổi nơi cư trú không?"
+    print(graphrag_retrieval.invoke({"query": f"{query}", "output_folder": f"{output_folder}"}))
