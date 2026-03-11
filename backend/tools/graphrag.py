@@ -374,8 +374,8 @@ def extract_entities_unsloth(
         for idx, actual_gen in enumerate(decoded_outputs):
             with open(debug_log_path, "a", encoding="utf-8") as f:
                 f.write(f"\n--- BATCH {i+idx} ---")
-                f.write(f"Prompt: {batch_messages}")
-                f.write(f"\n{actual_gen}\n{'-'*30}\n")
+                f.write(f"\nPrompt: {batch_messages}")
+                f.write(f"\nOutput: {actual_gen}\n{'-'*30}\n")
             
             entities, relations = parse_graph_output(actual_gen)
             all_entities.extend(entities)
