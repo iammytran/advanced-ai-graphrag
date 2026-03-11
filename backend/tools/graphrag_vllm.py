@@ -151,7 +151,7 @@ def parse_graph_output(raw_text):
 def process_with_vllm(text_units, model_path, entity_types, tuple_delimiter, record_delimiter, completion_delimiter):
     # 1. Khởi tạo model vLLM (Thay thế cho model.generate truyền thống)
     # vLLM tự động quản lý bộ nhớ cực tốt
-    llm = LLM(model=model_path, trust_remote_code=True, tensor_parallel_size=2) 
+    llm = LLM(model=model_path, trust_remote_code=True, tensor_parallel_size=2, gpu_memory_utilization=0.7) 
     
     # 2. Cấu hình "Kỷ luật thép" cho vLLM
     sampling_params = SamplingParams(
@@ -219,7 +219,7 @@ def process_with_vllm(text_units, model_path, entity_types, tuple_delimiter, rec
 
     # 4. Inference siêu tốc với vLLM
     print(f"Bắt đầu trích xuất {len(all_prompts)} văn bản với vLLM...")
-    outputs = llm.generate(all_prompts, sampling_params, use_tqdm=True, gpu_memory_utilization=0.7)
+    outputs = llm.generate(all_prompts, sampling_params, use_tqdm=True)
 
     all_entities = []
     all_relationships = []
