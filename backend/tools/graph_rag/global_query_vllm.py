@@ -120,6 +120,7 @@ Bạn PHẢI trả về JSON duy nhất theo cấu trúc:
     return results
 
 async def run_reduce_step(query, map_results, max_new_tokens, processor: VLLMProcessor):
+    print(f"DEBUG: map_results type: {type(map_results)}, value: {map_results}")
     # Lấy top các luận điểm chất lượng nhất
     sorted_results = sorted(map_results, key=lambda x: x.get('score', 0), reverse=True)[:15]
     
