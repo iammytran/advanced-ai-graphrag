@@ -403,11 +403,11 @@ async def main():
         json.dump(reports, f, ensure_ascii=False, indent=4)
     print("Extract community summaries thành công!")
 
-    # print("Run global search...\n")
-    # print(run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path))
+    print("Run global search...\n")
+    print(run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path))
 
-    # print("Run local search...\n")
-    # print(run_local_search("Đang hưởng án treo có được thay đổi nơi cư trú không?", new_folder_name))
+    print("Run local search...\n")
+    print(run_local_search("Đang hưởng án treo có được thay đổi nơi cư trú không?", new_folder_name))
 
 
 @tool
@@ -416,7 +416,6 @@ def graphrag_retrieval(query: str) -> str:
     model_path = "Qwen/Qwen2.5-14B-Instruct" 
     graphrag_manager = LLM(model=model_path, tensor_parallel_size=1)
     result = route_graphrag_query(query, graphrag_manager)
-    return result
 
     print(f"Quyết định: {result['search_type'].upper()}")
     print(f"Lý do: {result['reason']}")
@@ -433,5 +432,5 @@ def graphrag_retrieval(query: str) -> str:
 if __name__ == '__main__':
     asyncio.run(main())
 
-    query = "Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?"
-    print(graphrag_retrieval.invoke({"query": f"{query}"}))
+    # query = "Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?"
+    # print(graphrag_retrieval.invoke({"query": f"{query}"}))
