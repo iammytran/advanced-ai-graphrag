@@ -14,6 +14,7 @@ from backend.tools.rag import rag_retrieval
 
 class State(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
+    options_dict: dict
 
 
 class Chatbot:
@@ -105,24 +106,29 @@ class Chatbot:
         return graph.compile()
 
     # CHAT
-    def chat(self, user_input: str) -> str:
+    def chat(self, user_input: str, options_dict: dict = None) -> dict:
+        if options_dict is None:
+            options_dict = {}
+
         human_message = HumanMessage(content=user_input)
         self.message_history.append(human_message)
 
-        state = State(messages=self.message_history)
+        state = State(messages=self.message_history, options_dict=options_dict)
 
         output_state = self.graph.invoke(state)
 
         self.message_history = output_state["messages"]
 
+        answer = "No response generated"
         for message in reversed(self.message_history):
             if isinstance(message, AIMessage):
-                return message.content
+                answer = message.content
+                break
 
-        return "No response generated"
+        return {"answer": answer, "retrieved_documents": []}
 
 
 if __name__ == "__main__":
     # Choose 1 for HuggingFace, 2 for OpenAI
     chatbot = Chatbot(model_option=2)
-    print(chatbot.chat("đánh bài phạt bao nhiêu tiền?"))
+    print(chatbot.chat("đánh bài phạt bao nhiêu tiền?")["answer"])
