@@ -51,7 +51,10 @@ transformers.logging.set_verbosity_error()
 # 2. Hoặc cấu hình lại logger cơ bản để bỏ qua các tham số thừa
 logging.basicConfig(level=logging.ERROR)
 
-Communities = list[tuple[int, int, int, list[str]]]
+# 0. Create folder contains everything of current timestamp
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+new_folder_name = f"outputs_{timestamp}"
+Path(new_folder_name).mkdir(parents=True, exist_ok=True)
 
 # Định nghĩa danh sách các loại thực thể phù hợp với Luật
 # ENTITY_TYPES = "VĂN_BẢN_PHÁP_LUẬT, ĐIỀU_KHOẢN, CHỦ_THỂ, QUYỀN_HẠN, NGHĨA_VỤ, HÀNH_VI_VI_PHẠM, CHẾ_TÀI_PHÁP_LÝ, ĐIỀU_KIỆN_ÁP_DỤNG, THỜI_HẠN_THỜI_HIỆU, QUY_ĐỊNH_CỤ_THỂ"
@@ -289,11 +292,6 @@ def route_graphrag_query(query: str, llm):
 
 # Ví dụ cách chạy indexing
 async def main():
-    # 0. Create folder contains everything of current timestamp
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    new_folder_name = f"outputs_{timestamp}"
-    Path(new_folder_name).mkdir(parents=True, exist_ok=True)
-
     # 5. Chunking
     print("Chunking...")
     law_texts_df = get_law_texts_external()
@@ -405,11 +403,11 @@ async def main():
         json.dump(reports, f, ensure_ascii=False, indent=4)
     print("Extract community summaries thành công!")
 
-    print("Run global search...\n")
-    print(run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path))
+    # print("Run global search...\n")
+    # print(run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path))
 
-    print("Run local search...\n")
-    print(run_local_search("Đang hưởng án treo có được thay đổi nơi cư trú không?", new_folder_name))
+    # print("Run local search...\n")
+    # print(run_local_search("Đang hưởng án treo có được thay đổi nơi cư trú không?", new_folder_name))
 
 
 @tool
@@ -420,14 +418,20 @@ def graphrag_retrieval(query: str) -> str:
     result = route_graphrag_query(query, graphrag_manager)
     return result
 
-    # print(f"Quyết định: {result['search_type'].upper()}")
-    # print(f"Lý do: {result['reason']}")
+    print(f"Quyết định: {result['search_type'].upper()}")
+    print(f"Lý do: {result['reason']}")
 
-    # # Tích hợp gọi GraphRAG
-    # if result['search_type'] == "local":
-    #     run_global_search(user_input)
-    # else:
-    #     run_global_search(user_input)
+    # Tích hợp gọi GraphRAG
+    response = None
+    if result['search_type'] == "local":
+        summaries_path = f"{new_folder_name}/community_summaries.json"
+        response = run_local_search(query, summaries_path)
+    else:
+        response = run_global_search(query, new_folder_name)
+    return response
     
 if __name__ == '__main__':
     asyncio.run(main())
+
+    query = "Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?"
+    print(graphrag_retrieval.invoke({"query": f"{query}"}))

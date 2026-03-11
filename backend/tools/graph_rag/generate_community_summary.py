@@ -94,10 +94,10 @@ def generate_hierarchical_community_reports(
                     sub_reports.sort(key=len, reverse=True)
                     input_text = "BÁO CÁO TÓM TẮT TỪ CÁC CỤM CON:\n" + "\n---\n".join(sub_reports)
 
-                # Kiểm soát Context Window
-                tokens = tokenizer.encode(input_text)
-                if len(tokens) > (context_window - 1000):
-                    input_text = tokenizer.decode(tokens[:context_window - 1000]) + "..."
+                # # Kiểm soát Context Window
+                # tokens = tokenizer.encode(input_text)
+                # if len(tokens) > (context_window - 1000):
+                #     input_text = tokenizer.decode(tokens[:context_window - 1000]) + "..."
 
                 # --- CHUYỂN SANG CHAT TEMPLATE ---
                 system_msg = f"""
@@ -124,9 +124,12 @@ Bạn PHẢI trả về một khối JSON duy nhất với cấu trúc sau:
     "rating_explanation": "Giải thích lý do cho điểm tác động này.",
     "findings": [
         {{
-            "summary": "Tóm tắt phát hiện 1",
-            "explanation": "Giải thích chi tiết kèm trích dẫn ID dữ liệu [Data: ...]"
+            "summary": "Tóm tắt ý 1",
+            "explanation": "Giải thích ý 1"
         }}
+    ],
+    "node": [
+    "THỰC THỂ LIÊN QUAN 1, THỰC THỂ LIÊN QUAN 2
     ]
 }}
 
