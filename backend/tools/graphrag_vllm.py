@@ -40,6 +40,7 @@ from backend.tools.graph_rag.chunking import get_law_texts as get_law_texts_exte
 from backend.tools.graph_rag.compute_leiden_communities import _compute_leiden_communities
 from backend.tools.graph_rag.generate_community_summary import generate_hierarchical_community_reports
 from backend.tools.graph_rag.global_query_vllm import run_global_search
+from backend.tools.graph_rag.local_query import run_local_search
 
 # 1. Nạp các biến từ tệp .env
 load_dotenv()
@@ -339,6 +340,7 @@ async def main():
     print("Lưu entities, relationships và claims thành công!")
 
     # 10. Encode các entities
+    print("Embed các entities...")
     entity_embeddings_folder_name = f"{new_folder_name}/entity_embeddings"
     embedding_model_name="keepitreal/vietnamese-sbert"
     embed_model = SentenceTransformer(embedding_model_name)
@@ -346,9 +348,6 @@ async def main():
     # 4. Lưu lại
     np.save(entity_embeddings_folder_name, entity_name_embeddings)
     logging.info(f"Đã lưu embeddings của entities tại: {entity_embeddings_folder_name}")
-
-
-
 
     # 10. Vẽ đồ thị
     # print("creating graphs...")
@@ -391,7 +390,7 @@ async def main():
         json.dump(full_context, f, ensure_ascii=False, indent=4)
 
     # 11. Tạo community summary
-    reports = asyncio.run(generate_hierarchical_community_reports(
+    reports = generate_hierarchical_community_reports(
         community_results=result,
         community_hierarchy=hierarchy,
         entities_df=entities_df,
@@ -399,14 +398,18 @@ async def main():
         claims_df=claims_df,
         model_name=model_path,
         folder_for_debug=new_folder_name
-    ))
+    )
 
     summaries_path = f"{new_folder_name}/community_summaries.json"
     with open(summaries_path, "w", encoding="utf-8") as f:
         json.dump(reports, f, ensure_ascii=False, indent=4)
     print("Extract community summaries thành công!")
 
+    print("Run global search...\n")
     print(run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path))
+
+    print("Run local search...\n")
+    print(run_local_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", new_folder_name))
 
 
 @tool

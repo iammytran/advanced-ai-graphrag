@@ -6,7 +6,7 @@ import json
 import re
 from transformers import AutoTokenizer
 
-async def generate_hierarchical_community_reports(
+def generate_hierarchical_community_reports(
     community_results: dict,
     community_hierarchy: dict, 
     entities_df: pd.DataFrame,
