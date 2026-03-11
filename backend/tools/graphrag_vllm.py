@@ -284,7 +284,7 @@ async def main():
     # Gọi hàm xử lý
     entities_df, relationships_df = extract_entities_relations(
         text_units = final_df,    
-        foler_path = new_folder_name,
+        folder_path = new_folder_name,
         model_path = model_path, 
         entity_types = ENTITY_TYPES,
         tuple_delimiter = tuple_delimiter,
