@@ -243,7 +243,7 @@ def extract_entities_unsloth(
     entity_types: str,
     folder_name: str,
     stop_token_ids,
-    batch_size: int = 4, # Giảm batch_size xuống để tăng độ tập trung cho bản 4-bit
+    batch_size: int = 1, # Giảm batch_size xuống để tăng độ tập trung cho bản 4-bit
     max_seq_length: int = 8192,
     max_new_tokens: int = 1500
 ):
@@ -358,21 +358,22 @@ def extract_entities_unsloth(
             ]
             
             prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+            print(prompt)
             batch_messages.append(prompt)
 
         inputs = tokenizer(batch_messages, return_tensors="pt", padding=True, truncation=True, max_length=max_seq_length-max_new_tokens).to("cuda")
 
         # GENERATION CONFIG - KỶ LUẬT THÉP
         outputs = model.generate(
-            **inputs,
-            max_new_tokens=max_new_tokens,
-            use_cache=True,
-            do_sample=False,            # Greedy Search để ổn định nhất
-            repetition_penalty=1.5,     # Phạt nặng để không dám đếm số 1.0, 2.0
-            temperature=0,              # Triệt tiêu sự sáng tạo rác
+            input_ids = inputs.input_ids,
+            attention_mask = inputs.attention_mask, # Truyền rõ ràng mask ở đây
+            max_new_tokens = max_new_tokens,
+            use_cache = True,
+            temperature = 0.1,
+            pad_token_id=tokenizer.pad_token_id,
             eos_token_id=tokenizer.eos_token_id,
-            pad_token_id=tokenizer.pad_token_id
-        )
+            do_sample=False
+       )
 
         input_len = inputs.input_ids.shape[1]
         decoded_outputs = tokenizer.batch_decode(outputs[:, input_len:], skip_special_tokens=True)
