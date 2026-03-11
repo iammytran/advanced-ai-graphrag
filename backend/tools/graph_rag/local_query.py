@@ -191,7 +191,7 @@ async def run_local_search(query, artifact_path):
     search_engine = AdvancedLocalSearch(
         model_name="Qwen/Qwen2.5-7B-Instruct",
         embedding_model_name="keepitreal/vietnamese-sbert", # Model embedding tiếng Việt xịn
-        artifacts_path="artifact_path"
+        artifacts_path=artifact_path
     )
     
     response = await search_engine.query(query)
