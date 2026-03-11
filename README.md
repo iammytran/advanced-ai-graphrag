@@ -28,7 +28,7 @@ python -m backend.src.chatbot
 1. Follow the setup and indexing steps from the **Run Example** section above.
 2. Start the backend server by running:
 ```bash
-python main.py
+python -m backend.main
 ```
 
 
