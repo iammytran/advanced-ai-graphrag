@@ -435,4 +435,4 @@ if __name__ == '__main__':
     asyncio.run(main(output_folder))
 
     query = "Đang hưởng án treo có được thay đổi nơi cư trú không?"
-    print(graphrag_retrieval.invoke({"query": f"{query}", "output_folder": f"{output_folder}"}))
+    print(asyncio.run(graphrag_retrieval.invoke({"query": f"{query}", "output_folder": f"{output_folder}"})))
