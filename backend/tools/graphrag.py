@@ -448,10 +448,12 @@ async def main():
         text_units=final_df,
         model=model,
         tokenizer=tokenizer,
-        prompt_template=GRAPH_PROMPT,
+        # prompt_template=GRAPH_PROMPT,
         entity_types=ENTITY_TYPES, # Biến bạn đã định nghĩa ở trên,
         folder_name=new_folder_name,
-        stop_token_ids=stop_token_ids
+        stop_token_ids=stop_token_ids,
+        max_seq_length = max_seq_length,
+        max_new_tokens=max_new_tokens
     )
     print("Extract entities và relationships thành công!")
 
