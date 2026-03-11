@@ -9,7 +9,7 @@ import sys
 from typing import TypedDict
 
 # Import LLMs
-from langchain_openai import ChatOpenAI
+from langchain_huggingface import ChatHuggingFace, HuggingFacePipeline
 from langsmith import Client, traceable
 from typing_extensions import Annotated
 
@@ -19,7 +19,12 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Mute warnings
 import warnings
 
-from backend.config.config import LANGSMITH_API_KEY, OPENAI_API_KEY, OPENAI_MODEL
+from backend.config.config import (
+    HUGGINGFACE_MODEL,
+    LANGSMITH_API_KEY,
+    OPENAI_API_KEY,
+    OPENAI_MODEL,
+)
 from backend.src.chatbot import Chatbot
 
 warnings.filterwarnings("ignore")
@@ -30,18 +35,16 @@ chatbot = Chatbot()
 
 def get_judge_llm():
     """Get the LLM to use for evaluation (Judge)"""
-    # Prefer OpenAI for evaluation if available, as it's the standard for 'LLM-as-a-Judge'
-    if OPENAI_API_KEY:
-        return ChatOpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            model=OPENAI_MODEL,
-            temperature=0,
-            max_completion_tokens=1000,
-        )
-
-    raise ValueError(
-        "No API key found for evaluation. Please set OPENAI_API_KEY or GOOGLE_API_KEY."
+    llm = HuggingFacePipeline.from_model_id(
+        model_id=HUGGINGFACE_MODEL,
+        task="text-generation",
+        pipeline_kwargs={
+            "max_new_tokens": 1000,
+            "temperature": 0.0,
+            "do_sample": False,
+        },
     )
+    return ChatHuggingFace(llm=llm)
 
 
 # --- Evaluator Definitions ---
@@ -283,7 +286,7 @@ def main():
         experiment_prefix="rag-chatbot-original",
         metadata={
             "description": "RAG Chatbot Evaluation - Original Questions",
-            "llm_model": OPENAI_MODEL,
+            "llm_model": HUGGINGFACE_MODEL,
         },
     )
 
