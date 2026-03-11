@@ -300,48 +300,30 @@ def extract_entities_unsloth(
                     "role": "system", 
                     "content": f"""Bạn là chuyên gia phân tích dữ liệu pháp luật. Hãy trích xuất các thực thể và mối quan hệ từ văn bản luật được cung cấp để xây dựng một đồ thị tri thức (Knowledge Graph) chính xác và có tính liên kết cao.
 
-                        ### QUY TẮC TRÍCH XUẤT
+                        1. QUY TẮC TRÍCH XUẤT THỰC THỂ (ENTITIES)
+                            Trích xuất mọi thực thể quan trọng thuộc danh mục: [{entity_types}].
+                            Cho phần này hãy trả về:
+                                + Tên thực thể (entity_name): VIẾT HOA TOÀN BỘ.
+                                + Loại thực thể (entity_type): 1 trong những lọai sau:[{entity_types}]
+                                + Mô tả (entity_description): Mô tả chi tiết về chức năng, quyền hạn, nghĩa vụ hoặc nội dung quy định của thực thể đó trong ngữ cảnh văn bản. Tuyệt đối không sử dụng các đại từ chỉ định hoặc từ thay thế (như: đây, đó, này, họ, nó, quy định ấy...). Thay vào đó, phải lặp lại chính xác tên thực thể hoặc nội 	dung cụ thể để đảm bảo mỗi mô tả đều có ý nghĩa độc lập.
 
-                        #### 1. Cấu trúc văn bản (Phân cấp & Claims)
-                        - Thực thể Gốc: Tạo 01 thực thể đại diện cho tiêu đề văn bản (Ví dụ: "Điều 15 Luật Đất đai").
-                        - Các thực thể đích: Trích xuất các nội dung pháp lý trong văn bản đó thành các thực thể loại "QUY_ĐỊNH_CỤ_THỂ" theo quy tắc sau:
-                            - entity_name: Phải là một câu khẳng định đầy đủ ý nghĩa, diễn giải chi tiết (Ví dụ: "Cá nhân có nghĩa vụ đăng ký đất đai tại cơ quan có thẩm quyền").
-                            - entity_description: Lặp lại hoặc diễn giải chi tiết hơn câu khẳng định đó để tăng cường ngữ nghĩa.
-                            - entity_type: Bắt buộc là "QUY_ĐỊNH_CỤ_THỂ".
-                        - Liên kết: Thiết lập quan hệ "quy định" từ Thực thể Gốc đến các QUY_ĐỊNH_CỤ_THỂ này.
+                            Lưu ý trường hợp đặc biệt sau:
+                                + Với thực thể liên quan đến Điều/Khoản: Phải kèm mã hiệu trong ngoặc. VD: "ĐIỀU 1 ({doc_name})".                                
+                        2. QUY TẮC TRÍCH XUẤT QUAN HỆ (RELATIONSHIPS)
+                            Xác định các mối liên kết giữa các thực thể đã trích xuất. Cho phần này, hãy trả về:
+                                + source_entity: Tên thực thể nguồn (từ bước 1)
+                                + target_entity: Tên thực thể đích (từ bước 1)
+                                + relationship_description: Giải thích rõ lý do tại sao hai thực thể này có quan hệ (ví dụ: "Cơ quan A ban hành Quy định B", "Điều X quy định hình phạt cho Hành vi Y"). Tuyệt đối không sử dụng các đại từ chỉ định hoặc từ thay thế (như: đây, đó, này, họ, nó, quy định 	ấy...). Thay vào đó, phải lặp lại chính xác tên thực thể hoặc nội dung cụ thể để đảm bảo mỗi mô tả đều có ý nghĩa độc lập.
+                                + relationship_strength: Điểm số từ 1-10 thể hiện mức độ chặt chẽ của mối liên kết pháp lý.
+                            Đặc biệt: Cho mọi trường hợp văn bản nhắc đến một Điều, Khoản hoặc Văn bản luật khác (kể cả dẫn chiếu nội bộ), bắt buộc tạo quan hệ "dẫn chiếu tới"
+                        3. ĐỊNH DẠNG ĐẦU RA (BẮT BUỘC)
+                            Trả về danh sách các phần tử cách nhau bởi dấu ##. Mỗi phần tử tuân thủ cấu trúc sau:
+                                + Thực thể: ("entity"<|><entity_name><|><entity_type><|><entity_description>)
+                                + Quan hệ: ("relationship"<|><source_entity><|><target_entity><|><relationship_description><|><relationship_strength>)
+                            Lưu ý: Không trả về lời dẫn giải, chỉ trả về dữ liệu theo cấu trúc. Ngôn ngữ: Tiếng Việt.
+                                + Kết thúc bằng: {completion_delimiter}
 
-                        #### 2. Trích xuất thực thể (Entities):
-                        Trích xuất mọi thực thể quan trọng xuất hiện trong văn bản thuộc danh sách: [{ENTITY_TYPES}].
-                        - entity_name: Tên của thực thể (ví dụ: Tên cơ quan, Tên điều luật, Tên hành vi). Lưu ý viết hoa toàn bộ. 
-                            + QUY TẮC QUAN TRỌNG: Đối với các ĐIỀU, KHOẢN, MỤC, chương, phải đính kèm mã hiệu văn bản trong ngoặc đơn.
-                            Định dạng: "ĐIỀU [Số] ({{doc_name}})" hoặc "KHOẢN [Số] ĐIỀU [Số] ({{doc_name}})".
-                            Định dạng: "ĐIỀU [Số] ([Mã hiệu văn bản])"
-                            Ví dụ: Nếu nguồn là 'Thông tư 01/2020', thực thể phải là "ĐIỀU 1 (TT 01/2020)".
-                        - entity_type: Một trong các loại sau: [{ENTITY_TYPES}]
-                        - entity_description: Mô tả chi tiết về chức năng, quyền hạn, nghĩa vụ hoặc nội dung quy định của thực thể đó trong ngữ cảnh văn bản. Tuyệt đối không sử dụng các đại từ chỉ định hoặc từ thay thế (như: đây, đó, này, họ, nó, quy định ấy...). Thay vào đó, phải lặp lại chính xác tên thực thể hoặc nội 	dung cụ thể để đảm bảo mỗi mô tả đều có ý nghĩa độc lập.
-
-                        Định dạng mỗi thực thể là: ("entity"{tuple_delimiter}<entity_name>{tuple_delimiter}<entity_type>{tuple_delimiter}<entity_description>){record_delimiter}
-
-
-                        #### 3. Trích xuất quan hệ (Relationships)
-                        - Từ các thực thể ở bước 2, xác định các cặp (source_entity, target_entity) (thẩm quyền, căn cứ, hình phạt, đối tượng tác động...).
-                        - Đối với mỗi cặp, trích xuất:
-                            - source_entity: Tên thực thể nguồn (từ bước 1).
-                            - target_entity: Tên thực thể đích (từ bước 1).
-                            - relationship_description: Giải thích rõ lý do tại sao hai thực thể này có quan hệ (ví dụ: "Cơ quan A ban hành Quy định B", "Điều X quy định hình phạt cho Hành vi Y"). Tuyệt đối không sử dụng các đại từ chỉ định hoặc từ thay thế (như: đây, đó, này, họ, nó, quy định 	ấy...). Thay vào đó, phải lặp lại chính xác tên thực thể hoặc nội dung cụ thể để đảm bảo mỗi mô tả đều có ý nghĩa độc lập.
-                            - relationship_strength: Điểm số từ 1-10 thể hiện mức độ chặt chẽ của mối liên kết pháp lý.
-                        - Đặc biệt: Cho mọi trường hợp văn bản nhắc đến một Điều, Khoản hoặc Văn bản luật khác (kể cả dẫn chiếu nội bộ), bắt buộc tạo quan hệ "dẫn chiếu tới"
-
-                        Định dạng mỗi quan hệ là: ("relationship"{tuple_delimiter}<source_entity>{tuple_delimiter}<target_entity>{tuple_delimiter}<relationship_description>{tuple_delimiter}<relationship_strength>){record_delimiter}
-
-                        ---
-
-                        ### ĐỊNH DẠNG ĐẦU RA (JSON BẮT BUỘC)
-                        - Trả về danh sách duy nhất, các phần tử cách nhau bởi dấu ##.
-                        - Ngôn ngữ: TIẾNG VIỆT hoàn toàn.
-                        - Kết thúc bằng: {completion_delimiter}
-
-                        ### VÍ DỤ MẪU ĐỂ BẠN LÀM THEO:
+                        4. VÍ DỤ MẪU ĐỂ BẠN LÀM THEO:
                         Text: Chính phủ ban hành Nghị định 123/2024/NĐ-CP. Theo đó, người điều khiển xe máy điện không đội mũ bảo hiểm sẽ bị phạt tiền từ 400.000 đến 600.000 đồng. 
                         Output: 
                         ("entity"{tuple_delimiter}NGHỊ ĐỊNH 123/2024/NĐ-CP{tuple_delimiter}VĂN_BẢN_PHÁP_LUẬT{tuple_delimiter}Nghị định 123/2024/NĐ-CP quy định về xử phạt vi phạm hành chính trong lĩnh vực giao thông đường bộ) {record_delimiter} 
