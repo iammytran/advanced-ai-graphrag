@@ -108,6 +108,7 @@ Bạn PHẢI trả về JSON duy nhất theo cấu trúc:
 
     print(f"🚀 Giai đoạn Map: Đang xử lý {len(prompts)} chunks song song...")
     raw_responses = await processor.generate_batch(prompts, temperature=0.1, max_tokens=1024)
+    print(f"raw_responses: {raw_responses}")
     
     results = []
     for res in raw_responses:
@@ -116,7 +117,9 @@ Bạn PHẢI trả về JSON duy nhất theo cấu trúc:
             clean_res = res.replace("```json", "").replace("```", "").strip()
             data = json.loads(clean_res)
             results.extend(data.get("points", []))
-        except: continue
+        except: 
+            continue
+
     return results
 
 async def run_reduce_step(query, map_results, max_new_tokens, processor: VLLMProcessor):
