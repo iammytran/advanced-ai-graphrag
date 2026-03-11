@@ -6,6 +6,28 @@ import json
 import re
 from transformers import AutoTokenizer
 
+def repair_truncated_json(json_str):
+    """Cứu vãn chuỗi JSON bị cắt ngang bằng cách đóng các ngoặc còn thiếu"""
+    json_str = json_str.strip()
+    
+    # Nếu rỗng thì chịu thua
+    if not json_str: return None
+    
+    # Bổ sung dấu ngoặc kép nếu bị cắt ở giữa một chuỗi string
+    # Quy tắc: nếu số dấu " là lẻ, nghĩa là đang viết dở string
+    if json_str.count('"') % 2 != 0:
+        json_str += '"'
+    
+    # Đóng các tầng ngoặc từ trong ra ngoài
+    # Ta dùng stack hoặc đếm đơn giản:
+    for bracket_open, bracket_close in [('{', '}'), ('[', ']')]:
+        n_open = json_str.count(bracket_open)
+        n_close = json_str.count(bracket_close)
+        if n_open > n_close:
+            json_str += bracket_close * (n_open - n_close)
+            
+    return json_str
+
 def generate_hierarchical_community_reports(
     community_results: dict,
     community_hierarchy: dict, 
@@ -14,7 +36,7 @@ def generate_hierarchical_community_reports(
     claims_df: pd.DataFrame,
     model_name: str, # Tên model hoặc path
     folder_for_debug: str,
-    max_new_tokens=2048,
+    max_new_tokens=10000,
     context_window=30000 # vLLM thường hỗ trợ context lớn hơn
 ):
     # 1. Khởi tạo vLLM và Tokenizer
@@ -171,18 +193,33 @@ Dữ liệu thực tế:
 
                 # --- XỬ LÝ JSON ---
                 try:
-                    # Tìm nội dung trong cặp ngoặc nhọn { }
-                    match = re.search(r'\{.*\}', raw_output, re.DOTALL)
+                    # 1. Tìm khối văn bản nghi vấn là JSON
+                    match = re.search(r'\{.*', raw_output, re.DOTALL) # Tìm từ dấu { đến hết
                     if match:
-                        clean_json_str = match.group(0)
-                        # Loại bỏ các ký tự điều khiển lỗi
-                        clean_json_str = re.sub(r'[\x00-\x1F\x7F]', '', clean_json_str)
-                        data_json = json.loads(clean_json_str)
+                        potential_json = match.group(0)
+                        
+                        # 2. Loại bỏ ký tự điều khiển lỗi
+                        potential_json = re.sub(r'[\x00-\x1F\x7F]', '', potential_json)
+                        
+                        # 3. THÊM BƯỚC REPAIR: Thử parse thẳng, nếu lỗi thì sửa rồi parse lại
+                        try:
+                            data_json = json.loads(potential_json)
+                        except json.JSONDecodeError:
+                            repaired_str = repair_truncated_json(potential_json)
+                            data_json = json.loads(repaired_str)
+                            print(f"⚠️ Đã cứu thành công dữ liệu bị cắt tại cụm {cid}")
                     else:
                         raise ValueError("No JSON found")
+                        
                 except Exception as e:
-                    print(f"Lỗi parse JSON tại cụm {cid}: {e}")
-                    data_json = {"title": "Lỗi định dạng", "summary": raw_output, "rating": 0, "findings": []}
+                    print(f"❌ Lỗi parse JSON tại cụm {cid}: {e}")
+                    # Nếu hỏng hẳn, My giữ lại raw_output để sau này vẫn xem được text thô
+                    data_json = {
+                        "title": f"Báo cáo cụm {cid} (Lỗi định dạng)", 
+                        "report": raw_output[:500] + "...", # Lấy tạm text thô
+                        "rating": 0, 
+                        "findings": []
+                    }
 
                 final_reports.append({
                     "community_id": cid,
