@@ -100,8 +100,8 @@ class AdvancedLocalSearch:
 
         # Lấy quy định (Claims)
         claims = self.df_claims[
-            self.claims['subject'].isin(names) | 
-            self.claims['object'].isin(names)
+            self.df_claims['subject'].isin(names) | 
+            self.df_claims['object'].isin(names)
         ].head(20)
         
         # Lấy báo cáo cộng đồng theo entities mà có trong nodes (Reports)
