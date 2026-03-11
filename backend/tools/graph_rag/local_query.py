@@ -156,6 +156,7 @@ class AdvancedLocalSearch:
 
         report_entries = []
         for r in reports:
+            print(f"DEBUG: Type of r: {type(r)}, Value of r: {r}")
             # Lấy phần detail ra để xử lý cho gọn
             detail = r.get('report_detail', {})
             title = detail.get('title', 'Không có tiêu đề')
