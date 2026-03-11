@@ -128,6 +128,7 @@ class AdvancedLocalSearch:
         # 2 & 3. So khớp ngữ nghĩa (Meaning Comparison)
         matched_ents = self.find_best_matches(extracted_names)
         logging.info(f"📍 Đã khớp với {len(matched_ents)} thực thể trong đồ thị.")
+        logging.info(f"📍 Các thực thể khớp: {matched_ents}")
         
         # 4. Gom context
         ents, rels, claims, reports = self.get_graph_context(matched_ents)
