@@ -404,8 +404,8 @@ async def main():
     # print("Extract community summaries thành công!")
     summaries_path = "outputs_10030018/community_summaries.json"
 
-    print("Run global search...\n")
-    print(await run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path))
+    # print("Run global search...\n")
+    # print(await run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path))
 
     print("Run local search...\n")
     print(await run_local_search("Đang hưởng án treo có được thay đổi nơi cư trú không?", new_folder_name))
