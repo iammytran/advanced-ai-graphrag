@@ -243,7 +243,7 @@ def extract_entities_unsloth(
     entity_types: str,
     folder_name: str,
     stop_token_ids,
-    batch_size: int = 1, # Giảm batch_size xuống để tăng độ tập trung cho bản 4-bit
+    batch_size: int = 4, # Giảm batch_size xuống để tăng độ tập trung cho bản 4-bit
     max_seq_length: int = 8192,
     max_new_tokens: int = 1500
 ):
