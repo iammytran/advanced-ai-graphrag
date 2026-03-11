@@ -248,7 +248,7 @@ def extract_entities_unsloth(
     max_new_tokens: int = 1500
 ):
     # from unsloth import FastLanguageModel
-    FastLanguageModel.for_inference(model)
+    model = FastLanguageModel.for_inference(model)
     
     all_entities = []
     all_relationships = []
