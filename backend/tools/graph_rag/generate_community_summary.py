@@ -15,7 +15,7 @@ def generate_hierarchical_community_reports(
     model_name: str, # Tên model hoặc path
     folder_for_debug: str,
     max_new_tokens=2048,
-    context_window=16384 # vLLM thường hỗ trợ context lớn hơn
+    context_window=30000 # vLLM thường hỗ trợ context lớn hơn
 ):
     # 1. Khởi tạo vLLM và Tokenizer
     llm = LLM(model=model_name, gpu_memory_utilization=0.8, tensor_parallel_size=2, trust_remote_code=True)
@@ -94,10 +94,10 @@ def generate_hierarchical_community_reports(
                     sub_reports.sort(key=len, reverse=True)
                     input_text = "BÁO CÁO TÓM TẮT TỪ CÁC CỤM CON:\n" + "\n---\n".join(sub_reports)
 
-                # # Kiểm soát Context Window
-                # tokens = tokenizer.encode(input_text)
-                # if len(tokens) > (context_window - 1000):
-                #     input_text = tokenizer.decode(tokens[:context_window - 1000]) + "..."
+                # Kiểm soát Context Window
+                tokens = tokenizer.encode(input_text)
+                if len(tokens) > (context_window - 1000):
+                    input_text = tokenizer.decode(tokens[:context_window - 1000]) + "..."
 
                 # --- CHUYỂN SANG CHAT TEMPLATE ---
                 system_msg = f"""
