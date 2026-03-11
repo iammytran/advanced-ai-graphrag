@@ -362,20 +362,20 @@ async def main():
 
 @tool
 def graphrag_retrieval(query: str) -> str:
+    """Retrieves information using the GraphRAG system."""
     model_path = "Qwen/Qwen2.5-14B-Instruct" 
     graphrag_manager = LLM(model=model_path, tensor_parallel_size=1)
-    # --- VÍ DỤ SỬ DỤNG ---
-    user_input = "Tóm tắt các sự kiện chính diễn ra trong toàn bộ tài liệu này."
-    result = route_graphrag_query(user_input, graphrag_manager)
+    result = route_graphrag_query(query, graphrag_manager)
+    return result
 
-    print(f"Quyết định: {result['search_type'].upper()}")
-    print(f"Lý do: {result['reason']}")
+    # print(f"Quyết định: {result['search_type'].upper()}")
+    # print(f"Lý do: {result['reason']}")
 
-    # Tích hợp gọi GraphRAG
-    if result['search_type'] == "local":
-        run_global_search(user_input)
-    else:
-        run_global_search(user_input)
+    # # Tích hợp gọi GraphRAG
+    # if result['search_type'] == "local":
+    #     run_global_search(user_input)
+    # else:
+    #     run_global_search(user_input)
     
 if __name__ == '__main__':
     asyncio.run(main())
