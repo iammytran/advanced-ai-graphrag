@@ -116,6 +116,10 @@ Bạn PHẢI trả về JSON duy nhất theo cấu trúc:
             # 1. Làm sạch chuỗi
             clean_res = res.replace("```json", "").replace("```", "").strip()
             data = json.loads(clean_res)
+
+            # Giả sử bạn muốn lưu từng response của LLM để kiểm tra
+            with open('debug_llm_response.json', 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=4)
             
             # 2. Thay vì chỉ lấy "points", hãy lấy toàn bộ object 
             # để giữ lại "score" (hoặc "rating") cho bước Reduce sau này
