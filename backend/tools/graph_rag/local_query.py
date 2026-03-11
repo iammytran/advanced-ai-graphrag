@@ -187,7 +187,7 @@ class AdvancedLocalSearch:
         return final_output[0].outputs[0].text
 
 # --- CÁCH CHẠY ---
-async def run_local_query(query, artifact_path):
+async def run_local_search(query, artifact_path):
     search_engine = AdvancedLocalSearch(
         model_name="Qwen/Qwen2.5-7B-Instruct",
         embedding_model_name="keepitreal/vietnamese-sbert", # Model embedding tiếng Việt xịn
@@ -199,4 +199,4 @@ async def run_local_query(query, artifact_path):
 
 if __name__ == "__main__":
     query = "Người cho vay có quyền đòi lại tài sản trước hạn không?"
-    asyncio.run(run_local_query(query))
+    asyncio.run(run_local_search(query))
