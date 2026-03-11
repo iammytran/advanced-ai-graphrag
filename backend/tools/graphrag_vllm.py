@@ -24,7 +24,6 @@ from typing import List, Optional, Any, Callable, Tuple
 # from graspologic.partition import hierarchical_leiden
 import uuid
 from dotenv import load_dotenv
-# from unsloth import FastLanguageModel
 import torch
 import logging
 import transformers
@@ -220,7 +219,7 @@ def process_with_vllm(text_units, model_path, entity_types, tuple_delimiter, rec
 
     # 4. Inference siêu tốc với vLLM
     print(f"Bắt đầu trích xuất {len(all_prompts)} văn bản với vLLM...")
-    outputs = llm.generate(all_prompts, sampling_params, use_tqdm=True)
+    outputs = llm.generate(all_prompts, sampling_params, use_tqdm=True, gpu_memory_utilization=0.7)
 
     all_entities = []
     all_relationships = []
