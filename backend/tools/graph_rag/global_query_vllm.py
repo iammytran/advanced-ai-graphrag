@@ -182,7 +182,7 @@ async def run_global_search(query, summaries_path):
     map_results = await run_map_step(query, chunks, max_new_tokens, processor)
     
     # 3. Reduce
-    final_answer = await run_reduce_step(query, map_results, processor)
+    final_answer = await run_reduce_step(query, max_new_tokens, map_results, processor)
     return final_answer
 
     # # Lưu kết quả
