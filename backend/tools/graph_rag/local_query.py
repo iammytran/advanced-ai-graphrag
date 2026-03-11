@@ -68,13 +68,14 @@ class AdvancedLocalSearch:
         except:
             return []
 
-    def find_best_matches(self, extracted_entities: List[str], top_k_per_entity: int = 5) -> pd.DataFrame:
+    def find_best_matches(self, extracted_entities: List[str], top_k_per_entity: int = 10) -> pd.DataFrame:
         """Bước 2 & 3: Encode thực thể trích xuất và so sánh similarity với entity_df"""
         if not extracted_entities:
             return pd.DataFrame()
 
         # Encode các thực thể từ query
         query_embeddings = self.embed_model.encode(extracted_entities)
+        logging.info(f"query_embeddings: {query_embeddings}")
         
         matched_indices = []
         for q_emb in query_embeddings:
