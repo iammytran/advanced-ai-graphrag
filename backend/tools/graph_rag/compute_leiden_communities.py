@@ -1,7 +1,7 @@
 import networkx as nx
 import pandas as pd
 import graspologic_native as gn
-from typing import List, Optional, Any, Callable, Tuple
+from typing import Any
 from collections import defaultdict
 import html
 

@@ -1,14 +1,11 @@
 import json
 import random
 import asyncio
-from typing import List, Dict
-from tqdm.asyncio import tqdm
+from typing import List
 from vllm import LLM, SamplingParams
 from transformers import AutoTokenizer
 import logging
 import warnings
-from datetime import datetime
-import os
 
 # Cấu hình log và cảnh báo
 warnings.filterwarnings("ignore", category=FutureWarning)

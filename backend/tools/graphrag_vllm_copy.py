@@ -292,60 +292,60 @@ def route_graphrag_query(query: str, llm):
 
 # Ví dụ cách chạy indexing
 async def main():
-    # # 5. Chunking
-    # print("Chunking...")
-    # law_texts_df = get_law_texts_external()
-    # law_texts_df["chunk"] = law_texts_df["content"].apply(chunk_civil_code_markdown)
+    # 5. Chunking
+    print("Chunking...")
+    law_texts_df = get_law_texts_external()
+    law_texts_df["chunk"] = law_texts_df["content"].apply(chunk_civil_code_markdown)
 
-    # new_df = law_texts_df.explode('chunk', ignore_index=True)
+    new_df = law_texts_df.explode('chunk', ignore_index=True)
 
-    # # 6. (Tùy chọn) Nếu bạn muốn bung các key trong dict của chunk 
-    # # (như 'chuong', 'dieu') ra thành các cột riêng biệt:
-    # chunk_details = pd.json_normalize(new_df['chunk'])
+    # 6. (Tùy chọn) Nếu bạn muốn bung các key trong dict của chunk 
+    # (như 'chuong', 'dieu') ra thành các cột riêng biệt:
+    chunk_details = pd.json_normalize(new_df['chunk'])
 
-    # # 7. Đổi tên cột 'content' thành 'chunk' (nếu trong dict key là 'content')
-    # chunk_details = chunk_details.rename(columns={'content': 'chunk'})
+    # 7. Đổi tên cột 'content' thành 'chunk' (nếu trong dict key là 'content')
+    chunk_details = chunk_details.rename(columns={'content': 'chunk'})
 
-    # final_df = pd.concat([new_df[['file_name']], chunk_details], axis=1)
-    # print("Ready for extracting entities and relationships...")
+    final_df = pd.concat([new_df[['file_name']], chunk_details], axis=1)
+    print("Ready for extracting entities and relationships...")
 
-    # tuple_delimiter = "<|>"
-    # record_delimiter = " ## "
-    # completion_delimiter = "<|COMPLETE|>"
+    tuple_delimiter = "<|>"
+    record_delimiter = " ## "
+    completion_delimiter = "<|COMPLETE|>"
 
-    # # Đường dẫn model (vLLM hỗ trợ load trực tiếp từ HuggingFace hoặc thư mục local)
-    # model_path = "Qwen/Qwen2.5-7B-Instruct" # Hoặc bản 14B/32B tùy GPU của My
+    # Đường dẫn model (vLLM hỗ trợ load trực tiếp từ HuggingFace hoặc thư mục local)
+    model_path = "Qwen/Qwen2.5-7B-Instruct" # Hoặc bản 14B/32B tùy GPU của My
 
 
-    # # Gọi hàm xử lý
-    # entities_df, relationships_df, claims_df = extract_info_from_chunk(
-    #     text_units = final_df,    
-    #     folder_path = new_folder_name,
-    #     model_path = model_path, 
-    #     entity_types = ENTITY_TYPES,
-    #     tuple_delimiter = tuple_delimiter,
-    #     record_delimiter = record_delimiter,
-    #     completion_delimiter = completion_delimiter
-    # )
+    # Gọi hàm xử lý
+    entities_df, relationships_df, claims_df = extract_info_from_chunk(
+        text_units = final_df,    
+        folder_path = new_folder_name,
+        model_path = model_path, 
+        entity_types = ENTITY_TYPES,
+        tuple_delimiter = tuple_delimiter,
+        record_delimiter = record_delimiter,
+        completion_delimiter = completion_delimiter
+    )
 
-    # # 9. Lưu entities và relations sang pickle file
-    # with open(f'{new_folder_name}/entities.pkl', 'wb') as f:
-    #     pickle.dump(entities_df, f)
-    # with open(f'{new_folder_name}/relationships.pkl', 'wb') as f:
-    #     pickle.dump(relationships_df, f)
-    # with open(f'{new_folder_name}/claims.pkl', 'wb') as f:
-    #     pickle.dump(claims_df, f)
-    # print("Lưu entities, relationships và claims thành công!")
+    # 9. Lưu entities và relations sang pickle file
+    with open(f'{new_folder_name}/entities.pkl', 'wb') as f:
+        pickle.dump(entities_df, f)
+    with open(f'{new_folder_name}/relationships.pkl', 'wb') as f:
+        pickle.dump(relationships_df, f)
+    with open(f'{new_folder_name}/claims.pkl', 'wb') as f:
+        pickle.dump(claims_df, f)
+    print("Lưu entities, relationships và claims thành công!")
 
-    # # 10. Encode các entities
-    # print("Embed các entities...")
-    # entity_embeddings_folder_name = f"{new_folder_name}/entity_embeddings"
-    # embedding_model_name="keepitreal/vietnamese-sbert"
-    # embed_model = SentenceTransformer(embedding_model_name)
-    # entity_name_embeddings = embed_model.encode(entities_df['name'].tolist(), show_progress_bar=True, convert_to_numpy=True)
-    # # 4. Lưu lại
-    # np.save(entity_embeddings_folder_name, entity_name_embeddings)
-    # logging.info(f"Đã lưu embeddings của entities tại: {entity_embeddings_folder_name}")
+    # 10. Encode các entities
+    print("Embed các entities...")
+    entity_embeddings_folder_name = f"{new_folder_name}/entity_embeddings"
+    embedding_model_name="keepitreal/vietnamese-sbert"
+    embed_model = SentenceTransformer(embedding_model_name)
+    entity_name_embeddings = embed_model.encode(entities_df['name'].tolist(), show_progress_bar=True, convert_to_numpy=True)
+    # 4. Lưu lại
+    np.save(entity_embeddings_folder_name, entity_name_embeddings)
+    logging.info(f"Đã lưu embeddings của entities tại: {entity_embeddings_folder_name}")
 
     # 10. Vẽ đồ thị
     # print("creating graphs...")
@@ -373,35 +373,35 @@ async def main():
     # # nx.draw_networkx_edge_labels(graph, pos, edge_labels=labels)
     # plt.show()
 
-    # # 10. Compute leiden communities
-    # result, hierarchy = _compute_leiden_communities(relationships_df, max_cluster_size=10, use_lcc=False)
-    # total_communities = len(hierarchy)
+    # 10. Compute leiden communities
+    result, hierarchy = _compute_leiden_communities(relationships_df, max_cluster_size=10, use_lcc=False)
+    total_communities = len(hierarchy)
 
-    # full_context = {
-    #     "total_communities": total_communities,
-    #     "community_mapping": result, # {level: {node: cluster_id}}
-    #     "community_hierarchy": hierarchy # {cluster_id: parent_id}
-    # }
+    full_context = {
+        "total_communities": total_communities,
+        "community_mapping": result, # {level: {node: cluster_id}}
+        "community_hierarchy": hierarchy # {cluster_id: parent_id}
+    }
 
-    # communities_file_name = f"{new_folder_name}/communities.txt"
-    # with open(communities_file_name, 'w', encoding='utf-8') as f:
-    #     json.dump(full_context, f, ensure_ascii=False, indent=4)
+    communities_file_name = f"{new_folder_name}/communities.txt"
+    with open(communities_file_name, 'w', encoding='utf-8') as f:
+        json.dump(full_context, f, ensure_ascii=False, indent=4)
 
-    # # 11. Tạo community summary
-    # reports = generate_hierarchical_community_reports(
-    #     community_results=result,
-    #     community_hierarchy=hierarchy,
-    #     entities_df=entities_df,
-    #     relationships_df=relationships_df,
-    #     claims_df=claims_df,
-    #     model_name=model_path,
-    #     folder_for_debug=new_folder_name
-    # )
+    # 11. Tạo community summary
+    reports = generate_hierarchical_community_reports(
+        community_results=result,
+        community_hierarchy=hierarchy,
+        entities_df=entities_df,
+        relationships_df=relationships_df,
+        claims_df=claims_df,
+        model_name=model_path,
+        folder_for_debug=new_folder_name
+    )
 
-    # summaries_path = f"{new_folder_name}/community_summaries.json"
-    # with open(summaries_path, "w", encoding="utf-8") as f:
-    #     json.dump(reports, f, ensure_ascii=False, indent=4)
-    # print("Extract community summaries thành công!")
+    summaries_path = f"{new_folder_name}/community_summaries.json"
+    with open(summaries_path, "w", encoding="utf-8") as f:
+        json.dump(reports, f, ensure_ascii=False, indent=4)
+    print("Extract community summaries thành công!")
     summaries_path = "outputs_10030018/community_summaries.json"
 
     # print("Run global search...\n")
