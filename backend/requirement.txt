@@ -26,3 +26,8 @@ pymupdf4llm
 markitdown[all]
 vllm>=0.17.0
 sentence_transformers>=5.2.3
+langchain-huggingface>=0.0.3
+transformers>=5.1.0
+accelerate>=0.29.0
+bitsandbytes>=0.43.0
+torch>=2.2.0

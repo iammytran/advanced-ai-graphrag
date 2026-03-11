@@ -2,11 +2,12 @@ from typing import Annotated, TypedDict
 
 from langchain.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.messages import BaseMessage
+from langchain_huggingface import ChatHuggingFace, HuggingFacePipeline
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 
-from backend.config.config import OPENAI_MODEL, TEMPERATURE
+from backend.config.config import HUGGINGFACE_MODEL, OPENAI_MODEL, TEMPERATURE
 from backend.src.prompts import AGENT_SYSTEM_PROMPT
 from backend.tools.rag import rag_retrieval
 from backend.tools.graphrag_vllm import graphrag_retrieval
@@ -18,16 +19,38 @@ class State(TypedDict):
 
 class Chatbot:
 
-    def __init__(self):
+    def __init__(self, model_option: int = 1):
+        """
+        Initialize Chatbot with a specific model.
+        :param model_option: 1 for HuggingFace, 2 for OpenAI
+        """
         self.message_history: list[BaseMessage] = []
         self.graph = self.build_graph()
-        tools = [graphrag_retrieval]
-        self.llm = ChatOpenAI(
-            max_completion_tokens=5000,
-            base_url="https://openrouter.ai/api/v1",
-            model=OPENAI_MODEL,
-            temperature=TEMPERATURE,
-        )
+        tools = [rag_retrieval]
+
+        if model_option == 1:
+            llm = HuggingFacePipeline.from_model_id(
+                model_id=HUGGINGFACE_MODEL,
+                task="text-generation",
+                pipeline_kwargs={
+                    "max_new_tokens": 2500,
+                    "temperature": TEMPERATURE,
+                    "do_sample": True,
+                },
+            )
+            self.llm = ChatHuggingFace(llm=llm)
+        elif model_option == 2:
+            self.llm = ChatOpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                model=OPENAI_MODEL,
+                max_completion_tokens=1000,
+                temperature=float(TEMPERATURE),
+            )
+        else:
+            raise ValueError(
+                "Invalid model_option. Use 1 for HuggingFace or 2 for OpenAI."
+            )
+
         self.model_with_tools = self.llm.bind_tools(tools)
 
     # GRAPH NODES
@@ -110,5 +133,6 @@ class Chatbot:
 
 
 if __name__ == "__main__":
-    chatbot = Chatbot()
+    # Choose 1 for HuggingFace, 2 for OpenAI
+    chatbot = Chatbot(model_option=2)
     print(chatbot.chat("đánh bài phạt bao nhiêu tiền?"))
