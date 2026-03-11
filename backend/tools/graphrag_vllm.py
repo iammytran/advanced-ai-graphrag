@@ -409,7 +409,7 @@ async def main():
     print(run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path))
 
     print("Run local search...\n")
-    print(run_local_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", new_folder_name))
+    print(run_local_search("Đang hưởng án treo có được thay đổi nơi cư trú không?", new_folder_name))
 
 
 @tool
