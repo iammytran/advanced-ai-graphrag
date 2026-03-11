@@ -22,7 +22,6 @@ PyMuPDF>=1.24.1
 python-docx>=1.1.0
 pymupdf-layout>=0.0.1
 markitdown>=0.0.1
-unsloth
 pymupdf4llm
 markitdown[all]
 vllm>=0.17.0
