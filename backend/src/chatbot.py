@@ -47,7 +47,6 @@ class Chatbot:
             self.llm = ChatHuggingFace(llm=llm)
         elif model_option == 2:
             self.llm = ChatOpenAI(
-                api_key=OPENAI_API_KEY,
                 base_url="https://openrouter.ai/api/v1",
                 model=OPENAI_MODEL,
                 max_completion_tokens=1000,
