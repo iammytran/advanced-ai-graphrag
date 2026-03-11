@@ -545,7 +545,7 @@ async def main():
     Path(new_folder_name).mkdir(parents=True, exist_ok=True)
 
     # 1. Cấu hình thông số
-    model_name = "unsloth/Qwen2.5-32B-Instruct-bnb-4bit"
+    model_name = "unsloth/Qwen2.5-14B-Instruct-bnb-4bit"
     max_seq_length = 8192
     max_new_tokens=2048
 
