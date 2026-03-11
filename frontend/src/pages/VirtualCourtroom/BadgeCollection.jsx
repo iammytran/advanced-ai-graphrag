@@ -10,105 +10,103 @@ function BadgeCollection() {
     useEffect(() => {
         const badges = getUserBadges()
         setUserBadges(badges)
-
-        // Calculate stats
         const totalEarned = badges.reduce((sum, b) => sum + b.count, 0)
-        setStats({
-            total: badges.length,
-            sessions: totalEarned
-        })
+        setStats({ total: badges.length, sessions: totalEarned })
     }, [])
 
     const getBadgeStatus = (badgeId) => {
-        const userBadge = userBadges.find(b => b.id === badgeId)
-        return userBadge || null
+        return userBadges.find(b => b.id === badgeId) || null
     }
 
     const formatDate = (dateString) => {
         if (!dateString) return ''
-        const date = new Date(dateString)
-        return date.toLocaleDateString('vi-VN')
+        return new Date(dateString).toLocaleDateString('vi-VN')
     }
 
+    const progressPct = Math.round((stats.total / allBadges.length) * 100)
+
     return (
-        <div className="courtroom-page badge-collection">
-            <header className="page-header">
-                <h1>🏆 Bộ Sưu Tập Huy Hiệu</h1>
-                <p>Xem tất cả huy hiệu bạn đã đạt được</p>
+        <div className="vc-page">
+            {/* Header */}
+            <header className="vc-landing-header">
+                <div className="vc-landing-badge">Thành tích</div>
+                <h1>Bộ Sưu Tập Huy Hiệu</h1>
+                <p>Theo dõi hành trình rèn luyện kỹ năng tranh tụng của bạn</p>
             </header>
 
-            {/* Stats Overview */}
-            <section className="stats-overview">
-                <div className="stat-card">
-                    <div className="stat-icon">🏅</div>
-                    <div className="stat-info">
-                        <span className="stat-value">{stats.total}/{allBadges.length}</span>
-                        <span className="stat-label">Huy hiệu đã mở khóa</span>
+            <div className="vc-content">
+                {/* Stats overview */}
+                <div className="vc-section">
+                    <div className="vc-badge-stats-row">
+                        <div className="vc-badge-stat-card" style={{ animationDelay: '0.08s' }}>
+                            <span className="vc-badge-stat-icon">🏅</span>
+                            <span className="vc-badge-stat-num">{stats.total}/{allBadges.length}</span>
+                            <span className="vc-badge-stat-label">Đã mở khóa</span>
+                        </div>
+                        <div className="vc-badge-stat-card" style={{ animationDelay: '0.14s' }}>
+                            <span className="vc-badge-stat-icon">⚖️</span>
+                            <span className="vc-badge-stat-num">{stats.sessions}</span>
+                            <span className="vc-badge-stat-label">Lần nhận</span>
+                        </div>
+                        <div className="vc-badge-stat-card" style={{ animationDelay: '0.20s' }}>
+                            <span className="vc-badge-stat-icon">📊</span>
+                            <span className="vc-badge-stat-num">{progressPct}%</span>
+                            <span className="vc-badge-stat-label">Hoàn thành</span>
+                        </div>
                     </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon">⚖️</div>
-                    <div className="stat-info">
-                        <span className="stat-value">{stats.sessions}</span>
-                        <span className="stat-label">Lần nhận huy hiệu</span>
-                    </div>
-                </div>
-                <div className="stat-card progress">
-                    <div className="progress-bar">
-                        <div
-                            className="progress-fill"
-                            style={{ width: `${(stats.total / allBadges.length) * 100}%` }}
-                        />
-                    </div>
-                    <span className="progress-label">
-                        {Math.round((stats.total / allBadges.length) * 100)}% hoàn thành
-                    </span>
-                </div>
-            </section>
 
-            {/* Badge Grid */}
-            <section className="badges-grid-section">
-                <h2>Tất Cả Huy Hiệu</h2>
-                <div className="badges-grid">
-                    {allBadges.map(badge => {
-                        const status = getBadgeStatus(badge.id)
-                        const isUnlocked = status !== null
-
-                        return (
+                    {/* Progress bar */}
+                    <div className="vc-badge-progress">
+                        <div className="vc-badge-progress-bar">
                             <div
-                                key={badge.id}
-                                className={`badge-card ${isUnlocked ? 'unlocked' : 'locked'}`}
-                            >
-                                <div className="badge-icon">
-                                    {isUnlocked ? badge.icon : '🔒'}
-                                </div>
-                                <div className="badge-name">{badge.name}</div>
-                                <div className="badge-description">{badge.description}</div>
-
-                                {isUnlocked && (
-                                    <div className="badge-stats">
-                                        <span className="times-earned">
-                                            ✅ Đạt {status.count} lần
-                                        </span>
-                                        <span className="last-earned">
-                                            Gần nhất: {formatDate(status.lastEarned)}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                        )
-                    })}
+                                className="vc-badge-progress-fill"
+                                style={{ width: `${progressPct}%` }}
+                            />
+                        </div>
+                    </div>
                 </div>
-            </section>
 
-            {/* Navigation */}
-            <div className="navigation-buttons">
-                <button className="btn-secondary" onClick={() => navigate('/')}>
-                    💬 Về Chatbot
-                </button>
-                <button className="btn-primary" onClick={() => navigate('/courtroom')}>
-                    🏛️ Phiên tòa mới
-                </button>
+                {/* Badge grid */}
+                <div className="vc-section">
+                    <div className="vc-section-label">Tất cả huy hiệu</div>
+                    <div className="vc-badge-grid">
+                        {allBadges.map((badge, i) => {
+                            const status = getBadgeStatus(badge.id)
+                            const isUnlocked = status !== null
+
+                            return (
+                                <div
+                                    key={badge.id}
+                                    className={`vc-badge-card${isUnlocked ? ' unlocked' : ' locked'}`}
+                                    style={{ animationDelay: `${0.05 + i * 0.04}s` }}
+                                >
+                                    <span className="vc-badge-card-icon">
+                                        {isUnlocked ? badge.icon : '🔒'}
+                                    </span>
+                                    <span className="vc-badge-card-name">{badge.name}</span>
+                                    <span className="vc-badge-card-desc">{badge.description}</span>
+
+                                    {isUnlocked && (
+                                        <div className="vc-badge-card-meta">
+                                            <span>Đạt {status.count} lần</span>
+                                            <span>Gần nhất: {formatDate(status.lastEarned)}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+
+                {/* Navigation */}
+                <div className="vc-nav">
+                    <button className="vc-btn-back" onClick={() => navigate('/courtroom')}>
+                        ← Phiên tòa mới
+                    </button>
+                    <button className="vc-btn-next" onClick={() => navigate('/')}>
+                        Về trang chính →
+                    </button>
+                </div>
             </div>
         </div>
     )

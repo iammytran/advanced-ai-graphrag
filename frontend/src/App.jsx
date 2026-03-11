@@ -1,18 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-<<<<<<< HEAD
 import { sendMessage, getSuggestedQuestions } from './services/mockApi'
 import { generateImageFromGemini } from './services/geminiApi'
-=======
-import { getSuggestedQuestions, sendMessage } from './services/backendApi'
->>>>>>> c39bb11e14a81583b517959210e8f27b8f7acf97
 
 function App() {
-    // State
     const [messages, setMessages] = useState([])
     const [inputValue, setInputValue] = useState('')
     const [isLoading, setIsLoading] = useState(false)
-    const [character, setCharacter] = useState('normal') // 'lawyer' or 'normal'
+    const [character, setCharacter] = useState('normal')
     const [toneValue, setToneValue] = useState(50)
     const [illustrationType, setIllustrationType] = useState('none')
     const [showScrollTop, setShowScrollTop] = useState(false)
@@ -21,7 +16,6 @@ function App() {
     const messagesTopRef = useRef(null)
     const messagesContainerRef = useRef(null)
 
-    // Auto scroll to bottom
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
@@ -30,26 +24,20 @@ function App() {
         scrollToBottom()
     }, [messages])
 
-    // Hiện nút khi có tin nhắn từ bot
     useEffect(() => {
         const hasBotMessage = messages.some(m => m.type === 'bot')
         if (hasBotMessage) {
-            // Delay để đảm bảo UI đã render
             setTimeout(() => setShowScrollTop(true), 500)
         }
     }, [messages])
 
-    // Scroll to top
     const scrollToTop = () => {
-        // Sử dụng scrollIntoView giống như scrollToBottom
         messagesTopRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
 
-    // Khi scroll bằng chuột - hiện lại nút nếu không ở đầu
     const handleContainerScroll = () => {
         const container = messagesContainerRef.current
         if (!container) return
-
         if (container.scrollTop < 10) {
             setShowScrollTop(false)
         } else if (messages.some(m => m.type === 'bot')) {
@@ -57,7 +45,6 @@ function App() {
         }
     }
 
-    // Handle send message
     const handleSend = async () => {
         if (!inputValue.trim() || isLoading) return
 
@@ -79,7 +66,7 @@ function App() {
                 illustrationType
             })
 
-            const botMessageId = Date.now() + 1;
+            const botMessageId = Date.now() + 1
             const botMessage = {
                 id: botMessageId,
                 type: 'bot',
@@ -100,14 +87,14 @@ function App() {
                                     ...msg,
                                     illustration: {
                                         ...msg.illustration,
-                                        url: imageUrl || msg.illustration.url, 
+                                        url: imageUrl || msg.illustration.url,
                                         isLoadingImage: false
                                     }
-                                };
+                                }
                             }
-                            return msg;
-                        }));
-                    });
+                            return msg
+                        }))
+                    })
             }
         } catch (error) {
             console.error('Error:', error)
@@ -116,12 +103,10 @@ function App() {
         }
     }
 
-    // Handle suggestion click
     const handleSuggestionClick = (question) => {
         setInputValue(question)
     }
 
-    // Handle key press
     const handleKeyPress = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault()
@@ -129,7 +114,6 @@ function App() {
         }
     }
 
-    // Format timestamp
     const formatTime = (date) => {
         return new Date(date).toLocaleTimeString('vi-VN', {
             hour: '2-digit',
@@ -137,7 +121,6 @@ function App() {
         })
     }
 
-    // Get tone label
     const getToneLabel = () => {
         if (toneValue < 30) return 'Đời thường'
         if (toneValue > 70) return 'Pháp lý'
@@ -147,69 +130,75 @@ function App() {
     return (
         <div className="app-container">
             {/* Sidebar */}
-            <aside className="sidebar">
-                <div className="sidebar-header">
-                    <div className="logo">⚖️</div>
-                    <h1>Legal AI</h1>
-                    <p>Hỗ trợ pháp luật thông minh</p>
+            <aside className="app-sidebar">
+                <div className="app-sidebar-header">
+                    <div className="app-logo">
+                        <span className="app-logo-icon">⚖️</span>
+                        <div>
+                            <h1 className="app-logo-title">Legal AI</h1>
+                            <p className="app-logo-sub">Hỗ trợ pháp luật thông minh</p>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Navigation */}
-                <nav className="sidebar-nav">
-                    <Link to="/" className="nav-item active">
-                        <span className="nav-icon">💬</span>
-                        <span>Hỏi đáp AI</span>
+                <nav className="app-nav">
+                    <Link to="/" className="app-nav-item active">
+                        <span className="app-nav-icon">💬</span>
+                        <span className="app-nav-label">Hỏi đáp AI</span>
                     </Link>
-                    <Link to="/courtroom" className="nav-item">
-                        <span className="nav-icon">🏛️</span>
-                        <span>Phòng tòa ảo</span>
+                    <Link to="/courtroom" className="app-nav-item">
+                        <span className="app-nav-icon">🏛️</span>
+                        <span className="app-nav-label">Phòng tòa ảo</span>
                     </Link>
-                    <Link to="/courtroom/badges" className="nav-item">
-                        <span className="nav-icon">🏆</span>
-                        <span>Huy hiệu</span>
+                    <Link to="/courtroom/badges" className="app-nav-item">
+                        <span className="app-nav-icon">🏆</span>
+                        <span className="app-nav-label">Huy hiệu</span>
                     </Link>
                 </nav>
 
                 {/* Character Selection */}
-                <div className="settings-section">
-                    <div className="section-title">
-                        <span>👤</span> Chọn nhân vật trả lời
-                    </div>
-                    <div className="character-options">
+                <div className="app-settings-section">
+                    <div className="app-section-label">Chọn nhân vật trả lời</div>
+                    <div className="app-character-options">
                         <div
-                            className={`character-card lawyer ${character === 'lawyer' ? 'active' : ''}`}
+                            className={`app-character-card ${character === 'lawyer' ? 'selected' : ''}`}
                             onClick={() => setCharacter('lawyer')}
                         >
-                            <div className="character-avatar lawyer">👨‍⚖️</div>
-                            <div className="character-info">
-                                <h3>Luật sư</h3>
-                                <p>Nghiêm túc • Chuyên nghiệp • Chuẩn mực</p>
+                            <div className="app-character-avatar app-character-avatar--lawyer">👨‍⚖️</div>
+                            <div className="app-character-info">
+                                <div className="app-character-name">Luật sư</div>
+                                <div className="app-character-desc">Nghiêm túc · Chuyên nghiệp</div>
+                            </div>
+                            <div className="app-character-check">
+                                {character === 'lawyer' && '✓'}
                             </div>
                         </div>
                         <div
-                            className={`character-card normal ${character === 'normal' ? 'active' : ''}`}
+                            className={`app-character-card ${character === 'normal' ? 'selected' : ''}`}
                             onClick={() => setCharacter('normal')}
                         >
-                            <div className="character-avatar normal">👤</div>
-                            <div className="character-info">
-                                <h3>Người bình thường</h3>
-                                <p>Dễ hiểu • Gần gũi • Thân thiện</p>
+                            <div className="app-character-avatar app-character-avatar--normal">👤</div>
+                            <div className="app-character-info">
+                                <div className="app-character-name">Người bình thường</div>
+                                <div className="app-character-desc">Dễ hiểu · Thân thiện</div>
+                            </div>
+                            <div className="app-character-check">
+                                {character === 'normal' && '✓'}
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Tone Slider */}
-                <div className="settings-section">
-                    <div className="section-title">
-                        <span>🎚️</span> Tone phản hồi
-                    </div>
-                    <div className="tone-slider-container">
-                        <div className="tone-labels">
-                            <span className={`tone-label ${toneValue < 50 ? 'active' : ''}`}>
+                <div className="app-settings-section">
+                    <div className="app-section-label">Tone phản hồi</div>
+                    <div className="app-tone-box">
+                        <div className="app-tone-labels">
+                            <span className={`app-tone-label ${toneValue < 50 ? 'active' : ''}`}>
                                 💬 Đời thường
                             </span>
-                            <span className={`tone-label ${toneValue >= 50 ? 'active' : ''}`}>
+                            <span className={`app-tone-label ${toneValue >= 50 ? 'active' : ''}`}>
                                 ⚖️ Pháp lý
                             </span>
                         </div>
@@ -219,92 +208,74 @@ function App() {
                             max="100"
                             value={toneValue}
                             onChange={(e) => setToneValue(Number(e.target.value))}
-                            className="tone-slider"
+                            className="app-tone-slider"
                         />
-                        <div className="tone-value">
-                            Mức độ: <span>{getToneLabel()}</span> ({toneValue}%)
+                        <div className="app-tone-value">
+                            {getToneLabel()} ({toneValue}%)
                         </div>
                     </div>
                 </div>
 
                 {/* Illustration Options */}
-                <div className="settings-section">
-                    <div className="section-title">
-                        <span>🖼️</span> Hình minh họa
-                    </div>
-                    <div className="illustration-options">
-                        <div
-                            className={`illustration-option ${illustrationType === 'none' ? 'active' : ''}`}
-                            onClick={() => setIllustrationType('none')}
-                        >
-                            <div className="radio-circle">
-                                <div className="radio-dot"></div>
+                <div className="app-settings-section">
+                    <div className="app-section-label">Hình minh họa</div>
+                    <div className="app-illust-options">
+                        {[
+                            { key: 'none', icon: '❌', label: 'Không có hình', desc: 'Chỉ hiển thị văn bản' },
+                            { key: 'comic', icon: '📖', label: 'Truyện tranh', desc: 'Dễ ghi nhớ, chia sẻ' },
+                            { key: 'poster', icon: '📢', label: 'Poster tuyên truyền', desc: 'Giáo dục, nâng cao nhận thức' }
+                        ].map(opt => (
+                            <div
+                                key={opt.key}
+                                className={`app-illust-option ${illustrationType === opt.key ? 'selected' : ''}`}
+                                onClick={() => setIllustrationType(opt.key)}
+                            >
+                                <div className="app-illust-radio">
+                                    <div className="app-illust-radio-dot" />
+                                </div>
+                                <span className="app-illust-icon">{opt.icon}</span>
+                                <div className="app-illust-text">
+                                    <div className="app-illust-label">{opt.label}</div>
+                                    <div className="app-illust-desc">{opt.desc}</div>
+                                </div>
                             </div>
-                            <span className="illustration-icon">❌</span>
-                            <div className="illustration-info">
-                                <h4>Không có hình</h4>
-                                <p>Chỉ hiển thị văn bản</p>
-                            </div>
-                        </div>
-                        <div
-                            className={`illustration-option ${illustrationType === 'comic' ? 'active' : ''}`}
-                            onClick={() => setIllustrationType('comic')}
-                        >
-                            <div className="radio-circle">
-                                <div className="radio-dot"></div>
-                            </div>
-                            <span className="illustration-icon">📖</span>
-                            <div className="illustration-info">
-                                <h4>Truyện tranh</h4>
-                                <p>Dễ ghi nhớ, chia sẻ</p>
-                            </div>
-                        </div>
-                        <div
-                            className={`illustration-option ${illustrationType === 'poster' ? 'active' : ''}`}
-                            onClick={() => setIllustrationType('poster')}
-                        >
-                            <div className="radio-circle">
-                                <div className="radio-dot"></div>
-                            </div>
-                            <span className="illustration-icon">📢</span>
-                            <div className="illustration-info">
-                                <h4>Poster tuyên truyền</h4>
-                                <p>Giáo dục, nâng cao nhận thức</p>
-                            </div>
-                        </div>
+                        ))}
                     </div>
                 </div>
             </aside>
 
-            {/* Main Chat Area */}
-            <main className="main-chat">
+            {/* Main Chat */}
+            <main className="app-main">
                 {/* Chat Header */}
-                <header className="chat-header">
-                    <div className="chat-title">
+                <header className="app-chat-header">
+                    <div className="app-chat-title">
+                        <span className="app-chat-title-icon">
+                            {character === 'lawyer' ? '👨‍⚖️' : '👤'}
+                        </span>
                         <h2>
-                            {character === 'lawyer' ? '👨‍⚖️ Tư vấn cùng Luật sư' : '👤 Trò chuyện thân thiện'}
+                            {character === 'lawyer' ? 'Tư vấn cùng Luật sư' : 'Trò chuyện thân thiện'}
                         </h2>
                     </div>
-                    <div className="chat-status">
-                        <span className="status-dot"></span>
+                    <div className="app-chat-status">
+                        <span className="app-status-dot" />
                         <span>Sẵn sàng hỗ trợ</span>
                     </div>
                 </header>
 
-                {/* Messages or Welcome Screen */}
+                {/* Messages or Welcome */}
                 {messages.length === 0 ? (
-                    <div className="welcome-screen">
-                        <div className="welcome-icon">💬</div>
-                        <h2>Chào mừng bạn đến với Legal AI!</h2>
-                        <p>
+                    <div className="app-welcome">
+                        <div className="app-welcome-icon">💬</div>
+                        <h2 className="app-welcome-title">Chào mừng bạn đến với Legal AI!</h2>
+                        <p className="app-welcome-desc">
                             Hãy đặt câu hỏi về pháp luật, tôi sẽ giải đáp theo phong cách bạn chọn.
                             Bạn có thể thử các câu hỏi gợi ý bên dưới.
                         </p>
-                        <div className="suggestion-chips">
+                        <div className="app-suggestions">
                             {getSuggestedQuestions().map((question, index) => (
                                 <button
                                     key={index}
-                                    className="suggestion-chip"
+                                    className="app-suggestion-chip"
                                     onClick={() => handleSuggestionClick(question)}
                                 >
                                     {question}
@@ -314,20 +285,19 @@ function App() {
                     </div>
                 ) : (
                     <div
-                        className="messages-container"
+                        className="app-messages"
                         ref={messagesContainerRef}
                         onScroll={handleContainerScroll}
                     >
-                        {/* Điểm đánh dấu đầu trang để scroll tới */}
                         <div ref={messagesTopRef} />
 
                         {messages.map((message) => (
-                            <div key={message.id} className={`message ${message.type}`}>
-                                <div className={`message-avatar ${message.type === 'bot' ? message.character : ''}`}>
+                            <div key={message.id} className={`app-msg app-msg--${message.type}`}>
+                                <div className={`app-msg-avatar ${message.type === 'bot' ? `app-msg-avatar--${message.character}` : ''}`}>
                                     {message.type === 'user' ? '👤' : (message.character === 'lawyer' ? '👨‍⚖️' : '😊')}
                                 </div>
-                                <div className="message-content">
-                                    <div className="message-bubble">
+                                <div className="app-msg-content">
+                                    <div className="app-msg-bubble">
                                         {message.text.split('\n').map((line, i) => (
                                             <span key={i}>
                                                 {line}
@@ -336,36 +306,33 @@ function App() {
                                         ))}
                                     </div>
                                     {message.illustration && (
-                                        <div className="message-illustration">
+                                        <div className="app-msg-illust">
                                             {message.illustration.isLoadingImage ? (
-                                                <div className="image-loading-skeleton" style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#e2e8f0', borderRadius: '8px', margin: '10px 0', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}>
-                                                    <span style={{ color: '#64748b', fontSize: '14px' }}>🖼️ Đang vẽ hình minh họa...</span>
+                                                <div className="app-msg-illust-loading">
+                                                    <span>🖼️ Đang vẽ hình minh họa...</span>
                                                 </div>
                                             ) : (
                                                 <img src={message.illustration.url} alt={message.illustration.caption} />
                                             )}
-                                            <div className="illustration-caption">
+                                            <div className="app-msg-illust-caption">
                                                 {message.illustration.caption}
                                             </div>
                                         </div>
                                     )}
-                                    <span className="message-time">{formatTime(message.timestamp)}</span>
+                                    <span className="app-msg-time">{formatTime(message.timestamp)}</span>
                                 </div>
                             </div>
                         ))}
 
-                        {/* Typing Indicator */}
                         {isLoading && (
-                            <div className="message bot">
-                                <div className={`message-avatar ${character}`}>
+                            <div className="app-msg app-msg--bot">
+                                <div className={`app-msg-avatar app-msg-avatar--${character}`}>
                                     {character === 'lawyer' ? '👨‍⚖️' : '😊'}
                                 </div>
-                                <div className="message-content">
-                                    <div className="message-bubble">
-                                        <div className="typing-indicator">
-                                            <div className="typing-dot"></div>
-                                            <div className="typing-dot"></div>
-                                            <div className="typing-dot"></div>
+                                <div className="app-msg-content">
+                                    <div className="app-msg-bubble">
+                                        <div className="app-msg-typing">
+                                            <span /><span /><span />
                                         </div>
                                     </div>
                                 </div>
@@ -377,11 +344,11 @@ function App() {
                 )}
 
                 {/* Chat Input */}
-                <div className="chat-input-container">
-                    <div className="chat-input-wrapper">
+                <div className="app-input-area">
+                    <div className="app-input-wrapper">
                         <input
                             type="text"
-                            className="chat-input"
+                            className="app-input"
                             placeholder="Nhập câu hỏi của bạn về pháp luật..."
                             value={inputValue}
                             onChange={(e) => setInputValue(e.target.value)}
@@ -389,22 +356,21 @@ function App() {
                             disabled={isLoading}
                         />
                         <button
-                            className="send-button"
+                            className="app-send-btn"
                             onClick={handleSend}
                             disabled={!inputValue.trim() || isLoading}
                         >
-                            ➤
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <path d="M4 10L16 10M16 10L10 4M16 10L10 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
                         </button>
                     </div>
+                    <p className="app-input-disclaimer">AI có thể mắc lỗi. Hãy kiểm tra lại những thông tin quan trọng.</p>
                 </div>
 
-                {/* Nút Kéo Lên Đầu Trang - hiện khi có tin nhắn và đã cuộn xuống */}
+                {/* Scroll to top */}
                 {messages.length > 0 && showScrollTop && (
-                    <button
-                        className="scroll-to-top-btn"
-                        onClick={scrollToTop}
-                        title="Kéo lên đầu trang"
-                    >
+                    <button className="app-scroll-top" onClick={scrollToTop} title="Kéo lên đầu trang">
                         ⬆
                     </button>
                 )}

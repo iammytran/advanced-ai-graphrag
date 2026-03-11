@@ -10,7 +10,7 @@ function CaseFile() {
     const [objective, setObjective] = useState('compensation')
     const [sessionSettings, setSessionSettings] = useState({
         timeLimit: 10,
-        objectionLimit: 3,
+        roundLimit: 4,
         pauseEnabled: true
     })
 
@@ -37,121 +37,172 @@ function CaseFile() {
     }
 
     if (!scenario) {
-        return <div className="courtroom-page">Loading...</div>
+        return <div className="vc-page"><div className="vc-content">Đang tải...</div></div>
     }
 
+    const steps = [
+        { label: 'Kịch bản', done: true },
+        { label: 'Vai trò', done: true },
+        { label: 'Huấn luyện viên', done: true },
+        { label: 'Hồ sơ vụ án', active: true },
+        { label: 'Chiến lược' }
+    ]
+
     return (
-        <div className="courtroom-page case-file">
-            <header className="page-header">
-                <div className="breadcrumb">
-                    <span onClick={() => navigate('/courtroom')}>Kịch bản</span>
-                    <span> → Chi tiết → Coach → </span>
-                    <span>Hồ sơ</span>
-                </div>
-                <h1>📁 Hồ Sơ Vụ Án</h1>
-                <p>{scenario.name}</p>
-            </header>
-
-            <section className="facts-section">
-                <h2>📋 Các Sự Kiện (Facts)</h2>
-                <ul className="facts-list">
-                    {scenario.facts?.map((fact, i) => (
-                        <li key={i}>
-                            <span className="fact-number">{i + 1}</span>
-                            <span className="fact-text">{fact}</span>
-                        </li>
-                    ))}
-                </ul>
-            </section>
-
-            <section className="objective-section">
-                <h2>🎯 Mục Tiêu Của Bạn</h2>
-                <div className="objective-options">
-                    <label className={`objective-card ${objective === 'compensation' ? 'selected' : ''}`}>
-                        <input
-                            type="radio"
-                            name="objective"
-                            value="compensation"
-                            checked={objective === 'compensation'}
-                            onChange={(e) => setObjective(e.target.value)}
-                        />
-                        <div className="icon">💰</div>
-                        <h3>Nhận bồi thường</h3>
-                        <p>Yêu cầu bồi thường thiệt hại đầy đủ</p>
-                    </label>
-
-                    <label className={`objective-card ${objective === 'mediation' ? 'selected' : ''}`}>
-                        <input
-                            type="radio"
-                            name="objective"
-                            value="mediation"
-                            checked={objective === 'mediation'}
-                            onChange={(e) => setObjective(e.target.value)}
-                        />
-                        <div className="icon">🤝</div>
-                        <h3>Hòa giải (Win-Win)</h3>
-                        <p>Đạt thỏa thuận có lợi cho cả hai bên</p>
-                    </label>
-                </div>
-            </section>
-
-            <section className="settings-section">
-                <h2>⚙️ Cài Đặt Phiên</h2>
-                <div className="settings-grid">
-                    <div className="setting-item">
-                        <label>⏱️ Giới hạn thời gian</label>
-                        <select
-                            value={sessionSettings.timeLimit}
-                            onChange={(e) => setSessionSettings(prev => ({
-                                ...prev,
-                                timeLimit: parseInt(e.target.value)
-                            }))}
-                        >
-                            <option value={5}>5 phút</option>
-                            <option value={10}>10 phút</option>
-                            <option value={15}>15 phút</option>
-                            <option value={20}>20 phút</option>
-                        </select>
+        <div className="vc-page">
+            {/* Step indicator */}
+            <nav className="vc-steps">
+                {steps.map((step, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center' }}>
+                        {i > 0 && (
+                            <div className={`vc-step-line${step.done || step.active ? ' done' : ''}`} />
+                        )}
+                        <div className={`vc-step${step.done ? ' done' : ''}${step.active ? ' active' : ''}`}>
+                            <span className="vc-step-dot">
+                                {step.done ? '✓' : i + 1}
+                            </span>
+                            <span>{step.label}</span>
+                        </div>
                     </div>
+                ))}
+            </nav>
 
-                    <div className="setting-item">
-                        <label>✋ Giới hạn lượt phản đối</label>
-                        <select
-                            value={sessionSettings.objectionLimit}
-                            onChange={(e) => setSessionSettings(prev => ({
-                                ...prev,
-                                objectionLimit: parseInt(e.target.value)
-                            }))}
-                        >
-                            <option value={2}>2 lượt</option>
-                            <option value={3}>3 lượt</option>
-                            <option value={5}>5 lượt</option>
-                        </select>
+            <div className="vc-content">
+                {/* Title */}
+                <h1 className="vc-case-title">Hồ Sơ Vụ Án</h1>
+                <p className="vc-case-scenario">{scenario.name}</p>
+
+                {/* Facts */}
+                <div className="vc-section">
+                    <div className="vc-section-label">Các sự kiện pháp lý</div>
+                    <div className="vc-facts-list">
+                        {scenario.facts?.map((fact, i) => (
+                            <div
+                                key={i}
+                                className="vc-fact-item"
+                                style={{ animationDelay: `${0.05 + i * 0.06}s` }}
+                            >
+                                <span className="vc-fact-num">{i + 1}</span>
+                                <span className="vc-fact-text">{fact}</span>
+                            </div>
+                        ))}
                     </div>
+                </div>
 
-                    <div className="setting-item">
-                        <label className="checkbox-label">
+                {/* Objective */}
+                <div className="vc-section">
+                    <div className="vc-section-label">Mục tiêu của bạn</div>
+                    <div className="vc-objective-grid">
+                        <label
+                            className={`vc-objective-card${objective === 'compensation' ? ' selected' : ''}`}
+                            style={{ animationDelay: '0.1s' }}
+                        >
                             <input
-                                type="checkbox"
-                                checked={sessionSettings.pauseEnabled}
-                                onChange={(e) => setSessionSettings(prev => ({
-                                    ...prev,
-                                    pauseEnabled: e.target.checked
-                                }))}
+                                type="radio"
+                                name="objective"
+                                value="compensation"
+                                checked={objective === 'compensation'}
+                                onChange={(e) => setObjective(e.target.value)}
                             />
-                            <span>⏸️ Cho phép tạm dừng 10 giây</span>
+                            <div className="vc-objective-icon">💰</div>
+                            <div className="vc-objective-name">Nhận bồi thường</div>
+                            <div className="vc-objective-desc">Yêu cầu bồi thường thiệt hại đầy đủ theo quy định pháp luật</div>
+                        </label>
+
+                        <label
+                            className={`vc-objective-card${objective === 'mediation' ? ' selected' : ''}`}
+                            style={{ animationDelay: '0.15s' }}
+                        >
+                            <input
+                                type="radio"
+                                name="objective"
+                                value="mediation"
+                                checked={objective === 'mediation'}
+                                onChange={(e) => setObjective(e.target.value)}
+                            />
+                            <div className="vc-objective-icon">🤝</div>
+                            <div className="vc-objective-name">Hòa giải (Win-Win)</div>
+                            <div className="vc-objective-desc">Đạt thỏa thuận có lợi cho cả hai bên thông qua đàm phán</div>
                         </label>
                     </div>
                 </div>
-            </section>
 
-            <div className="navigation-buttons">
-                <button className="btn-secondary" onClick={() => navigate(-1)}>
-                    ← Quay lại
-                </button>
-                <button className="btn-primary" onClick={handleContinue}>
-                    Tiếp tục →
-                </button>
+                {/* Settings */}
+                <div className="vc-section">
+                    <div className="vc-section-label">Cài đặt phiên tòa</div>
+                    <div className="vc-settings-box" style={{ animationDelay: '0.2s' }}>
+                        <div className="vc-setting-row">
+                            <div className="vc-setting-label">
+                                <span>⏱️</span>
+                                <span>Giới hạn thời gian</span>
+                            </div>
+                            <select
+                                className="vc-setting-select"
+                                value={sessionSettings.timeLimit}
+                                onChange={(e) => setSessionSettings(prev => ({
+                                    ...prev,
+                                    timeLimit: parseInt(e.target.value)
+                                }))}
+                            >
+                                <option value={5}>5 phút</option>
+                                <option value={10}>10 phút</option>
+                                <option value={15}>15 phút</option>
+                                <option value={20}>20 phút</option>
+                            </select>
+                        </div>
+
+                        <div className="vc-setting-row">
+                            <div className="vc-setting-label">
+                                <span>🔄</span>
+                                <span>Giới hạn lượt phản biện</span>
+                            </div>
+                            <select
+                                className="vc-setting-select"
+                                value={sessionSettings.roundLimit}
+                                onChange={(e) => setSessionSettings(prev => ({
+                                    ...prev,
+                                    roundLimit: parseInt(e.target.value)
+                                }))}
+                            >
+                                <option value={2}>2 lượt</option>
+                                <option value={3}>3 lượt</option>
+                                <option value={4}>4 lượt</option>
+                                <option value={5}>5 lượt</option>
+                                <option value={6}>6 lượt</option>
+                            </select>
+                        </div>
+
+                        <div className="vc-setting-row">
+                            <div className="vc-setting-label">
+                                <span>⏸️</span>
+                                <span>Cho phép tạm dừng 10 giây</span>
+                            </div>
+                            <div
+                                className={`vc-toggle${sessionSettings.pauseEnabled ? ' on' : ''}`}
+                                onClick={() => setSessionSettings(prev => ({
+                                    ...prev,
+                                    pauseEnabled: !prev.pauseEnabled
+                                }))}
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={sessionSettings.pauseEnabled}
+                                    readOnly
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Navigation */}
+                <div className="vc-nav">
+                    <button className="vc-btn-back" onClick={() => navigate(-1)}>
+                        ← Quay lại
+                    </button>
+                    <button className="vc-btn-next" onClick={handleContinue}>
+                        Tiếp tục → Xây dựng chiến lược
+                    </button>
+                </div>
             </div>
         </div>
     )
