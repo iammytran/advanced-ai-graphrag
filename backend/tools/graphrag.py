@@ -255,8 +255,8 @@ def extract_entities_unsloth(
     
     # Cấu hình Tokenizer BẮT BUỘC
     tokenizer.padding_side = "left" 
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = "<|reserved_special_token_0|>"
+    tokenizer.pad_token = tokenizer.eos_token
+    model.config.pad_token_id = tokenizer.eos_token_id
 
     def parse_graph_output(raw_text):
         entities, relationships = [], []
@@ -348,14 +348,21 @@ def extract_entities_unsloth(
         # GENERATION CONFIG - KỶ LUẬT THÉP
         outputs = model.generate(
             input_ids = inputs.input_ids,
-            attention_mask = inputs.attention_mask, # Truyền rõ ràng mask ở đây
+            attention_mask = inputs.attention_mask,
             max_new_tokens = max_new_tokens,
             use_cache = True,
-            temperature = 0.1,
-            pad_token_id=tokenizer.pad_token_id,
-            eos_token_id=tokenizer.eos_token_id,
-            do_sample=False
-       )
+            
+            # Thay đổi ở đây:
+            do_sample = True, 
+            temperature = 0.1, # Rất thấp để giữ độ chính xác nhưng tránh bị kẹt Greedy
+            top_p = 0.9,
+            
+            pad_token_id = tokenizer.pad_token_id,
+            eos_token_id = tokenizer.eos_token_id,
+            
+            # Thêm cái này để tránh lặp từ:
+            repetition_penalty = 1.1 
+        )
 
         input_len = inputs.input_ids.shape[1]
         decoded_outputs = tokenizer.batch_decode(outputs[:, input_len:], skip_special_tokens=True)
