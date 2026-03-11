@@ -23,7 +23,7 @@ class AdvancedLocalSearch:
 
         # 2. LOAD ENCODINGS CÓ SẴN (Step My muốn)
         self.entity_name_embeddings=None
-        entity_embeddings_path = f"{artifacts_path}/entity_embeddings"
+        entity_embeddings_path = f"{artifacts_path}/entity_embeddings.npy"
         if os.path.exists(entity_embeddings_path):
             logging.info("🚀 Đang nạp encodings từ file vật lý...")
             self.entity_name_embeddings = np.load(entity_embeddings_path)
