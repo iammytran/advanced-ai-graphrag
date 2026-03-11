@@ -108,9 +108,8 @@ Bạn PHẢI trả về JSON duy nhất theo cấu trúc:
 
     print(f"🚀 Giai đoạn Map: Đang xử lý {len(prompts)} chunks song song...")
     raw_responses = await processor.generate_batch(prompts, temperature=0.1, max_tokens=1024)
-    # print(f"raw_responses: {raw_responses}")
     
-    parsed_data = []
+    results = []
     for res in raw_responses:
         try:
             # 1. Làm sạch chuỗi
@@ -118,8 +117,6 @@ Bạn PHẢI trả về JSON duy nhất theo cấu trúc:
             data = json.loads(clean_res)
 
             results = []
-
-            parsed_data.append(data) # Thêm vào danh sách tổng
             
             # 2. Thay vì chỉ lấy "points", hãy lấy toàn bộ object 
             # để giữ lại "score" (hoặc "rating") cho bước Reduce sau này
@@ -129,16 +126,10 @@ Bạn PHẢI trả về JSON duy nhất theo cấu trúc:
                     data['score'] = data['rating'] # Đồng bộ hóa tên khóa
                 
                 results.append(data) 
-            elif isinstance(data, list):
-                results.extend(data)
                 
         except Exception as e:
             print(f"Lỗi parse JSON: {e}")
             continue
-
-    # Sau khi thoát vòng lặp, ghi tất cả vào file
-    with open('all_map_results.json', 'w', encoding='utf-8') as f:
-        json.dump(parsed_data, f, ensure_ascii=False, indent=4)
 
     return results
 
@@ -206,7 +197,7 @@ async def run_global_search(query, summaries_path):
     map_results = await run_map_step(query, chunks, max_new_tokens, processor)
     
     # 3. Reduce
-    final_answer = await run_reduce_step(query, max_new_tokens, map_results, processor)
+    final_answer = await run_reduce_step(query, map_results, max_new_tokens, processor)
     return final_answer
 
     # # Lưu kết quả
