@@ -386,6 +386,157 @@ def extract_entities_unsloth(
 
     return all_entities, all_relationships
 
+def extract_claim_unsloth(
+    text_units: pd.DataFrame,
+    model,
+    tokenizer,
+    entity_types: str,
+    folder_name: str,
+    stop_token_ids,
+    batch_size: int = 4, # Giảm batch_size xuống để tăng độ tập trung cho bản 4-bit
+    max_seq_length: int = 8192,
+    max_new_tokens: int = 1500
+):
+    # from unsloth import FastLanguageModel
+    model = FastLanguageModel.for_inference(model)
+    
+    all_entities = []
+    all_relationships = []
+    
+    # Cấu hình Tokenizer BẮT BUỘC
+    tokenizer.padding_side = "left" 
+    tokenizer.pad_token = tokenizer.eos_token
+    model.config.pad_token_id = tokenizer.eos_token_id
+
+    def parse_graph_output(raw_text):
+        entities, relationships = [], []
+        # Tách theo record_delimiter đã định nghĩa là ##
+        segments = raw_text.split("##")
+        for seg in segments:
+            # Làm sạch các ký tự rác xung quanh
+            parts = seg.strip("() \n\t").split("<|>")
+            if not parts or len(parts) < 1: 
+                continue
+            
+            tag = parts[0].replace('"', '').replace('“', '').replace('”', '').strip().lower()
+            
+            if "entity" in tag and len(parts) >= 4:
+                entities.append({
+                    "name": parts[1].strip(), 
+                    "type": parts[2].strip(), 
+                    "description": parts[3].strip()
+                })
+            elif "relationship" in tag and len(parts) >= 5:
+                relationships.append({
+                    "source": parts[1].strip(), 
+                    "target": parts[2].strip(), 
+                    "description": parts[3].strip(), 
+                    "weight": float(parts[4].strip()) if parts[4].strip().replace('.','',1).isdigit() else 1.0
+                })
+        return entities, relationships
+
+    for i in tqdm(range(0, len(text_units), batch_size), desc="Batch Inferencing"):
+        batch_rows = text_units.iloc[i : i + batch_size]
+        batch_messages = []
+        
+        for _, row in batch_rows.iterrows():
+            doc_name = os.path.splitext(row.get('file_name', 'Văn bản gốc'))[0]
+            # Làm sạch text đầu vào: loại bỏ xuống dòng thừa gây nhiễu
+            text_content = str(row.get('chunk', '')).replace('\n', ' ').strip()
+
+            # Chat Template với lệnh cấm đếm số
+            messages = [
+                {
+                    "role": "system", 
+                    "content": f"""Bạn là chuyên gia phân tích dữ liệu pháp luật. Hãy trích xuất các thực thể và mối quan hệ từ văn bản luật được cung cấp để xây dựng một đồ thị tri thức (Knowledge Graph) chính xác và có tính liên kết cao.
+
+                        1. QUY TẮC TRÍCH XUẤT THỰC THỂ (ENTITIES)
+                            Trích xuất mọi thực thể quan trọng thuộc danh mục: [{entity_types}].
+                            Cho phần này hãy trả về:
+                                + Tên thực thể (entity_name): VIẾT HOA TOÀN BỘ.
+                                + Loại thực thể (entity_type): 1 trong những lọai sau:[{entity_types}]
+                                + Mô tả (entity_description): Mô tả chi tiết về chức năng, quyền hạn, nghĩa vụ hoặc nội dung quy định của thực thể đó trong ngữ cảnh văn bản. Tuyệt đối không sử dụng các đại từ chỉ định hoặc từ thay thế (như: đây, đó, này, họ, nó, quy định ấy...). Thay vào đó, phải lặp lại chính xác tên thực thể hoặc nội 	dung cụ thể để đảm bảo mỗi mô tả đều có ý nghĩa độc lập.
+
+                            Lưu ý trường hợp đặc biệt sau:
+                                + Với thực thể liên quan đến Điều/Khoản: Phải kèm mã hiệu trong ngoặc. VD: "ĐIỀU 1 ({doc_name})".                                
+                        2. QUY TẮC TRÍCH XUẤT QUAN HỆ (RELATIONSHIPS)
+                            Xác định các mối liên kết giữa các thực thể đã trích xuất. Cho phần này, hãy trả về:
+                                + source_entity: Tên thực thể nguồn (từ bước 1)
+                                + target_entity: Tên thực thể đích (từ bước 1)
+                                + relationship_description: Giải thích rõ lý do tại sao hai thực thể này có quan hệ (ví dụ: "Cơ quan A ban hành Quy định B", "Điều X quy định hình phạt cho Hành vi Y"). Tuyệt đối không sử dụng các đại từ chỉ định hoặc từ thay thế (như: đây, đó, này, họ, nó, quy định 	ấy...). Thay vào đó, phải lặp lại chính xác tên thực thể hoặc nội dung cụ thể để đảm bảo mỗi mô tả đều có ý nghĩa độc lập.
+                                + relationship_strength: Điểm số từ 1-10 thể hiện mức độ chặt chẽ của mối liên kết pháp lý.
+                            Đặc biệt: Cho mọi trường hợp văn bản nhắc đến một Điều, Khoản hoặc Văn bản luật khác (kể cả dẫn chiếu nội bộ), bắt buộc tạo quan hệ "dẫn chiếu tới"
+                        3. ĐỊNH DẠNG ĐẦU RA (BẮT BUỘC)
+                            Trả về danh sách các phần tử cách nhau bởi dấu ##. Mỗi phần tử tuân thủ cấu trúc sau:
+                                + Thực thể: ("entity"<|><entity_name><|><entity_type><|><entity_description>)
+                                + Quan hệ: ("relationship"<|><source_entity><|><target_entity><|><relationship_description><|><relationship_strength>)
+                            Lưu ý: Không trả về lời dẫn giải, chỉ trả về dữ liệu theo cấu trúc. Ngôn ngữ: Tiếng Việt.
+                                + Kết thúc bằng: {completion_delimiter}
+
+                        4. VÍ DỤ MẪU ĐỂ BẠN LÀM THEO:
+                        Text: Chính phủ ban hành Nghị định 123/2024/NĐ-CP. Theo đó, người điều khiển xe máy điện không đội mũ bảo hiểm sẽ bị phạt tiền từ 400.000 đến 600.000 đồng. 
+                        Output: 
+                        ("entity"{tuple_delimiter}NGHỊ ĐỊNH 123/2024/NĐ-CP{tuple_delimiter}VĂN_BẢN_PHÁP_LUẬT{tuple_delimiter}Nghị định 123/2024/NĐ-CP quy định về xử phạt vi phạm hành chính trong lĩnh vực giao thông đường bộ) {record_delimiter} 
+                        (“entity"{tuple_delimiter}KHÔNG ĐỘI MŨ BẢO HIỂM{tuple_delimiter}HÀNH_VI_VI_PHẠM{tuple_delimiter}Hành vi người điều khiển xe máy điện không đội mũ bảo hiểm cho người đi mô tô, xe máy) {record_delimiter}
+                        ("entity"{tuple_delimiter}PHẠT TIỀN TỪ 400.000 ĐẾN 600.000 ĐỒNG{tuple_delimiter}CHẾ_TÀI_PHÁP_LÝ{tuple_delimiter}Mức phạt tiền từ 400.000 đồng đến 600.000 đồng áp dụng cho hành vi vi phạm giao thông cụ thể) {record_delimiter} 
+                        ("relationship"{tuple_delimiter}NGHỊ ĐỊNH 123/2024/NĐ-CP{tuple_delimiter}KHÔNG ĐỘI MŨ BẢO HIỂM{tuple_delimiter}Nghị định 123/2024/NĐ-CP xác định hành vi không đội mũ bảo hiểm là hành vi vi phạm pháp luật{tuple_delimiter}9) {record_delimiter} 
+                        ("relationship"{tuple_delimiter}KHÔNG ĐỘI MŨ BẢO HIỂM{tuple_delimiter}PHẠT TIỀN TỪ 400.000 ĐẾN 600.000 ĐỒNG{tuple_delimiter}Hành vi không đội mũ bảo hiểm dẫn đến hình thức xử phạt tiền từ 400.000 đến 600.000 đồng{tuple_delimiter}10) {completion_delimiter}
+                        """
+                },
+                {
+                    "role": "user", 
+                    "content": f"Văn bản gốc: {doc_name}\nNội dung cần trích xuất: {text_content}\n\nOutput:"
+                }
+            ]
+            
+            prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+            # print(prompt)
+            batch_messages.append(prompt)
+
+        inputs = tokenizer(batch_messages, return_tensors="pt", padding=True, truncation=True, max_length=max_seq_length-max_new_tokens).to("cuda")
+
+        # GENERATION CONFIG - KỶ LUẬT THÉP
+        outputs = model.generate(
+            input_ids = inputs.input_ids,
+            attention_mask = inputs.attention_mask,
+            max_new_tokens = max_new_tokens,
+            use_cache = True,
+            
+            # Thay đổi ở đây:
+            do_sample = True, 
+            temperature = 0.1, # Rất thấp để giữ độ chính xác nhưng tránh bị kẹt Greedy
+            top_p = 0.9,
+            
+            pad_token_id = tokenizer.pad_token_id,
+            eos_token_id = tokenizer.eos_token_id,
+            
+            # Thêm cái này để tránh lặp từ:
+            repetition_penalty = 1.1 
+        )
+
+        input_len = inputs.input_ids.shape[1]
+        decoded_outputs = tokenizer.batch_decode(outputs[:, input_len:], skip_special_tokens=True)
+
+        # Lưu Log để debug
+        os.makedirs(folder_name, exist_ok=True)
+        debug_log_path = os.path.join(folder_name, "debug_log.txt")
+        print("Finish batch ...")
+        for idx, actual_gen in enumerate(decoded_outputs):
+            with open(debug_log_path, "a", encoding="utf-8") as f:
+                f.write(f"\n--- BATCH {i+idx} ---")
+                f.write(f"Prompt: {batch_messages}")
+                f.write(f"\n{actual_gen}\n{'-'*30}\n")
+            
+            entities, relations = parse_graph_output(actual_gen)
+            all_entities.extend(entities)
+            all_relationships.extend(relations)
+
+        del inputs, outputs
+        torch.cuda.empty_cache()
+
+    return all_entities, all_relationships
+
+
 # Ví dụ cách chạy indexing
 async def main():
     # 0. Create folder contains everything of current timestamp
@@ -394,7 +545,7 @@ async def main():
     Path(new_folder_name).mkdir(parents=True, exist_ok=True)
 
     # 1. Cấu hình thông số
-    model_name = "unsloth/meta-llama-3.1-8b-instruct-bnb-4bit"
+    model_name = "unsloth/Qwen2.5-32B-Instruct-bnb-4bit"
     max_seq_length = 8192
     max_new_tokens=2048
 
