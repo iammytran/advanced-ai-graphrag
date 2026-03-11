@@ -108,16 +108,28 @@ Bạn PHẢI trả về JSON duy nhất theo cấu trúc:
 
     print(f"🚀 Giai đoạn Map: Đang xử lý {len(prompts)} chunks song song...")
     raw_responses = await processor.generate_batch(prompts, temperature=0.1, max_tokens=1024)
-    print(f"raw_responses: {raw_responses}")
+    # print(f"raw_responses: {raw_responses}")
     
     results = []
     for res in raw_responses:
         try:
-            # Làm sạch chuỗi JSON (loại bỏ markdown nếu có)
+            # 1. Làm sạch chuỗi
             clean_res = res.replace("```json", "").replace("```", "").strip()
             data = json.loads(clean_res)
-            results.extend(data.get("points", []))
-        except: 
+            
+            # 2. Thay vì chỉ lấy "points", hãy lấy toàn bộ object 
+            # để giữ lại "score" (hoặc "rating") cho bước Reduce sau này
+            if isinstance(data, dict):
+                # Đảm bảo object có score để không bị lỗi khi sort
+                if 'score' not in data and 'rating' in data:
+                    data['score'] = data['rating'] # Đồng bộ hóa tên khóa
+                
+                results.append(data) 
+            elif isinstance(data, list):
+                results.extend(data)
+                
+        except Exception as e:
+            print(f"Lỗi parse JSON: {e}")
             continue
 
     return results
