@@ -220,7 +220,7 @@ def process_with_vllm(text_units, model_path, entity_types, tuple_delimiter, rec
 
     # 4. Inference siêu tốc với vLLM
     print(f"Bắt đầu trích xuất {len(all_prompts)} văn bản với vLLM...")
-    outputs = llm.generate(all_prompts, sampling_params)
+    outputs = llm.generate(all_prompts, sampling_params, use_tqdm=True)
 
     all_entities = []
     all_relationships = []
