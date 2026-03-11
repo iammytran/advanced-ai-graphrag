@@ -358,7 +358,7 @@ def extract_entities_unsloth(
             ]
             
             prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-            print(prompt)
+            # print(prompt)
             batch_messages.append(prompt)
 
         inputs = tokenizer(batch_messages, return_tensors="pt", padding=True, truncation=True, max_length=max_seq_length-max_new_tokens).to("cuda")
@@ -381,7 +381,7 @@ def extract_entities_unsloth(
         # Lưu Log để debug
         os.makedirs(folder_name, exist_ok=True)
         debug_log_path = os.path.join(folder_name, "debug_log.txt")
-        
+        print("Finish batch ...")
         for idx, actual_gen in enumerate(decoded_outputs):
             with open(debug_log_path, "a", encoding="utf-8") as f:
                 f.write(f"\n--- BATCH {i+idx} ---\n{actual_gen}\n{'-'*30}\n")
