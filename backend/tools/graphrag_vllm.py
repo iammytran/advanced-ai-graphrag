@@ -401,11 +401,12 @@ async def main():
         folder_for_debug=new_folder_name
     ))
 
-    with open(f"{new_folder_name}/community_summaries.json", "w", encoding="utf-8") as f:
+    summaries_path = f"{new_folder_name}/community_summaries.json"
+    with open(summaries_path, "w", encoding="utf-8") as f:
         json.dump(reports, f, ensure_ascii=False, indent=4)
     print("Extract community summaries thành công!")
 
-    print(run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?"))
+    print(run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path))
 
 
 @tool

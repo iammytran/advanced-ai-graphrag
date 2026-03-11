@@ -160,17 +160,16 @@ Nếu bạn không thể tìm thấy câu trả lời hoặc nếu các báo cá
     responses = await processor.generate_batch([prompt], temperature=0.3, max_tokens=2048)
     return responses[0]
 
-async def run_global_search(query):
+async def run_global_search(query, summaries_path):
     # Cấu hình
-    MODEL_PATH = "unsloth/meta-llama-3.1-8b-instruct-bnb-4bit"
-    FILE_DATA = 'community_summaries_20260309_151953.json'
+    MODEL_PATH = "Qwen/Qwen2.5-7B-Instruct"
     max_new_tokens = 4096
     
     processor = VLLMProcessor(MODEL_PATH)
     
     # Load Data
     try:
-        with open(FILE_DATA, 'r', encoding='utf-8') as f:
+        with open(summaries_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
     except Exception as e:
         print(f"Lỗi đọc file: {e}")
