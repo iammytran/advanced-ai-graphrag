@@ -1,37 +1,17 @@
 
 import os
 import pandas as pd
-import tiktoken
-import nltk
 import asyncio
 import json
-from google import genai
-from openai import AsyncOpenAI
 import networkx as nx
-import matplotlib.pyplot as plt
-import fitz  # PyMuPDF
 from pathlib import Path
-from pypdf import PdfReader
-from glob import glob
-from docx import Document
-import re
-from tqdm import tqdm
 import pickle
 import graspologic_native as gn
-import html
-from collections import defaultdict
-from typing import List, Optional, Any, Callable, Tuple
-# from graspologic.partition import hierarchical_leiden
-import uuid
 from dotenv import load_dotenv
-import torch
 import logging
 import transformers
 from datetime import datetime
 from langchain.tools import tool
-from langchain_chroma import Chroma
-from datetime import datetime
-from pathlib import Path
 from vllm import LLM, SamplingParams
 from sentence_transformers import SentenceTransformer
 import numpy as np
@@ -410,24 +390,24 @@ async def main():
     print(await run_local_search("Đang hưởng án treo có được thay đổi nơi cư trú không?", new_folder_name))
 
 
-@tool
-def graphrag_retrieval(query: str) -> str:
-    """Retrieves information using the GraphRAG system."""
-    model_path = "Qwen/Qwen2.5-14B-Instruct" 
-    graphrag_manager = LLM(model=model_path, tensor_parallel_size=1)
-    result = route_graphrag_query(query, graphrag_manager)
+# @tool
+# def graphrag_retrieval(query: str) -> str:
+#     """Retrieves information using the GraphRAG system."""
+#     model_path = "Qwen/Qwen2.5-14B-Instruct" 
+#     graphrag_manager = LLM(model=model_path, tensor_parallel_size=1)
+#     result = route_graphrag_query(query, graphrag_manager)
 
-    print(f"Quyết định: {result['search_type'].upper()}")
-    print(f"Lý do: {result['reason']}")
+#     print(f"Quyết định: {result['search_type'].upper()}")
+#     print(f"Lý do: {result['reason']}")
 
-    # Tích hợp gọi GraphRAG
-    response = None
-    if result['search_type'] == "local":
-        summaries_path = f"{new_folder_name}/community_summaries.json"
-        response = run_local_search(query, summaries_path)
-    else:
-        response = run_global_search(query, new_folder_name)
-    return response
+#     # Tích hợp gọi GraphRAG
+#     response = None
+#     if result['search_type'] == "local":
+#         summaries_path = f"{new_folder_name}/community_summaries.json"
+#         response = run_local_search(query, summaries_path)
+#     else:
+#         response = run_global_search(query, new_folder_name)
+#     return response
     
 if __name__ == '__main__':
     asyncio.run(main())
