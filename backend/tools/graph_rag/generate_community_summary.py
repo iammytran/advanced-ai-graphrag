@@ -11,6 +11,7 @@ async def generate_hierarchical_community_reports(
     community_hierarchy: dict, 
     entities_df: pd.DataFrame,
     relationships_df: pd.DataFrame,
+    claims_df: pd.DataFrame,
     model_name: str, # Tên model hoặc path
     folder_for_debug: str,
     max_new_tokens=2048,
@@ -67,6 +68,25 @@ async def generate_hierarchical_community_reports(
                     
                     input_text += "\n\nQUAN HỆ:\n"
                     input_text += "\n".join([f"ID:{idx}, {r['source']} -> {r['target']}: {r['description']}" for idx, r in relevant_rel.iterrows()])
+
+                    # 3. THÊM: Lấy Claims (Quy định chi tiết)
+                    # Lọc các claim mà chủ thể hoặc đối tượng liên quan nằm trong cụm này
+                    relevant_claims = claims_df[
+                        claims_df['subject'].isin(nodes) | 
+                        claims_df['object'].isin(nodes)
+                    ]
+                    
+                    if not relevant_claims.empty:
+                        input_text += "\n\n### 3. CHI TIẾT QUY ĐỊNH & CHẾ TÀI (CLAIMS):\n"
+                        claim_entries = []
+                        for idx, r in relevant_claims.iterrows():
+                            # Tổng hợp thông tin từ description và source_text (câu trích dẫn)
+                            entry = (f"ID:C{idx}, Chủ thể: {r['subject']}, Loại: {r['claim_type']}, "
+                                     f"Trạng thái: {r['status']}\n"
+                                     f"   - Nội dung: {r['description']}\n"
+                                     f"   - Trích dẫn gốc: {r['source_text']}")
+                            claim_entries.append(entry)
+                        input_text += "\n".join(claim_entries)
                 else:
                     # Level Cha: Tổng hợp từ Summary của con
                     sub_comm_ids = [child for child, parent in community_hierarchy.items() if str(parent) == str(cid)]
@@ -99,7 +119,7 @@ Hỗ trợ luật sư và người dân hiểu rõ tác động pháp lý. Báo 
 Bạn PHẢI trả về một khối JSON duy nhất với cấu trúc sau:
 {{
     "title": "Tiêu đề cụ thể, ví dụ: Các quy định về tội danh tại Điều 182 Bộ luật Hình sự",
-    "summary": "Tóm tắt tổng hợp toàn bộ nội dung từ các nút dữ liệu...",
+    "report": "Tổng hợp toàn bộ nội dung từ các nút dữ liệu",
     "rating": <số thực từ 0-10>,
     "rating_explanation": "Giải thích lý do cho điểm tác động này.",
     "findings": [

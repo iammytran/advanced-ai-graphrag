@@ -58,7 +58,7 @@ def prepare_global_context(query, community_reports, tokenizer, context_window=6
         report_text = (
             f"\n\n### BÁO CÁO ID: {r['community_id']}\n"
             f"Tiêu đề: {detail.get('title', 'N/A')}\n"
-            f"Tóm tắt: {detail.get('summary', '')}\n"
+            f"Tóm tắt: {detail.get('report', '')}\n"
             f"Phát hiện: {findings}\n---"
         )
         

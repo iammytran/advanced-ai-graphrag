@@ -33,6 +33,8 @@ from langchain_chroma import Chroma
 from datetime import datetime
 from pathlib import Path
 from vllm import LLM, SamplingParams
+from sentence_transformers import SentenceTransformer
+import numpy as np
 
 from backend.tools.graph_rag.chunking import get_law_texts as get_law_texts_external, chunk_civil_code_markdown
 from backend.tools.graph_rag.compute_leiden_communities import _compute_leiden_communities
@@ -59,7 +61,7 @@ completion_delimiter="<|COMPLETE|>"
 record_delimiter="##"
 
 def parse_graph_output(raw_text):
-        entities, relationships = [], []
+        entities, relationships, claims = [], [], []
         # Tách theo record_delimiter đã định nghĩa là ##
         segments = raw_text.split("##")
         for seg in segments:
@@ -83,9 +85,22 @@ def parse_graph_output(raw_text):
                     "description": parts[3].strip(), 
                     "weight": float(parts[4].strip()) if parts[4].strip().replace('.','',1).isdigit() else 1.0
                 })
-        return entities, relationships
+            
+            # 3. Parse Claim (Quy định) - 8 trường dữ liệu
+            elif "claim" in tag and len(parts) >= 9:
+                claims.append({
+                    "subject": parts[1].strip(),
+                    "object": parts[2].strip(),
+                    "claim_type": parts[3].strip(),
+                    "status": parts[4].strip(),
+                    "start_date": parts[5].strip(),
+                    "end_date": parts[6].strip(),
+                    "description": parts[7].strip(),
+                    "source_text": parts[8].strip()
+                })
+        return entities, relationships, claims
 
-def extract_entities_relations(text_units, folder_path, model_path, entity_types, tuple_delimiter, record_delimiter, completion_delimiter):
+def extract_info_from_chunk(text_units, folder_path, model_path, entity_types, tuple_delimiter, record_delimiter, completion_delimiter):
     # 1. Khởi tạo model vLLM (Thay thế cho model.generate truyền thống)
     # vLLM tự động quản lý bộ nhớ cực tốt
     llm = LLM(model=model_path, trust_remote_code=True, tensor_parallel_size=2, gpu_memory_utilization=0.7) 
@@ -127,10 +142,23 @@ def extract_entities_relations(text_units, folder_path, model_path, entity_types
                                 + relationship_description: Giải thích rõ lý do tại sao hai thực thể này có quan hệ (ví dụ: "Cơ quan A ban hành Quy định B", "Điều X quy định hình phạt cho Hành vi Y"). Tuyệt đối không sử dụng các đại từ chỉ định hoặc từ thay thế (như: đây, đó, này, họ, nó, quy định 	ấy...). Thay vào đó, phải lặp lại chính xác tên thực thể hoặc nội dung cụ thể để đảm bảo mỗi mô tả đều có ý nghĩa độc lập.
                                 + relationship_strength: Điểm số từ 1-10 thể hiện mức độ chặt chẽ của mối liên kết pháp lý.
                             Đặc biệt: Cho mọi trường hợp văn bản nhắc đến một Điều, Khoản hoặc Văn bản luật khác (kể cả dẫn chiếu nội bộ), bắt buộc tạo quan hệ "dẫn chiếu tới"
+
+                        ## QUY TẮC TRÍCH XUẤT QUY ĐỊNH (CLAIMS)
+                            Trích xuất nội dung quy định: Với mỗi thực thể đã trích xuất, trích xuất các quy định liên quan mà thực thể đó là "Chủ thể thực hiện".
+                            Với mỗi quy định, trích xuất:
+                                + Chủ thể (Subject): Tên đối tượng/nhóm đối tượng phải thực thi quy định (VIẾT HOA).
+                                + Đối tượng liên quan (Object): Cơ quan quản lý, hoặc bên chịu tác động của quy định này. Nếu không có, dùng **NONE**.
+                                + Loại quy định (Claim Type): Phân loại (ví dụ: NGHĨA VỤ, QUYỀN HẠN, ĐIỀU KIỆN, HÀNH VI CẤM).
+                                + Trạng thái (Claim Status): **TRUE** (Đang có hiệu lực), **SUSPECTED** (Cần kiểm tra văn bản sửa đổi).
+                                - Mô tả chi tiết (Claim Description): Nội dung cụ thể của quy định, các điều kiện kèm theo và hệ quả pháp lý.
+                                - Thời điểm (Claim Date): Khoảng thời gian (Ngày bắt đầu, Ngày kết thúc) theo định dạng ISO-8601. Nếu chỉ có một mốc thời gian, dùng mốc đó cho cả hai. Nếu không rõ, dùng **NONE**.
+                                - Trích dẫn (Claim Source Text): Danh sách **tất cả** các câu trích nguyên văn từ văn bản gốc có liên quan đến quy định này. Gộp các câu trích dẫn thành 1 chuỗi ký tự.
+
                         ## ĐỊNH DẠNG ĐẦU RA (BẮT BUỘC)
                             Trả về danh sách các phần tử cách nhau bởi dấu ##. Mỗi phần tử tuân thủ cấu trúc sau:
                                 + Thực thể: ("entity"<|><entity_name><|><entity_type><|><entity_description>)
                                 + Quan hệ: ("relationship"<|><source_entity><|><target_entity><|><relationship_description><|><relationship_strength>)
+                                + Quy định: ("claim"{tuple_delimiter}<subject_entity>{tuple_delimiter}<object_entity>{tuple_delimiter}<claim_type>{tuple_delimiter}<claim_status>{tuple_delimiter}<claim_start_date>{tuple_delimiter}<claim_end_date>{tuple_delimiter}<claim_description>{tuple_delimiter}<claim_source>) 
                                 + Kết thúc bằng: {completion_delimiter}
                             NGÔN NGỮ: Chỉ sử dụng Tiếng Việt hoàn chỉnh. Tuyệt đối không sử dụng tiếng Trung, tiếng Anh hay bất kỳ ngôn ngữ nào khác.
                             ĐỊNH DẠNG: Chỉ trả về dữ liệu trích xuất, không giải thích thêm bằng tiếng Trung.
@@ -143,7 +171,8 @@ def extract_entities_relations(text_units, folder_path, model_path, entity_types
                         ("entity"{tuple_delimiter}PHẠT TIỀN TỪ 400.000 ĐẾN 600.000 ĐỒNG{tuple_delimiter}CHẾ_TÀI_PHÁP_LÝ{tuple_delimiter}Mức phạt tiền từ 400.000 đồng đến 600.000 đồng áp dụng cho hành vi vi phạm giao thông cụ thể) {record_delimiter} 
                         ("relationship"{tuple_delimiter}NGHỊ ĐỊNH 123/2024/NĐ-CP{tuple_delimiter}KHÔNG ĐỘI MŨ BẢO HIỂM{tuple_delimiter}Nghị định 123/2024/NĐ-CP xác định hành vi không đội mũ bảo hiểm là hành vi vi phạm pháp luật{tuple_delimiter}9) {record_delimiter} 
                         ("relationship"{tuple_delimiter}KHÔNG ĐỘI MŨ BẢO HIỂM{tuple_delimiter}PHẠT TIỀN TỪ 400.000 ĐẾN 600.000 ĐỒNG{tuple_delimiter}Hành vi không đội mũ bảo hiểm dẫn đến hình thức xử phạt tiền từ 400.000 đến 600.000 đồng{tuple_delimiter}10) {completion_delimiter}
-                        """
+                        ("claim"{tuple_delimiter}NGƯỜI ĐIỀU KHIỂN XE MÁY ĐIỆN{tuple_delimiter}NGHỊ ĐỊNH 123/2024/NĐ-CP{tuple_delimiter}HÀNH VI BỊ NGHIÊM CẤM{tuple_delimiter}TRUE{tuple_delimiter}2024-01-01{tuple_delimiter}NONE{tuple_delimiter}Không đội mũ bảo hiểm bị xử phạt hành chính mức 400.000 - 600.000 VNĐ.{tuple_delimiter}"người điều khiển xe máy điện không đội mũ bảo hiểm sẽ bị phạt tiền từ 400.000 đến 600.000 đồng")                        
+"""
                 },
                 {
                     "role": "user", 
@@ -161,6 +190,7 @@ def extract_entities_relations(text_units, folder_path, model_path, entity_types
 
     all_entities = []
     all_relationships = []
+    all_claims=[]
 
     # 5. Parse kết quả
     print(f"Bắt đầu phân tích kết quả...")
@@ -169,9 +199,10 @@ def extract_entities_relations(text_units, folder_path, model_path, entity_types
         prompt_sent = output.prompt # Lấy lại prompt đã gửi cho vLLM
         
         # Parse kết quả
-        entities, relations = parse_graph_output(actual_gen)
+        entities, relations, claims = parse_graph_output(actual_gen)
         all_entities.extend(entities)
         all_relationships.extend(relations)
+        all_claims.extend(claims)
 
         debug_step = 10
         
@@ -195,6 +226,7 @@ def extract_entities_relations(text_units, folder_path, model_path, entity_types
         # 1. Chuyển sang DataFrame
         df_entities = pd.DataFrame(all_entities)
         df_relationships = pd.DataFrame(all_relationships)
+        df_claims = pd.DataFrame(all_claims)
 
         # 2. Xử lý trùng lặp (Quan trọng cho Knowledge Graph)
         # Vì nhiều Điều luật có thể nhắc đến cùng 1 thực thể, My nên gộp chúng lại
@@ -204,9 +236,14 @@ def extract_entities_relations(text_units, folder_path, model_path, entity_types
         if not df_relationships.empty:
             df_relationships = df_relationships.drop_duplicates(
                 subset=['source', 'target', 'description'], keep='first'
-            )
+        )
+            
+        if not df_claims.empty:
+            df_claims = df_claims.drop_duplicates(
+                subset=['source', 'target', 'description'], keep='first'
+        )
 
-    return df_entities, df_relationships
+    return df_entities, df_relationships, df_claims
 
 def route_graphrag_query(query: str, llm):
     """
@@ -278,11 +315,11 @@ async def main():
     completion_delimiter = "<|COMPLETE|>"
 
     # Đường dẫn model (vLLM hỗ trợ load trực tiếp từ HuggingFace hoặc thư mục local)
-    model_path = "Qwen/Qwen2.5-14B-Instruct" # Hoặc bản 14B/32B tùy GPU của My
+    model_path = "Qwen/Qwen2.5-7B-Instruct" # Hoặc bản 14B/32B tùy GPU của My
 
 
     # Gọi hàm xử lý
-    entities_df, relationships_df = extract_entities_relations(
+    entities_df, relationships_df, claims_df = extract_info_from_chunk(
         text_units = final_df,    
         folder_path = new_folder_name,
         model_path = model_path, 
@@ -297,7 +334,20 @@ async def main():
         pickle.dump(entities_df, f)
     with open(f'{new_folder_name}/relationships.pkl', 'wb') as f:
         pickle.dump(relationships_df, f)
-    print("Lưu entities và relationships thành công!")
+    with open(f'{new_folder_name}/claims.pkl', 'wb') as f:
+        pickle.dump(claims_df, f)
+    print("Lưu entities, relationships và claims thành công!")
+
+    # 10. Encode các entities
+    entity_embeddings_folder_name = f"{new_folder_name}/entity_embeddings"
+    embedding_model_name="keepitreal/vietnamese-sbert"
+    embed_model = SentenceTransformer(embedding_model_name)
+    entity_name_embeddings = embed_model.encode(entities_df['name'].tolist(), show_progress_bar=True, convert_to_numpy=True)
+    # 4. Lưu lại
+    np.save(entity_embeddings_folder_name, entity_name_embeddings)
+    logging.info(f"Đã lưu embeddings của entities tại: {entity_embeddings_folder_name}")
+
+
 
 
     # 10. Vẽ đồ thị
@@ -346,10 +396,8 @@ async def main():
         community_hierarchy=hierarchy,
         entities_df=entities_df,
         relationships_df=relationships_df,
-        model=model_path,
-        # tokenizer=tokenizer,
-        # max_new_tokens=max_new_tokens,
-        # context_window=max_seq_length,
+        claims_df=claims_df,
+        model_name=model_path,
         folder_for_debug=new_folder_name
     ))
 
