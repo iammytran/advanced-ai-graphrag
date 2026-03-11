@@ -51,11 +51,6 @@ transformers.logging.set_verbosity_error()
 # 2. Hoặc cấu hình lại logger cơ bản để bỏ qua các tham số thừa
 logging.basicConfig(level=logging.ERROR)
 
-# 0. Create folder contains everything of current timestamp
-timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-new_folder_name = f"outputs_{timestamp}"
-Path(new_folder_name).mkdir(parents=True, exist_ok=True)
-
 # Định nghĩa danh sách các loại thực thể phù hợp với Luật
 # ENTITY_TYPES = "VĂN_BẢN_PHÁP_LUẬT, ĐIỀU_KHOẢN, CHỦ_THỂ, QUYỀN_HẠN, NGHĨA_VỤ, HÀNH_VI_VI_PHẠM, CHẾ_TÀI_PHÁP_LÝ, ĐIỀU_KIỆN_ÁP_DỤNG, THỜI_HẠN_THỜI_HIỆU, QUY_ĐỊNH_CỤ_THỂ"
 ENTITY_TYPES = "VĂN_BẢN_PHÁP_LUẬT, ĐIỀU_KHOẢN, CHỦ_THỂ, QUY_ĐỊNH, HÀNH_VI, THỜI_HẠN"
@@ -292,6 +287,11 @@ def route_graphrag_query(query: str, llm):
 
 # Ví dụ cách chạy indexing
 async def main():
+    # 0. Create folder contains everything of current timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    new_folder_name = f"outputs_{timestamp}"
+    Path(new_folder_name).mkdir(parents=True, exist_ok=True)
+
     # 5. Chunking
     print("Chunking...")
     law_texts_df = get_law_texts_external()
@@ -374,7 +374,7 @@ async def main():
     # plt.show()
 
     # 10. Compute leiden communities
-    result, hierarchy = _compute_leiden_communities(relationships_df, max_cluster_size=20, use_lcc=False)
+    result, hierarchy = _compute_leiden_communities(relationships_df, max_cluster_size=10, use_lcc=False)
     total_communities = len(hierarchy)
 
     full_context = {

@@ -68,7 +68,7 @@ def generate_hierarchical_community_reports(
         
         # Với vLLM, chúng ta có thể xử lý toàn bộ Level trong 1 Batch nếu VRAM cho phép
         # Hoặc chia batch lớn (ví dụ 32-64)
-        batch_size = 64
+        batch_size = 32
         
         for i in range(0, len(level_comms), batch_size):
             batch = level_comms[i : i + batch_size]
@@ -142,10 +142,10 @@ Bạn là chuyên gia phân tích hệ thống pháp luật Việt Nam. Nhiệm 
 ### ĐỊNH DẠNG ĐẦU RA (JSON DUY NHẤT)
 Bạn PHẢI trả về JSON, không lời dẫn. Giới hạn số lượng mục như sau:
 {{
-    "title": "Tiêu đề ngắn gọn (< 15 từ)",
-    "report": "Tóm tắt tổng quan trong tối đa 3 câu văn.",
+    "title": "Tiêu đề ngắn gọn (< 15 từ) về nội dung của cụm",
+    "report": "Tóm tắt tổng hợp thông tin của cụm từ các nguồn thông tin đã cho",
     "rating": <số từ 0-10>,
-    "rating_explanation": "1 câu giải thích ngắn.",
+    "rating_explanation": "1 câu giải thích",
     "findings": [
         {{
             "summary": "Ý chính 1 (Tối đa 5 ý quan trọng nhất)",
@@ -161,12 +161,6 @@ Bạn PHẢI trả về JSON, không lời dẫn. Giới hạn số lượng m�
 - Tổng độ dài mong muốn: dưới {max_new_tokens} từ."""
                 
                 user_msg = f"""Viết báo cáo cho cụm thực thể sau đây. 
-Yêu cầu bắt buộc: 
-1. Chỉ trả về duy nhất 1 khối JSON.
-2. Trích dẫn ID dữ liệu chuẩn xác [Data: Thực thể (id); Quan hệ (id)].
-3. Nếu các thực thể có nội dung tương tự nhau, hãy gom nhóm chúng lại thành một phát hiện duy nhất mang tính tổng quát thay vì tách rời.
-
-Dữ liệu thực tế:
 {input_text}"""
 
                 messages = [
