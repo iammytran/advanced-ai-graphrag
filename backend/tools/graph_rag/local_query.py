@@ -111,13 +111,12 @@ class AdvancedLocalSearch:
         for community in self.reports:
             # Lấy list nodes của item đó
             entities_in_community = set(community.get("nodes", []))
-            # Kiểm tra xem có node nào chung giữa 2 list không (Giao nhau)
+            
+            # Kiểm tra xem có node nào chung giữa 2 list không
             if not entities_in_community.isdisjoint(node_names_set):
-                summary = community.get("report_detail", {}).get("report")
-                if summary:
-                    reports.append(summary)
-        
-        return matched_entities, rels, claims, reports
+                reports.append(community)
+                
+                return matched_entities, rels, claims, reports
 
     async def query(self, user_query: str):
         """Hàm chính điều phối toàn bộ luồng Local Search"""
