@@ -253,7 +253,22 @@ def process_with_vllm(text_units, model_path, entity_types, tuple_delimiter, rec
                 # Nếu muốn xem tổng tích lũy đến hiện tại
                 f.write(f"\n[TỔNG TÍCH LŨY ĐẾN HIỆN TẠI]: {len(all_entities)} entities, {len(all_relationships)} relations.")
                 f.write(f"\n" + "="*50 + "\n")
-    return all_entities, all_relationships
+
+        # 1. Chuyển sang DataFrame
+        df_entities = pd.DataFrame(all_entities)
+        df_relationships = pd.DataFrame(all_relationships)
+
+        # 2. Xử lý trùng lặp (Quan trọng cho Knowledge Graph)
+        # Vì nhiều Điều luật có thể nhắc đến cùng 1 thực thể, My nên gộp chúng lại
+        if not df_entities.empty:
+            df_entities = df_entities.drop_duplicates(subset=['name'], keep='first')
+        
+        if not df_relationships.empty:
+            df_relationships = df_relationships.drop_duplicates(
+                subset=['source', 'target', 'description'], keep='first'
+            )
+
+    return df_entities, df_relationships
 
 # Ví dụ cách chạy indexing
 async def main():
