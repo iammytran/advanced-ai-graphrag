@@ -152,7 +152,6 @@ Bạn PHẢI trả về JSON, không lời dẫn. Giới hạn số lượng m�
             "explanation": "Chi tiết ý 1 trong tối đa 2 câu văn."
         }}
     ],
-    "node": ["TÊN THỰC THỂ 1", "TÊN THỰC THỂ 2"]
 }}
 
 ### CẢNH BÁO KỸ THUẬT:
