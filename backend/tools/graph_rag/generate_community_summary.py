@@ -58,7 +58,7 @@ def generate_hierarchical_community_reports(
                 # --- LOGIC CHUẨN BỊ INPUT_TEXT (Giữ nguyên Idea cũ) ---
                 if current_level == max(sorted_levels):
                     # Level Lá: Thực thể và Quan hệ
-                    relevant_entities = entities_df[entities_df['name'].isin(nodes)].sort_values(by='degree', ascending=False)
+                    relevant_entities = entities_df[entities_df['name'].isin(nodes)]
                     input_text = "THỰC THỂ (Ưu tiên theo độ quan trọng):\n"
                     input_text += "\n".join([f"ID:{idx}, {r['name']}: {r['description']}" for idx, r in relevant_entities.iterrows()])
                     
