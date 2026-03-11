@@ -240,7 +240,7 @@ def extract_info_from_chunk(text_units, folder_path, model_path, entity_types, t
             
         if not df_claims.empty:
             df_claims = df_claims.drop_duplicates(
-                subset=['source', 'target', 'description'], keep='first'
+                subset=['subject', 'object', 'description'], keep='first'
         )
 
     return df_entities, df_relationships, df_claims
