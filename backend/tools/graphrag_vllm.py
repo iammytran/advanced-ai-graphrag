@@ -267,57 +267,64 @@ if __name__ == '__main__':
     Path(output_folder).mkdir(parents=True, exist_ok=True)
 
     asyncio.run(indexing(output_folder))
-
-# 2. Đường dẫn file
-    input_questions_path = "dataset/qa.json"
-    output_results_path = f"{output_folder}/final_results_with_qa.json"
-
-    try:
-        with open(input_questions_path, "r", encoding="utf-8") as f:
-            questions_list = json.load(f)
-    except FileNotFoundError:
-        print(f"❌ Không tìm thấy file {input_questions_path}")
-        questions_list = []
-
-    final_outputs = []
-
-    # 4. Lặp qua từng câu hỏi
-    print(f"🚀 Bắt đầu xử lý {len(questions_list)} câu hỏi...")
-    
-    for item in questions_list:
-        question = item.get("original_question")
-        gold_answer = item.get("answer", "")
-        gold_truth_references = item.get("references", [])
-        print(f"👉 Đang xử lý: {question}")
-        
-        try:
-            # Gọi hàm retrieval
-            # Lưu ý: invoke trả về kết quả cuối cùng từ LLM
-            query_type, answer = graphrag_retrieval.invoke({
-                "query": question, 
+    query = "Được gia hạn tạm giam tối đa bao nhiêu lần để tiến hành điều tra?"
+    query_type, answer = graphrag_retrieval.invoke({
+                "query": query, 
                 "output_folder": output_folder
             })
+    print(f"For {query}, run {query_type}...")
+    print(f"Answer: {answer}")
 
-            # 2. Tính độ tương đồng với gold_answer
-            similarity_score = 0.0
-            if gold_answer:
-                similarity_score = calculate_similarity(gold_answer, answer)
-                print(f"📊 Similarity Score: {similarity_score:.4f}")
+# # 2. Đường dẫn file
+#     input_questions_path = "dataset/qa.json"
+#     output_results_path = f"{output_folder}/final_results_with_qa.json"
+
+#     try:
+#         with open(input_questions_path, "r", encoding="utf-8") as f:
+#             questions_list = json.load(f)
+#     except FileNotFoundError:
+#         print(f"❌ Không tìm thấy file {input_questions_path}")
+#         questions_list = []
+
+#     final_outputs = []
+
+#     # 4. Lặp qua từng câu hỏi
+#     print(f"🚀 Bắt đầu xử lý {len(questions_list)} câu hỏi...")
+    
+#     for item in questions_list:
+#         question = item.get("original_question")
+#         gold_answer = item.get("answer", "")
+#         gold_truth_references = item.get("references", [])
+#         print(f"👉 Đang xử lý: {question}")
+        
+#         try:
+#             # Gọi hàm retrieval
+#             # Lưu ý: invoke trả về kết quả cuối cùng từ LLM
+#             query_type, answer = graphrag_retrieval.invoke({
+#                 "query": question, 
+#                 "output_folder": output_folder
+#             })
+
+#             # 2. Tính độ tương đồng với gold_answer
+#             similarity_score = 0.0
+#             if gold_answer:
+#                 similarity_score = calculate_similarity(gold_answer, answer)
+#                 print(f"📊 Similarity Score: {similarity_score:.4f}")
             
-            # Lưu kết quả vào list
-            final_outputs.append({
-                "question": question,
-                "query_type": query_type,
-                "answer": answer,
-                "gold_answer": gold_answer,
-                "gold_truth_references": gold_truth_references,
-                "similarity_score": round(similarity_score, 4)
-            })
-        except Exception as e:
-            print(f"❌ Lỗi khi xử lý câu hỏi '{question}': {e}")
+#             # Lưu kết quả vào list
+#             final_outputs.append({
+#                 "question": question,
+#                 "query_type": query_type,
+#                 "answer": answer,
+#                 "gold_answer": gold_answer,
+#                 "gold_truth_references": gold_truth_references,
+#                 "similarity_score": round(similarity_score, 4)
+#             })
+#         except Exception as e:
+#             print(f"❌ Lỗi khi xử lý câu hỏi '{question}': {e}")
 
-    # 5. Lưu toàn bộ kết quả vào file mới
-    with open(output_results_path, "w", encoding="utf-8") as f:
-        json.dump(final_outputs, f, ensure_ascii=False, indent=4)
+#     # 5. Lưu toàn bộ kết quả vào file mới
+#     with open(output_results_path, "w", encoding="utf-8") as f:
+#         json.dump(final_outputs, f, ensure_ascii=False, indent=4)
 
-    print(f"✅ Hoàn thành! Kết quả đã được lưu tại: {output_results_path}")
+#     print(f"✅ Hoàn thành! Kết quả đã được lưu tại: {output_results_path}")
