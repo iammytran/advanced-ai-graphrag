@@ -427,6 +427,7 @@ def graphrag_retrieval(query: str, output_folder: str) -> str:
     graphrag_manager = get_llm()
     result = route_graphrag_query(query, graphrag_manager)
 
+    print(f"Query: {query}")
     print(f"Quyết định: {result['search_type'].upper()}")
     print(f"Lý do: {result['reason']}")
 
