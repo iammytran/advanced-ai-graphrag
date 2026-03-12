@@ -392,7 +392,7 @@ async def indexing(output_folder):
     #     "community_hierarchy": hierarchy # {cluster_id: parent_id}
     # }
 
-    # communities_file_name = f"{new_folder_name}/communities.txt"
+    # communities_file_name = f"{new_folder_name}/communities.json"
     # with open(communities_file_name, 'w', encoding='utf-8') as f:
     #     json.dump(full_context, f, ensure_ascii=False, indent=4)
 
@@ -446,5 +446,5 @@ if __name__ == '__main__':
 
     asyncio.run(indexing(output_folder))
 
-    query = "Đang hưởng án treo có được thay đổi nơi cư trú không?"
+    query = "Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?"
     print(graphrag_retrieval.invoke({"query": f"{query}", "output_folder": f"{output_folder}"}))
