@@ -16,6 +16,7 @@ from backend.config.config import (
 from backend.src.prompts import AGENT_SYSTEM_PROMPT
 from backend.tools.graphrag_vllm import graphrag_retrieval
 from backend.tools.rag import rag_retrieval
+from backend.tools.graphrag_vllm import graphrag_retrieval
 
 
 class State(TypedDict):
@@ -68,7 +69,7 @@ class Chatbot:
             raise ValueError(
                 "Invalid model_option. Use 1 for HuggingFace or 2 for OpenAI."
             )
-
+        
         self.model_with_tools = self.llm.bind_tools(tools)
 
     # GRAPH NODES
