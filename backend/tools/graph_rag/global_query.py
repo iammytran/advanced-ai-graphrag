@@ -103,7 +103,7 @@ Bạn PHẢI trả về JSON duy nhất theo cấu trúc:
     raw_responses = processor.generate_batch(prompts, temperature=0.1, max_tokens=1024)
 
     # --- BẮT ĐẦU ĐOẠN LƯU DEBUG ---
-    log_filename = "debug_global_query.jsonl"
+    log_filename = "debug_global_query.json"
     with open(log_filename, "w", encoding="utf-8") as f:
         for i, res in enumerate(raw_responses):
             debug_entry = {
