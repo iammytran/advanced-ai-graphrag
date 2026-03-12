@@ -401,10 +401,10 @@ async def main(output_folder):
     summaries_path = "outputs_20260312_001744/community_summaries.json"
 
     print("Run global search...\n")
-    print(run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path))
+    print(run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path, 5))
 
     print("Run local search...\n")
-    print(await run_local_search("Đang hưởng án treo có được thay đổi nơi cư trú không?", "outputs_20260312_001744"))
+    print(run_local_search("Đang hưởng án treo có được thay đổi nơi cư trú không?", "outputs_20260312_001744"))
 
 
 @tool

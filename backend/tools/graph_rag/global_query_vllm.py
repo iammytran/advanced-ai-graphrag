@@ -147,7 +147,7 @@ def sort_map_outputs(map_results, top_k_sources):
 
     # 2. Sắp xếp dựa trên all_points đã thu thập được
     sorted_results=[]
-    sorted_results = sorted(all_points, key=lambda x: x.get('score', 0), reverse=True)[:top_k_sources]
+    sorted_results = sorted(all_points, key=lambda x: x.get('score', 0), reverse=True)[:top_k_sources] 
 
     return sorted_results
 
