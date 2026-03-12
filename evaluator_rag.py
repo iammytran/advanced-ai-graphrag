@@ -8,8 +8,10 @@ import os
 import sys
 from typing import TypedDict
 
-# Import LLMs
 from langchain_huggingface import ChatHuggingFace, HuggingFacePipeline
+
+# Import LLMs
+from langchain_openai import ChatOpenAI
 from langsmith import Client, traceable
 from typing_extensions import Annotated
 
@@ -30,21 +32,28 @@ from backend.src.chatbot import Chatbot
 warnings.filterwarnings("ignore")
 
 # Initialize Chatbot
-chatbot = Chatbot()
+chatbot = Chatbot(model_option=2)
 
 
 def get_judge_llm():
     """Get the LLM to use for evaluation (Judge)"""
-    llm = HuggingFacePipeline.from_model_id(
-        model_id=HUGGINGFACE_MODEL,
-        task="text-generation",
-        pipeline_kwargs={
-            "max_new_tokens": 1000,
-            "temperature": 0.0,
-            "do_sample": False,
-        },
+    # llm = HuggingFacePipeline.from_model_id(
+    #     model_id=HUGGINGFACE_MODEL,
+    #     task="text-generation",
+    #     pipeline_kwargs={
+    #         "max_new_tokens": 800,
+    #         "temperature": 0.0,
+    #         "do_sample": False,
+    #     },
+    # )
+    # return ChatHuggingFace(llm=llm)
+    llm = ChatOpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        model=OPENAI_MODEL,
+        max_completion_tokens=800,
+        temperature=0,
     )
-    return ChatHuggingFace(llm=llm)
+    return llm
 
 
 # --- Evaluator Definitions ---
@@ -276,7 +285,9 @@ def main():
     #     print(f"Using existing dataset '{dataset_name_reframed}'")
 
     # Run Evaluation
-    print(f"Starting evaluation with judges using {get_judge_llm().model_name}...")
+    print(
+        f"Starting evaluation with judges using {get_judge_llm().model_name if getattr(get_judge_llm(), 'model_name', None) else get_judge_llm().model_id}..."
+    )
 
     print("\n--- Evaluating Original Questions Dataset ---")
     experiment_results_original = client.evaluate(
@@ -286,7 +297,7 @@ def main():
         experiment_prefix="rag-chatbot-original",
         metadata={
             "description": "RAG Chatbot Evaluation - Original Questions",
-            "llm_model": HUGGINGFACE_MODEL,
+            "llm_model": OPENAI_MODEL,
         },
     )
 
