@@ -183,9 +183,9 @@ Bạn PHẢI trả về JSON, không lời dẫn. Giới hạn số lượng m�
                 nodes = batch_nodes[idx]
                 raw_output = output.outputs[0].text
                 
-                # Debug file
-                with open(f"{folder_for_debug}/debug_cluster_{cid}.txt", "w", encoding="utf-8") as f:
-                    f.write(raw_output)
+                # # Debug file
+                # with open(f"{folder_for_debug}/debug_cluster_{cid}.txt", "w", encoding="utf-8") as f:
+                #     f.write(raw_output)
 
                 # --- XỬ LÝ JSON ---
                 try:
