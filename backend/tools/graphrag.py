@@ -44,8 +44,8 @@ def get_llm():
             if _llm is None:
                 _llm = LLM(
                     model="Qwen/Qwen2.5-14B-Instruct",
-                    tensor_parallel_size=2,
-                    gpu_memory_utilization=0.7,
+                    tensor_parallel_size=1,
+                    gpu_memory_utilization=0.6,
                     trust_remote_code=True,
                 )
     return _llm
