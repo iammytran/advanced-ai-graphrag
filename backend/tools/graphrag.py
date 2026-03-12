@@ -22,9 +22,7 @@ from sentence_transformers import SentenceTransformer
 
 embed_model = SentenceTransformer('keepitreal/vietnamese-sbert', device='cuda:1')
 
-from vllm import LLM, SamplingParams
-
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+from vllm import SamplingParams
 
 from backend.tools.graph_rag.chunking import chunk_civil_code_markdown
 from backend.tools.graph_rag.chunking import get_law_texts as get_law_texts_external
@@ -55,6 +53,8 @@ def get_llm():
     if _llm is None:
         with _lock:
             if _llm is None:
+                os.environ["CUDA_VISIBLE_DEVICES"] = "0" 
+                from vllm import LLM
                 # 3. Khởi tạo vLLM trên GPU 0
                 _llm = LLM(
                     model="Qwen/Qwen2.5-14B-Instruct",
