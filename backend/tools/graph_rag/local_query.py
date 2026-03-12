@@ -21,7 +21,7 @@ class AdvancedLocalSearch:
         # 2. Khởi tạo Embedding Model để so sánh meaning
         self.embed_model = SentenceTransformer(embedding_model_name)
 
-        # 2. LOAD ENCODINGS CÓ SẴN (Step My muốn)
+        # 2. LOAD ENCODINGS CÓ SẴN
         self.entity_name_embeddings=None
         entity_embeddings_path = f"{artifacts_path}/entity_embeddings.npy"
         if os.path.exists(entity_embeddings_path):
@@ -134,7 +134,7 @@ class AdvancedLocalSearch:
         # 4. Gom context
         ents, rels, claims, reports = self.get_graph_context(matched_ents)
         
-        # Xây dựng context prompt (giống Reduce step của My)
+        # Xây dựng context prompt
         context_str = "### THỰC THỂ\n" + "\n".join([f"- {r['name']}: {r['description']}" for _, r in ents.iterrows()])
         context_str += "\n\n### QUAN HỆ\n" + "\n".join([f"- {r['source']} -> {r['target']}: {r['description']}" for _, r in rels.iterrows()])
         context_str += "\n\n### 3. QUY ĐỊNH & CHẾ TÀI CHI TIẾT (CLAIMS)\n"
@@ -166,7 +166,7 @@ class AdvancedLocalSearch:
             # Tạo chuỗi cho mỗi báo cáo
             entry = f"#### {title}\n{summary}"
             
-            # Nếu My muốn lấy thêm cả các 'findings' bên trong JSON để context dày hơn:
+            # Nếu muốn lấy thêm cả các 'findings' bên trong JSON để context dày hơn:
             findings = detail.get('findings', [])
             if findings:
                 finding_texts = "\n".join([f"- Phát hiện: {f['summary']}" for f in findings[:3]]) # Lấy tối đa 3 phát hiện

@@ -240,7 +240,6 @@ def extract_info_from_chunk(text_units, folder_path, model_path, entity_types, t
         df_claims = pd.DataFrame(all_claims)
 
         # 2. Xử lý trùng lặp (Quan trọng cho Knowledge Graph)
-        # Vì nhiều Điều luật có thể nhắc đến cùng 1 thực thể, My nên gộp chúng lại
         if not df_entities.empty:
             df_entities = df_entities.drop_duplicates(subset=['name'], keep='first')
         
@@ -324,7 +323,7 @@ async def indexing(output_folder):
     # completion_delimiter = "<|COMPLETE|>"
 
     # # Đường dẫn model (vLLM hỗ trợ load trực tiếp từ HuggingFace hoặc thư mục local)
-    # model_path = "Qwen/Qwen2.5-7B-Instruct" # Hoặc bản 14B/32B tùy GPU của My
+    # model_path = "Qwen/Qwen2.5-7B-Instruct"
 
     # # Gọi hàm xử lý
     # entities_df, relationships_df, claims_df = extract_info_from_chunk(

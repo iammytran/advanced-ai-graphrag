@@ -209,7 +209,6 @@ Bạn PHẢI trả về JSON, không lời dẫn. Giới hạn số lượng m�
                         
                 except Exception as e:
                     print(f"❌ Lỗi parse JSON tại cụm {cid}: {e}")
-                    # Nếu hỏng hẳn, My giữ lại raw_output để sau này vẫn xem được text thô
                     data_json = {
                         "title": f"Báo cáo cụm {cid} (Lỗi định dạng)", 
                         "report": raw_output[:500] + "...", # Lấy tạm text thô
