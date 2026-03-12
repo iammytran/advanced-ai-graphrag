@@ -1,11 +1,11 @@
 import json
-import random
-import asyncio
-from typing import List
-from vllm import LLM, SamplingParams
-from transformers import AutoTokenizer
 import logging
+import random
 import warnings
+from typing import List
+
+from transformers import AutoTokenizer
+from vllm import SamplingParams
 
 # Cấu hình log và cảnh báo
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -145,7 +145,7 @@ Bạn PHẢI trả về JSON duy nhất theo cấu trúc:
 
     return all_points
 
-def sort_map_outputs(map_results, top_k_sources):
+def get_relevant_results(map_results, top_k_sources):
     # 1. Thu thập tất cả các điểm (points) từ tất cả các kết quả map
     all_points = []
     for item in map_results:
@@ -229,7 +229,7 @@ def run_global_search(query, summaries_path, top_k_sources, llm):
     # 2. Map
     map_results = run_map_step(query, chunks, max_new_tokens, processor)
 
-    sorted_map_output = sort_map_outputs(map_results, top_k_sources)
+    sorted_map_output = get_relevant_results(map_results, top_k_sources)
 
     return sorted_map_output
 

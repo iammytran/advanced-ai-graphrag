@@ -1,14 +1,15 @@
-import pandas as pd
-import numpy as np
 import asyncio
 import json
-from typing import List, Dict, Any
-from vllm import LLM, SamplingParams
-from transformers import AutoTokenizer
-from sentence_transformers import SentenceTransformer
 import logging
 import os
 import pickle
+from typing import List
+
+import numpy as np
+import pandas as pd
+from sentence_transformers import SentenceTransformer
+from transformers import AutoTokenizer
+from vllm import SamplingParams
 
 logging.basicConfig(level=logging.INFO)
 
@@ -17,6 +18,7 @@ class AdvancedLocalSearch:
         # 1. Khởi tạo vLLM cho việc trích xuất và tổng hợp
         self.llm = llm
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.artifact_paths = artifacts_path
         
         # 2. Khởi tạo Embedding Model để so sánh meaning
         self.embed_model = SentenceTransformer(embedding_model_name)
@@ -65,7 +67,7 @@ class AdvancedLocalSearch:
             # Làm sạch JSON và parse
             clean_json = res_text.replace("```json", "").replace("```", "").strip()
             return json.loads(clean_json).get("entities", [])
-        except:
+        except Exception:
             return []
 
     def find_best_matches(self, extracted_entities: List[str], top_k_per_entity: int = 10) -> pd.DataFrame:
@@ -187,17 +189,59 @@ class AdvancedLocalSearch:
         
         final_output = self.llm.generate([final_prompt], SamplingParams(temperature=0.3, max_tokens=1024))
         return final_output[0].outputs[0].text
+    
+    def get_relevant_resources(self, user_query:str):
+        # 1. Trích xuất
+        extracted_names = self.extract_entities_from_query(user_query)
+        logging.info(f"🔍 Thực thể trích xuất từ query: {extracted_names}")
+        
+        # 2 & 3. So khớp ngữ nghĩa (Meaning Comparison)
+        matched_ents = self.find_best_matches(extracted_names)
+        logging.info(f"📍 Đã khớp với {len(matched_ents)} thực thể trong đồ thị.")
+        logging.info(f"📍 Các thực thể khớp: {matched_ents}")
+        
+        # 4. Gom context
+        ents, rels, claims, reports = self.get_graph_context(matched_ents)
+
+        # 1. Tạo thư mục debug nếu chưa có
+        debug_dir = f"{self.artifact_paths}/local_query"
+        os.makedirs(debug_dir, exist_ok=True)
+
+        dfs = {
+            "entities": ents,
+            "relations": rels,
+            "claims": claims
+        }
+
+        for name, df in dfs.items():
+            file_path = os.path.join(debug_dir, f"{name}.json")
+            # indent=4 giúp bạn mở file ra đọc (human-readable) dễ dàng hơn trên MacBook
+            df.to_json(file_path, orient='records', force_ascii=False, indent=4)
+            print(f"✅ Đã lưu DataFrame {name} vào: {file_path}")
+
+        # 3. Lưu Dictionary (reports)
+        report_file_path = os.path.join(debug_dir, "reports.json")
+        try:
+            with open(report_file_path, "w", encoding="utf-8") as f:
+                json.dump(reports, f, ensure_ascii=False, indent=4)
+            print(f"✅ Đã lưu Reports vào: {report_file_path}")
+        except Exception as e:
+            print(f"❌ Lỗi khi lưu reports: {e}")
+
+        print(f"\n🚀 Tất cả file debug đã nằm trong thư mục: {debug_dir}")
+
+        return []
 
 # --- CÁCH CHẠY ---
 def run_local_search(query, artifact_path, llm):
     search_engine = AdvancedLocalSearch(
         model_name="Qwen/Qwen2.5-7B-Instruct",
-        embedding_model_name="keepitreal/vietnamese-sbert", # Model embedding tiếng Việt xịn
+        embedding_model_name="keepitreal/vietnamese-sbert", 
         artifacts_path=artifact_path,
         llm=llm
     )
     
-    response = search_engine.query(query)
+    response = search_engine.get_relevant_resources(query)
     return response
 
 if __name__ == "__main__":
