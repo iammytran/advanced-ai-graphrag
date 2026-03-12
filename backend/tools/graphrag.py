@@ -286,7 +286,7 @@ def route_graphrag_query(query: str, llm):
         return {"search_type": "local", "reason": "error fallback"}
 
 # Ví dụ cách chạy indexing
-async def main(output_folder):
+async def indexing(output_folder):
     # new_folder_name = output_folder
     # # 5. Chunking
     # print("Chunking...")
@@ -398,10 +398,10 @@ async def main(output_folder):
     # with open(summaries_path, "w", encoding="utf-8") as f:
     #     json.dump(reports, f, ensure_ascii=False, indent=4)
     # print("Extract community summaries thành công!")
-    summaries_path = "outputs_20260312_001744/community_summaries.json"
+    # summaries_path = "outputs_20260312_001744/community_summaries.json"
 
     print("Run global search...\n")
-    print(run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path, 5))
+    # print(run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path, 5))
 
     # print("Run local search...\n")
     # print(run_local_search("Đang hưởng án treo có được thay đổi nơi cư trú không?", "outputs_20260312_001744"))
@@ -431,7 +431,7 @@ if __name__ == '__main__':
     output_folder = "outputs"
     Path(output_folder).mkdir(parents=True, exist_ok=True)
 
-    asyncio.run(main(output_folder))
+    asyncio.run(indexing(output_folder))
 
     query = "Đang hưởng án treo có được thay đổi nơi cư trú không?"
     print(graphrag_retrieval.invoke({"query": f"{query}", "output_folder": f"{output_folder}"}))

@@ -105,7 +105,18 @@ Bạn PHẢI trả về JSON duy nhất theo cấu trúc:
 
     print(f"🚀 Giai đoạn Map: Đang xử lý {len(prompts)} chunks song song...")
     raw_responses = processor.generate_batch(prompts, temperature=0.1, max_tokens=1024)
-    print(f"raw_responses: {raw_responses}")
+
+    # --- BẮT ĐẦU ĐOẠN LƯU DEBUG ---
+    log_filename = "debug_global_query.jsonl"
+    with open(log_filename, "w", encoding="utf-8") as f:
+        for i, res in enumerate(raw_responses):
+            debug_entry = {
+                "chunk_index": i,
+                "prompt_sent": prompts[i], # Lưu luôn prompt để đối chiếu
+                "raw_output": res,
+            }
+            f.write(json.dumps(debug_entry, ensure_ascii=False) + "\n")
+    print(f"✅ Đã lưu output thô vào file: {log_filename}")
     
     results = []
     for res in raw_responses:
