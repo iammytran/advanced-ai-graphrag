@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import multiprocessing
 import pickle
 from pathlib import Path
 from threading import Lock
@@ -11,7 +12,13 @@ import transformers
 from dotenv import load_dotenv
 from langchain.tools import tool
 from sentence_transformers import SentenceTransformer
-from vllm import LLM, SamplingParams
+
+# Ép dùng spawn trước khi import vllm
+try:
+    multiprocessing.set_start_method('spawn', force=True)
+except RuntimeError:
+    pass
+
 
 from backend.tools.graph_rag.chunking import chunk_civil_code_markdown
 from backend.tools.graph_rag.chunking import get_law_texts as get_law_texts_external
@@ -42,6 +49,7 @@ def get_llm():
     if _llm is None:
         with _lock:
             if _llm is None:
+                from vllm import LLM, SamplingParams
                 _llm = LLM(
                     model="Qwen/Qwen2.5-14B-Instruct",
                     tensor_parallel_size=1,
