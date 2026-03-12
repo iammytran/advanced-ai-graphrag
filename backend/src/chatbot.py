@@ -9,6 +9,7 @@ from langgraph.graph.message import add_messages
 from backend.config.config import OPENAI_MODEL, TEMPERATURE
 from backend.src.prompts import AGENT_SYSTEM_PROMPT
 from backend.tools.rag import rag_retrieval
+from backend.tools.graphrag_vllm import graphrag_retrieval
 
 
 class State(TypedDict):
@@ -20,7 +21,7 @@ class Chatbot:
     def __init__(self):
         self.message_history: list[BaseMessage] = []
         self.graph = self.build_graph()
-        tools = [rag_retrieval]
+        tools = [graphrag_retrieval]
         self.llm = ChatOpenAI(
             max_completion_tokens=5000,
             base_url="https://openrouter.ai/api/v1",
@@ -48,6 +49,15 @@ class Chatbot:
 
                 if tool_name == "rag_retrieval":
                     tool_result = rag_retrieval.invoke(tool_input)
+
+                    tool_message = ToolMessage(
+                        content=tool_result,
+                        tool_call_id=tool_call.get("id", ""),
+                        name=tool_name,
+                    )
+                    state["messages"].append(tool_message)
+                if tool_name == "graphrag_retrieval":
+                    tool_result = graphrag_retrieval.invoke(tool_input)
 
                     tool_message = ToolMessage(
                         content=tool_result,

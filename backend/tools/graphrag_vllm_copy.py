@@ -423,7 +423,7 @@ async def graphrag_retrieval(query: str, output_folder: str) -> str:
         response = await run_local_search(query, output_folder)
     else:
         summaries_path = f"{output_folder}/community_summaries.json"
-        response = await run_global_search(query, summaries_path)
+        response = await run_global_search(query, summaries_path, top)
     return response
     
 if __name__ == '__main__':

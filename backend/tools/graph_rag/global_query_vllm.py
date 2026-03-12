@@ -128,7 +128,28 @@ Bạn PHẢI trả về JSON duy nhất theo cấu trúc:
             print(f"Lỗi parse JSON: {e}")
             continue
 
-    return results
+    # 1. Thu thập tất cả các điểm (points) từ tất cả các kết quả map
+    all_points = []
+    for item in results:
+        # Lấy danh sách points bên trong mỗi kết quả
+        points = item.get('points', [])
+        all_points.extend(points)    
+
+    return all_points
+
+async def sort_map_outputs(map_results, top_k_sources):
+    # 1. Thu thập tất cả các điểm (points) từ tất cả các kết quả map
+    all_points = []
+    for item in map_results:
+        # Lấy danh sách points bên trong mỗi kết quả
+        points = item.get('points', [])
+        all_points.extend(points)
+
+    # 2. Sắp xếp dựa trên all_points đã thu thập được
+    sorted_results = sorted(all_points, key=lambda x: x.get('score', 0), reverse=True)[:15]
+    if (len(sorted_results) < top_k_sources):
+        
+    return sorted_results
 
 async def run_reduce_step(query, map_results, max_new_tokens, processor: VLLMProcessor):
     # 1. Thu thập tất cả các điểm (points) từ tất cả các kết quả map
@@ -179,7 +200,7 @@ Nếu bạn không thể tìm thấy câu trả lời hoặc nếu các báo cá
     responses = await processor.generate_batch([prompt], temperature=0.3, max_tokens=2048)
     return responses[0]
 
-async def run_global_search(query, summaries_path):
+async def run_global_search(query, summaries_path, top_k_sources):
     # Cấu hình
     MODEL_PATH = "Qwen/Qwen2.5-7B-Instruct"
     max_new_tokens = 4096
@@ -199,10 +220,10 @@ async def run_global_search(query, summaries_path):
     
     # 2. Map
     map_results = await run_map_step(query, chunks, max_new_tokens, processor)
-    
-    # 3. Reduce
-    final_answer = await run_reduce_step(query, map_results, max_new_tokens, processor)
-    return final_answer
+
+    sorted_map_output = sort_map_outputs(map_results, top_k_sources)
+
+    return sorted_map_output
 
     # # Lưu kết quả
     # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
