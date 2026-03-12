@@ -107,6 +107,7 @@ Bạn PHẢI trả về JSON duy nhất theo cấu trúc:
     with open(log_filename, "w", encoding="utf-8") as f:
         for i, res in enumerate(raw_responses):
             debug_entry = {
+                "query": query, 
                 "chunk_index": i,
                 "prompt_sent": prompts[i], # Lưu luôn prompt để đối chiếu
                 "raw_output": res,
