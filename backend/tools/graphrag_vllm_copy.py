@@ -403,12 +403,12 @@ async def main(output_folder):
     print("Run global search...\n")
     print(run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path, 5))
 
-    print("Run local search...\n")
-    print(run_local_search("Đang hưởng án treo có được thay đổi nơi cư trú không?", "outputs_20260312_001744"))
+    # print("Run local search...\n")
+    # print(run_local_search("Đang hưởng án treo có được thay đổi nơi cư trú không?", "outputs_20260312_001744"))
 
 
 @tool
-async def graphrag_retrieval(query: str, output_folder: str) -> str:
+def graphrag_retrieval(query: str, output_folder: str) -> str:
     """Retrieves information using the GraphRAG system."""
     model_path = "Qwen/Qwen2.5-14B-Instruct" 
     graphrag_manager = LLM(model=model_path, tensor_parallel_size=1)
