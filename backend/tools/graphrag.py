@@ -411,7 +411,7 @@ async def indexing(output_folder):
 def graphrag_retrieval(query: str, output_folder: str) -> str:
     """Retrieves information using the GraphRAG system."""
     model_path = "Qwen/Qwen2.5-14B-Instruct" 
-    graphrag_manager = LLM(model=model_path, tensor_parallel_size=1)
+    graphrag_manager = LLM(model=model_path, tensor_parallel_size=1, gpu_memory_utilization=0.7)
     result = route_graphrag_query(query, graphrag_manager)
 
     print(f"Quyết định: {result['search_type'].upper()}")
