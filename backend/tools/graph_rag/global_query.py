@@ -12,15 +12,9 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 logging.basicConfig(level=logging.INFO)
 
 class VLLMProcessor:
-    def __init__(self, model_name: str, max_model_len: int = 16384):
+    def __init__(self, model_name: str, llm, max_model_len: int = 16384):
         # Khởi tạo vLLM engine
-        self.llm = LLM(
-            model=model_name,
-            max_model_len=max_model_len,
-            trust_remote_code=True,
-            gpu_memory_utilization=0.85, # Điều chỉnh tùy theo VRAM của bạn
-            enforce_eager=True # Giảm overhead cho các model nhỏ nếu cần
-        )
+        self.llm = llm
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def apply_template(self, system_prompt: str, user_prompt: str) -> str:
@@ -212,12 +206,12 @@ Nếu bạn không thể tìm thấy câu trả lời hoặc nếu các báo cá
     responses = processor.generate_batch([prompt], temperature=0.3, max_tokens=2048)
     return responses[0]
 
-def run_global_search(query, summaries_path, top_k_sources):
+def run_global_search(query, summaries_path, top_k_sources, llm):
     # Cấu hình
     MODEL_PATH = "Qwen/Qwen2.5-7B-Instruct"
     max_new_tokens = 4096
     
-    processor = VLLMProcessor(MODEL_PATH)
+    processor = VLLMProcessor(MODEL_PATH, llm)
     
     # Load Data
     try:

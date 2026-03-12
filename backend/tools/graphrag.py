@@ -21,7 +21,6 @@ import graspologic_native as gn
 import html
 from collections import defaultdict
 from typing import List, Optional, Any, Callable, Tuple
-# from graspologic.partition import hierarchical_leiden
 import uuid
 from dotenv import load_dotenv
 import torch
@@ -35,6 +34,7 @@ from pathlib import Path
 from vllm import LLM, SamplingParams
 from sentence_transformers import SentenceTransformer
 import numpy as np
+from threading import Lock
 
 from backend.tools.graph_rag.chunking import get_law_texts as get_law_texts_external, chunk_civil_code_markdown
 from backend.tools.graph_rag.compute_leiden_communities import _compute_leiden_communities
@@ -58,6 +58,22 @@ ENTITY_TYPES = "VĂN_BẢN_PHÁP_LUẬT, ĐIỀU_KHOẢN, CHỦ_THỂ, QUY_ĐỊ
 tuple_delimiter="<|>"
 completion_delimiter="<|COMPLETE|>"
 record_delimiter="##"
+
+_llm = None
+_lock = Lock()
+
+def get_llm():
+    global _llm
+    if _llm is None:
+        with _lock:
+            if _llm is None:
+                _llm = LLM(
+                    model="Qwen/Qwen2.5-14B-Instruct",
+                    tensor_parallel_size=2,
+                    gpu_memory_utilization=0.7,
+                    trust_remote_code=True,
+                )
+    return _llm
 
 def parse_graph_output(raw_text):
         entities, relationships, claims = [], [], []
@@ -99,11 +115,7 @@ def parse_graph_output(raw_text):
                 })
         return entities, relationships, claims
 
-def extract_info_from_chunk(text_units, folder_path, model_path, entity_types, tuple_delimiter, record_delimiter, completion_delimiter):
-    # 1. Khởi tạo model vLLM (Thay thế cho model.generate truyền thống)
-    # vLLM tự động quản lý bộ nhớ cực tốt
-    llm = LLM(model=model_path, trust_remote_code=True, tensor_parallel_size=2, gpu_memory_utilization=0.7) 
-    
+def extract_info_from_chunk(text_units, folder_path, model_path, entity_types, tuple_delimiter, record_delimiter, completion_delimiter, llm):    
     # 2. Cấu hình "Kỷ luật thép" cho vLLM
     sampling_params = SamplingParams(
         temperature=0.1,
@@ -287,6 +299,8 @@ def route_graphrag_query(query: str, llm):
 
 # Ví dụ cách chạy indexing
 async def indexing(output_folder):
+    # llm = get_llm()
+
     # new_folder_name = output_folder
     # # 5. Chunking
     # print("Chunking...")
@@ -312,7 +326,6 @@ async def indexing(output_folder):
     # # Đường dẫn model (vLLM hỗ trợ load trực tiếp từ HuggingFace hoặc thư mục local)
     # model_path = "Qwen/Qwen2.5-7B-Instruct" # Hoặc bản 14B/32B tùy GPU của My
 
-
     # # Gọi hàm xử lý
     # entities_df, relationships_df, claims_df = extract_info_from_chunk(
     #     text_units = final_df,    
@@ -321,7 +334,8 @@ async def indexing(output_folder):
     #     entity_types = ENTITY_TYPES,
     #     tuple_delimiter = tuple_delimiter,
     #     record_delimiter = record_delimiter,
-    #     completion_delimiter = completion_delimiter
+    #     completion_delimiter = completion_delimiter,
+    #     llm=llm
     # )
 
     # # 9. Lưu entities và relations sang pickle file
@@ -391,14 +405,15 @@ async def indexing(output_folder):
     #     relationships_df=relationships_df,
     #     claims_df=claims_df,
     #     model_name=model_path,
-    #     folder_for_debug=new_folder_name
+    #     folder_for_debug=new_folder_name,
+    #     llm=llm
     # )
 
     # summaries_path = f"{new_folder_name}/community_summaries.json"
     # with open(summaries_path, "w", encoding="utf-8") as f:
     #     json.dump(reports, f, ensure_ascii=False, indent=4)
     # print("Extract community summaries thành công!")
-    # summaries_path = "outputs_20260312_001744/community_summaries.json"
+    summaries_path = "outputs_20260312_001744/community_summaries.json"
 
     print("Run global search...\n")
     # print(run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path, 5))
@@ -410,8 +425,7 @@ async def indexing(output_folder):
 @tool
 def graphrag_retrieval(query: str, output_folder: str) -> str:
     """Retrieves information using the GraphRAG system."""
-    model_path = "Qwen/Qwen2.5-14B-Instruct" 
-    graphrag_manager = LLM(model=model_path, tensor_parallel_size=2, gpu_memory_utilization=0.7)
+    graphrag_manager = get_llm()
     result = route_graphrag_query(query, graphrag_manager)
 
     print(f"Quyết định: {result['search_type'].upper()}")
@@ -420,10 +434,10 @@ def graphrag_retrieval(query: str, output_folder: str) -> str:
     # Tích hợp gọi GraphRAG
     response = None
     if result['search_type'] == "local":
-        response = run_local_search(query, output_folder)
+        response = run_local_search(query, output_folder, graphrag_manager)
     else:
         summaries_path = f"{output_folder}/community_summaries.json"
-        response = run_global_search(query, summaries_path, 10)
+        response = run_global_search(query, summaries_path, 10, graphrag_manager)
     return response
     
 if __name__ == '__main__':

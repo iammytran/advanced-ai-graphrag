@@ -13,9 +13,9 @@ import pickle
 logging.basicConfig(level=logging.INFO)
 
 class AdvancedLocalSearch:
-    def __init__(self, model_name: str, embedding_model_name: str, artifacts_path: str):
+    def __init__(self, model_name: str, embedding_model_name: str, artifacts_path: str, llm):
         # 1. Khởi tạo vLLM cho việc trích xuất và tổng hợp
-        self.llm = LLM(model=model_name, trust_remote_code=True, gpu_memory_utilization=0.6)
+        self.llm = llm
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         
         # 2. Khởi tạo Embedding Model để so sánh meaning
@@ -189,11 +189,12 @@ class AdvancedLocalSearch:
         return final_output[0].outputs[0].text
 
 # --- CÁCH CHẠY ---
-def run_local_search(query, artifact_path):
+def run_local_search(query, artifact_path, llm):
     search_engine = AdvancedLocalSearch(
         model_name="Qwen/Qwen2.5-7B-Instruct",
         embedding_model_name="keepitreal/vietnamese-sbert", # Model embedding tiếng Việt xịn
-        artifacts_path=artifact_path
+        artifacts_path=artifact_path,
+        llm=llm
     )
     
     response = search_engine.query(query)
