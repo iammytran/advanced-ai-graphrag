@@ -185,7 +185,7 @@ class AdvancedLocalSearch:
             tokenize=False, add_generation_prompt=True
         )
         
-        final_output = self.llm.generate([final_prompt], SamplingParams(temperature=0.3, max_tokens=1024))
+        final_output = self.llm.generate([final_prompt], SamplingParams(temperature=0.3, max_tokens=1024), tensor_parallel_size=2, gpu_memory_utilization=0.7)
         return final_output[0].outputs[0].text
 
 # --- CÁCH CHẠY ---
