@@ -59,7 +59,7 @@ def get_llm():
                 _llm = LLM(
                     model="Qwen/Qwen2.5-14B-Instruct",
                     tensor_parallel_size=1,
-                    gpu_memory_utilization=0.6,
+                    gpu_memory_utilization=0.8,
                     trust_remote_code=True,
                 )
     return _llm
