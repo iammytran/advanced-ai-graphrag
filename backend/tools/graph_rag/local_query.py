@@ -77,7 +77,7 @@ class AdvancedLocalSearch:
 
         # Encode các thực thể từ query
         query_embeddings = self.embed_model.encode(extracted_entities)
-        logging.info(f"query_embeddings: {query_embeddings}")
+        # logging.info(f"query_embeddings: {query_embeddings}")
         
         matched_indices = []
         for q_emb in query_embeddings:

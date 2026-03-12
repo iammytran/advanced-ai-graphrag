@@ -233,10 +233,10 @@ async def indexing(output_folder):
     # with open(summaries_path, "w", encoding="utf-8") as f:
     #     json.dump(reports, f, ensure_ascii=False, indent=4)
     # print("Extract community summaries thành công!")
-    # summaries_path = "outputs_20260312_001744/community_summaries.json"
+    summaries_path = "outputs_20260312_001744/community_summaries.json"
 
     print("Run global search...\n")
-    # # print(run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path, 5))
+    print(run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path, 5))
 
     # # print("Run local search...\n")
     # # print(run_local_search("Đang hưởng án treo có được thay đổi nơi cư trú không?", "outputs_20260312_001744"))
@@ -267,13 +267,13 @@ if __name__ == '__main__':
     Path(output_folder).mkdir(parents=True, exist_ok=True)
 
     asyncio.run(indexing(output_folder))
-    query = "Được gia hạn tạm giam tối đa bao nhiêu lần để tiến hành điều tra?"
-    query_type, answer = graphrag_retrieval.invoke({
-                "query": query, 
-                "output_folder": output_folder
-            })
-    print(f"For {query}, run {query_type}...")
-    print(f"Answer: {answer}")
+    # query = "Được gia hạn tạm giam tối đa bao nhiêu lần để tiến hành điều tra?"
+    # query_type, answer = graphrag_retrieval.invoke({
+    #             "query": query, 
+    #             "output_folder": output_folder
+    #         })
+    # print(f"For {query}, run {query_type}...")
+    # print(f"Answer: {answer}")
 
 # # 2. Đường dẫn file
 #     input_questions_path = "dataset/qa.json"
