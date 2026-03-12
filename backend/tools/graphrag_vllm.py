@@ -70,7 +70,7 @@ def get_embedding_model():
     from sentence_transformers import SentenceTransformer
     return SentenceTransformer('keepitreal/vietnamese-sbert', device='cuda:1')
 
-def graphrag_manager(query: str, llm):
+def query_type_classifier(query: str, llm):
     """
     Sử dụng thư viện vLLM để xác định loại query cho GraphRAG.
     """
@@ -230,7 +230,7 @@ async def indexing(output_folder):
 def graphrag_retrieval(query: str, output_folder: str) -> str:
     """Retrieves information using the GraphRAG system."""
     graphrag_manager = get_llm()
-    result = graphrag_manager(query, graphrag_manager)
+    result = query_type_classifier(query, graphrag_manager)
 
     print(f"Query: {query}")
     print(f"Quyết định: {result['search_type'].upper()}")
