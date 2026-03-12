@@ -31,7 +31,7 @@ class VLLMProcessor:
         ]
         return self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
-    async def generate_batch(self, prompts: List[str], temperature: float, max_tokens: int) -> List[str]:
+    def generate_batch(self, prompts: List[str], temperature: float, max_tokens: int) -> List[str]:
         sampling_params = SamplingParams(
             temperature=temperature,
             max_tokens=max_tokens,
@@ -68,7 +68,7 @@ def prepare_global_context(query, community_reports, tokenizer, context_window=6
     if current_chunk: chunks.append(current_chunk.strip())
     return chunks
 
-async def run_map_step(query, chunks, max_new_tokens, processor: VLLMProcessor):
+def run_map_step(query, chunks, max_new_tokens, processor: VLLMProcessor):
     system_prompt = f"""
 ---Vai trò---
 Bạn là một chuyên gia phân tích pháp luật và trợ lý AI thông minh. 
@@ -104,7 +104,7 @@ Bạn PHẢI trả về JSON duy nhất theo cấu trúc:
         prompts.append(processor.apply_template(system_prompt, user_content))
 
     print(f"🚀 Giai đoạn Map: Đang xử lý {len(prompts)} chunks song song...")
-    raw_responses = await processor.generate_batch(prompts, temperature=0.1, max_tokens=1024)
+    raw_responses = processor.generate_batch(prompts, temperature=0.1, max_tokens=1024)
     
     results = []
     for res in raw_responses:
@@ -137,7 +137,7 @@ Bạn PHẢI trả về JSON duy nhất theo cấu trúc:
 
     return all_points
 
-async def sort_map_outputs(map_results, top_k_sources):
+def sort_map_outputs(map_results, top_k_sources):
     # 1. Thu thập tất cả các điểm (points) từ tất cả các kết quả map
     all_points = []
     for item in map_results:
@@ -146,12 +146,12 @@ async def sort_map_outputs(map_results, top_k_sources):
         all_points.extend(points)
 
     # 2. Sắp xếp dựa trên all_points đã thu thập được
-    sorted_results = sorted(all_points, key=lambda x: x.get('score', 0), reverse=True)[:15]
-    if (len(sorted_results) < top_k_sources):
-        
+    sorted_results=[]
+    sorted_results = sorted(all_points, key=lambda x: x.get('score', 0), reverse=True)[:top_k_sources]
+
     return sorted_results
 
-async def run_reduce_step(query, map_results, max_new_tokens, processor: VLLMProcessor):
+def run_reduce_step(query, map_results, max_new_tokens, processor: VLLMProcessor):
     # 1. Thu thập tất cả các điểm (points) từ tất cả các kết quả map
     all_points = []
     for item in map_results:
@@ -197,10 +197,10 @@ Nếu bạn không thể tìm thấy câu trả lời hoặc nếu các báo cá
     prompt = processor.apply_template(system_prompt, user_content)
     
     print("📝 Giai đoạn Reduce: Đang tổng hợp kết quả cuối cùng...")
-    responses = await processor.generate_batch([prompt], temperature=0.3, max_tokens=2048)
+    responses = processor.generate_batch([prompt], temperature=0.3, max_tokens=2048)
     return responses[0]
 
-async def run_global_search(query, summaries_path, top_k_sources):
+def run_global_search(query, summaries_path, top_k_sources):
     # Cấu hình
     MODEL_PATH = "Qwen/Qwen2.5-7B-Instruct"
     max_new_tokens = 4096
@@ -219,19 +219,12 @@ async def run_global_search(query, summaries_path, top_k_sources):
     chunks = prepare_global_context(query, data, processor.tokenizer)
     
     # 2. Map
-    map_results = await run_map_step(query, chunks, max_new_tokens, processor)
+    map_results = run_map_step(query, chunks, max_new_tokens, processor)
 
     sorted_map_output = sort_map_outputs(map_results, top_k_sources)
 
     return sorted_map_output
 
-    # # Lưu kết quả
-    # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    # with open(f"final_answer_{timestamp}.txt", "w", encoding="utf-8") as f:
-    #     f.write(f"CÂU HỎI: {query}\n" + "="*50 + "\n" + final_answer)
-    
-    # print(f"✅ Hoàn thành! File lưu tại final_answer_{timestamp}.txt")
-
 if __name__ == '__main__':
     query = "Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?"
-    asyncio.run(run_global_search(query))
+    run_global_search(query)

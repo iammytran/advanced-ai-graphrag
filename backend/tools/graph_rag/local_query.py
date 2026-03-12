@@ -48,7 +48,7 @@ class AdvancedLocalSearch:
         with open(self.reports_path, 'r', encoding='utf-8') as f:
             self.reports = json.load(f)  
 
-    async def extract_entities_from_query(self, query: str) -> List[str]:
+    def extract_entities_from_query(self, query: str) -> List[str]:
         """Bước 1: Dùng LLM trích xuất các thực thể quan trọng có trong câu hỏi"""
         system_prompt = """Bạn là trợ lý ngôn ngữ học pháp luật. 
         Nhiệm vụ: Trích xuất các danh từ riêng, thuật ngữ pháp lý hoặc đối tượng quan trọng từ câu hỏi của người dùng.
@@ -119,11 +119,11 @@ class AdvancedLocalSearch:
                 
                 return matched_entities, rels, claims, reports
 
-    async def query(self, user_query: str):
+    def query(self, user_query: str):
         """Hàm chính điều phối toàn bộ luồng Local Search"""
         
         # 1. Trích xuất
-        extracted_names = await self.extract_entities_from_query(user_query)
+        extracted_names = self.extract_entities_from_query(user_query)
         logging.info(f"🔍 Thực thể trích xuất từ query: {extracted_names}")
         
         # 2 & 3. So khớp ngữ nghĩa (Meaning Comparison)
@@ -189,14 +189,14 @@ class AdvancedLocalSearch:
         return final_output[0].outputs[0].text
 
 # --- CÁCH CHẠY ---
-async def run_local_search(query, artifact_path):
+def run_local_search(query, artifact_path):
     search_engine = AdvancedLocalSearch(
         model_name="Qwen/Qwen2.5-7B-Instruct",
         embedding_model_name="keepitreal/vietnamese-sbert", # Model embedding tiếng Việt xịn
         artifacts_path=artifact_path
     )
     
-    response = await search_engine.query(query)
+    response = search_engine.query(query)
     return response
 
 if __name__ == "__main__":
