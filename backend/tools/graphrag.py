@@ -244,7 +244,7 @@ if __name__ == '__main__':
     output_folder = "outputs_20260312_001744"
     Path(output_folder).mkdir(parents=True, exist_ok=True)
 
-    # asyncio.run(indexing(output_folder))
+    asyncio.run(indexing(output_folder))
 
-    # query = "Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?"
-    # print(graphrag_retrieval.invoke({"query": f"{query}", "output_folder": f"{output_folder}"}))
+    query = "Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?"
+    print(graphrag_retrieval.invoke({"query": f"{query}", "output_folder": f"{output_folder}"}))
