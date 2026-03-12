@@ -18,7 +18,7 @@ try:
     multiprocessing.set_start_method('spawn', force=True)
 except RuntimeError:
     pass
-
+from vllm import LLM, SamplingParams
 
 from backend.tools.graph_rag.chunking import chunk_civil_code_markdown
 from backend.tools.graph_rag.chunking import get_law_texts as get_law_texts_external
@@ -49,7 +49,7 @@ def get_llm():
     if _llm is None:
         with _lock:
             if _llm is None:
-                from vllm import LLM, SamplingParams
+
                 _llm = LLM(
                     model="Qwen/Qwen2.5-14B-Instruct",
                     tensor_parallel_size=1,
@@ -240,5 +240,5 @@ if __name__ == '__main__':
 
     # asyncio.run(indexing(output_folder))
 
-    query = "Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?"
-    print(graphrag_retrieval.invoke({"query": f"{query}", "output_folder": f"{output_folder}"}))
+    # query = "Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?"
+    # print(graphrag_retrieval.invoke({"query": f"{query}", "output_folder": f"{output_folder}"}))
