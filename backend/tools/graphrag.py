@@ -2,9 +2,16 @@ import asyncio
 import json
 import logging
 import multiprocessing
+import os
 import pickle
 from pathlib import Path
 from threading import Lock
+
+# Ép dùng spawn trước khi import vllm
+try:
+    multiprocessing.set_start_method('spawn', force=True)
+except RuntimeError:
+    pass
 
 import numpy as np
 import pandas as pd
@@ -13,12 +20,11 @@ from dotenv import load_dotenv
 from langchain.tools import tool
 from sentence_transformers import SentenceTransformer
 
-# Ép dùng spawn trước khi import vllm
-try:
-    multiprocessing.set_start_method('spawn', force=True)
-except RuntimeError:
-    pass
+embed_model = SentenceTransformer('keepitreal/vietnamese-sbert', device='cuda:1')
+
 from vllm import LLM, SamplingParams
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 from backend.tools.graph_rag.chunking import chunk_civil_code_markdown
 from backend.tools.graph_rag.chunking import get_law_texts as get_law_texts_external
@@ -49,7 +55,7 @@ def get_llm():
     if _llm is None:
         with _lock:
             if _llm is None:
-
+                # 3. Khởi tạo vLLM trên GPU 0
                 _llm = LLM(
                     model="Qwen/Qwen2.5-14B-Instruct",
                     tensor_parallel_size=1,
