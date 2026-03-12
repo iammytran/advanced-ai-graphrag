@@ -91,7 +91,7 @@ def graphrag_manager(query: str, llm):
         return {"search_type": "local", "reason": "error fallback"}
 
 async def indexing(output_folder):
-    llm = get_llm()
+    # llm = get_llm()
 
     # new_folder_name = output_folder
     # # 5. Chunking
@@ -199,7 +199,7 @@ async def indexing(output_folder):
     # print("Extract community summaries thành công!")
     # summaries_path = "outputs_20260312_001744/community_summaries.json"
 
-    # print("Run global search...\n")
+    print("Run global search...\n")
     # # print(run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path, 5))
 
     # # print("Run local search...\n")
