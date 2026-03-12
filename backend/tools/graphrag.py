@@ -1,28 +1,34 @@
+import multiprocessing
+import os
+import sys
+
+# Bước 1: Ép spawn PHẢI là dòng thực thi đầu tiên
+if __name__ == "__main__":
+    try:
+        multiprocessing.set_start_method('spawn', force=True)
+    except RuntimeError:
+        pass
+
+# Bước 2: Các thư viện chuẩn (Standard Libraries) - An toàn
 import asyncio
 import json
 import logging
-import multiprocessing
-import os
 import pickle
 from pathlib import Path
 from threading import Lock
 
-# Ép dùng spawn trước khi import vllm
-try:
-    multiprocessing.set_start_method('spawn', force=True)
-except RuntimeError:
-    pass
-
+# Bước 3: Các thư viện xử lý dữ liệu - Thường là an toàn
 import numpy as np
 import pandas as pd
-import transformers
 from dotenv import load_dotenv
+
+# Bước 4: Thư viện AI - ĐÂY LÀ VÙNG NGUY HIỂM
+# Thay vì import SentenceTransformer ở đây, ta sẽ import TRONG hàm sử dụng
+# để tránh việc tiến trình con của vLLM vô tình khởi tạo nó.
 from langchain.tools import tool
-from sentence_transformers import SentenceTransformer
 
-embed_model = SentenceTransformer('keepitreal/vietnamese-sbert', device='cuda:1')
-
-from vllm import SamplingParams
+# vLLM import ở đây là ổn vì nó sẽ được quản lý bởi spawn
+from vllm import LLM, SamplingParams
 
 from backend.tools.graph_rag.chunking import chunk_civil_code_markdown
 from backend.tools.graph_rag.chunking import get_law_texts as get_law_texts_external
@@ -39,8 +45,8 @@ from backend.tools.graph_rag.local_query import run_local_search
 # 1. Nạp các biến từ tệp .env
 load_dotenv()
 
-# 1. Tắt log của transformers để tránh cái warning gây crash kia
-transformers.logging.set_verbosity_error()
+# # 1. Tắt log của transformers để tránh cái warning gây crash kia
+# transformers.logging.set_verbosity_error()
 
 # 2. Hoặc cấu hình lại logger cơ bản để bỏ qua các tham số thừa
 logging.basicConfig(level=logging.ERROR)
@@ -63,6 +69,11 @@ def get_llm():
                     trust_remote_code=True,
                 )
     return _llm
+
+def get_embedding_model():
+    # Chỉ khởi tạo khi tiến trình chính (Main) gọi đến
+    from sentence_transformers import SentenceTransformer
+    return SentenceTransformer('keepitreal/vietnamese-sbert', device='cuda:1')
 
 def graphrag_manager(query: str, llm):
     """
@@ -149,7 +160,7 @@ async def indexing(output_folder):
     # print("Embed các entities...")
     # entity_embeddings_folder_name = f"{new_folder_name}/entity_embeddings"
     # embedding_model_name="keepitreal/vietnamese-sbert"
-    # embed_model = SentenceTransformer(embedding_model_name)
+    # embed_model = get_embedding_model()
     # entity_name_embeddings = embed_model.encode(entities_df['name'].tolist(), show_progress_bar=True, convert_to_numpy=True)
     # # 4. Lưu lại
     # np.save(entity_embeddings_folder_name, entity_name_embeddings)
