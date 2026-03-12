@@ -90,6 +90,56 @@ class AdvancedLocalSearch:
             matched_indices.extend(top_idx)
             
         return self.df_entities.iloc[list(set(matched_indices))]
+    
+    def _process_entities_context(self, ents_df) -> str:
+        if ents_df.empty:
+            return "### THỰC THỂ\n- Không tìm thấy thực thể liên quan."
+        lines = [f"- {r['name']}: {r['description']}" for _, r in ents_df.iterrows()]
+        return "### THỰC THỂ\n" + "\n".join(lines)
+    
+    def _process_relations_context(self, rels_df) -> str:
+        if rels_df.empty:
+            return "### QUAN HỆ\n- Không tìm thấy quan hệ liên quan."
+        lines = [f"- {r['source']} -> {r['target']}: {r['description']}" for _, r in rels_df.iterrows()]
+        return "### QUAN HỆ\n" + "\n".join(lines)
+    
+    def _process_claims_context(self, claims_df) -> str:
+        header = "### QUY ĐỊNH & CHẾ TÀI CHI TIẾT\n"
+        if claims_df.empty:
+            return header + "- Không có dữ liệu quy định chi tiết cho cụm này."
+        
+        claim_lines = []
+        for _, r in claims_df.iterrows():
+            line = f"- [Loại quy định: {r['claim_type']}], đối tượng {r['subject']} có mô tả: {r['description']}"
+            # Grounding: Thêm trích dẫn nguồn nếu có
+            if 'source_text' in r and r['source_text'] not in ['NONE', '']:
+                line += f" (Trích dẫn: {r['source_text']})"
+            claim_lines.append(line)
+            
+        return header + "\n".join(claim_lines)
+    
+    def _process_reports_context(self, reports_list) -> str:
+        header = "### BÁO CÁO TÓM TẮT CỦA CÁC CỤM\n"
+        if not reports_list:
+            return header + "- Không có báo cáo tóm tắt."
+
+        report_entries = []
+        for r in reports_list:
+            detail = r.get('report_detail', {})
+            title = detail.get('title', 'Không có tiêu đề')
+            summary = detail.get('summary', 'Không có tóm tắt')
+            
+            entry = f"#### {title}\n{summary}"
+            
+            # Lấy tối đa 3 phát hiện quan trọng
+            findings = detail.get('findings', [])
+            if findings:
+                finding_texts = "\n".join([f"- Phát hiện: {f['summary']}" for f in findings[:3]])
+                entry += f"\n{finding_texts}"
+                
+            report_entries.append(entry)
+
+        return header + "\n---\n".join(report_entries)
 
     def get_graph_context(self, matched_entities: pd.DataFrame):
         """Bước 4: Tìm quan hệ và báo cáo cộng đồng xung quanh"""
@@ -139,12 +189,12 @@ class AdvancedLocalSearch:
         # Xây dựng context prompt
         context_str = "### THỰC THỂ\n" + "\n".join([f"- {r['name']}: {r['description']}" for _, r in ents.iterrows()])
         context_str += "\n\n### QUAN HỆ\n" + "\n".join([f"- {r['source']} -> {r['target']}: {r['description']}" for _, r in rels.iterrows()])
-        context_str += "\n\n### 3. QUY ĐỊNH & CHẾ TÀI CHI TIẾT (CLAIMS)\n"
+        context_str += "\n\n### QUY ĐỊNH & CHẾ TÀI CHI TIẾT \n"
         if not claims.empty:
             claim_lines = []
             for _, r in claims.iterrows():
                 # Kết hợp Subject, Loại quy định và Nội dung chi tiết
-                line = f"- [{r['claim_type']}] {r['subject']}: {r['description']}"
+                line = f"- [Loại quy định: {r['claim_type']}], đối tượng {r['subject']} có mô tả: {r['description']}"
                 
                 # Nếu có trích dẫn nguồn, hãy đưa vào để model "grounding" tốt hơn
                 if 'source_text' in r and r['source_text'] not in ['NONE', '']:
@@ -155,7 +205,7 @@ class AdvancedLocalSearch:
         else:
             context_str += "- Không có dữ liệu quy định chi tiết cho cụm này."
         
-        context_str += "\n\n### 4. BÁO CÁO TÓM TẮT CỦA CÁC CỤM CON\n"
+        context_str += "\n\n### BÁO CÁO TÓM TẮT CỦA CÁC CỤM\n"
 
         report_entries = []
         for r in reports:
@@ -166,7 +216,7 @@ class AdvancedLocalSearch:
             summary = detail.get('summary', 'Không có tóm tắt')
             
             # Tạo chuỗi cho mỗi báo cáo
-            entry = f"#### {title}\n{summary}"
+            entry = f" ####{title}\n{summary}"
             
             # Nếu muốn lấy thêm cả các 'findings' bên trong JSON để context dày hơn:
             findings = detail.get('findings', [])
@@ -203,34 +253,14 @@ class AdvancedLocalSearch:
         # 4. Gom context
         ents, rels, claims, reports = self.get_graph_context(matched_ents)
 
-        # 1. Tạo thư mục debug nếu chưa có
-        debug_dir = f"{self.artifact_paths}/local_query"
-        os.makedirs(debug_dir, exist_ok=True)
+        context_parts = [
+            self._process_entities_context(ents),
+            self._process_relations_context(rels),
+            self._process_claims_context(claims),
+            self._process_reports_context(reports)
+        ]
 
-        dfs = {
-            "entities": ents,
-            "relations": rels,
-            "claims": claims
-        }
-
-        for name, df in dfs.items():
-            file_path = os.path.join(debug_dir, f"{name}.json")
-            # indent=4 giúp bạn mở file ra đọc (human-readable) dễ dàng hơn trên MacBook
-            df.to_json(file_path, orient='records', force_ascii=False, indent=4)
-            print(f"✅ Đã lưu DataFrame {name} vào: {file_path}")
-
-        # 3. Lưu Dictionary (reports)
-        report_file_path = os.path.join(debug_dir, "reports.json")
-        try:
-            with open(report_file_path, "w", encoding="utf-8") as f:
-                json.dump(reports, f, ensure_ascii=False, indent=4)
-            print(f"✅ Đã lưu Reports vào: {report_file_path}")
-        except Exception as e:
-            print(f"❌ Lỗi khi lưu reports: {e}")
-
-        print(f"\n🚀 Tất cả file debug đã nằm trong thư mục: {debug_dir}")
-
-        return []
+        return context_parts
 
 # --- CÁCH CHẠY ---
 def run_local_search(query, artifact_path, llm):

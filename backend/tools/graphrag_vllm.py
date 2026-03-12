@@ -20,6 +20,7 @@ import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
 from langchain.tools import tool
+from sklearn.metrics.pairwise import cosine_similarity
 
 # vLLM import ở đây là ổn vì nó sẽ được quản lý bởi spawn
 from vllm import LLM, SamplingParams
@@ -69,6 +70,21 @@ def get_embedding_model():
     # Chỉ khởi tạo khi tiến trình chính (Main) gọi đến
     from sentence_transformers import SentenceTransformer
     return SentenceTransformer('keepitreal/vietnamese-sbert', device='cuda:1')
+
+def calculate_similarity(text1, text2):
+    """Tính toán độ tương đồng ngữ nghĩa giữa hai văn bản."""
+    if not text1 or not text2:
+        return 0.0
+    
+    embed_model = get_embedding_model()
+    
+    # 1. Chuyển văn bản thành vector
+    # Chú ý: .encode() của sentence_transformers trả về numpy array
+    embeddings = embed_model.encode([text1, text2])
+    
+    # 2. Tính Cosine Similarity giữa 2 vector
+    sim = cosine_similarity([embeddings[0]], [embeddings[1]])[0][0]
+    return float(sim)
 
 def query_type_classifier(query: str, llm):
     """
@@ -243,7 +259,7 @@ def graphrag_retrieval(query: str, output_folder: str) -> str:
     else:
         summaries_path = f"{output_folder}/community_summaries.json"
         response = run_global_search(query, summaries_path, 10, graphrag_manager)
-    return response
+    return result['search_type'], response
     
 if __name__ == '__main__':
     # 0. Create output_folder
@@ -252,5 +268,56 @@ if __name__ == '__main__':
 
     asyncio.run(indexing(output_folder))
 
-    query = "Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?"
-    print(graphrag_retrieval.invoke({"query": f"{query}", "output_folder": f"{output_folder}"}))
+# 2. Đường dẫn file
+    input_questions_path = "dataset/qa.json"
+    output_results_path = f"{output_folder}/final_results_with_qa.json"
+
+    try:
+        with open(input_questions_path, "r", encoding="utf-8") as f:
+            questions_list = json.load(f)
+    except FileNotFoundError:
+        print(f"❌ Không tìm thấy file {input_questions_path}")
+        questions_list = []
+
+    final_outputs = []
+
+    # 4. Lặp qua từng câu hỏi
+    print(f"🚀 Bắt đầu xử lý {len(questions_list)} câu hỏi...")
+    
+    for item in questions_list:
+        question = item.get("original_question")
+        gold_answer = item.get("answer", "")
+        gold_truth_references = item.get("references", [])
+        print(f"👉 Đang xử lý: {question}")
+        
+        try:
+            # Gọi hàm retrieval
+            # Lưu ý: invoke trả về kết quả cuối cùng từ LLM
+            query_type, answer = graphrag_retrieval.invoke({
+                "query": question, 
+                "output_folder": output_folder
+            })
+
+            # 2. Tính độ tương đồng với gold_answer
+            similarity_score = 0.0
+            if gold_answer:
+                similarity_score = calculate_similarity(gold_answer, answer)
+                print(f"📊 Similarity Score: {similarity_score:.4f}")
+            
+            # Lưu kết quả vào list
+            final_outputs.append({
+                "question": question,
+                "query_type": query_type,
+                "answer": answer,
+                "gold_answer": gold_answer,
+                "gold_truth_references": gold_truth_references,
+                "similarity_score": round(similarity_score, 4)
+            })
+        except Exception as e:
+            print(f"❌ Lỗi khi xử lý câu hỏi '{question}': {e}")
+
+    # 5. Lưu toàn bộ kết quả vào file mới
+    with open(output_results_path, "w", encoding="utf-8") as f:
+        json.dump(final_outputs, f, ensure_ascii=False, indent=4)
+
+    print(f"✅ Hoàn thành! Kết quả đã được lưu tại: {output_results_path}")
