@@ -7,7 +7,12 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 
-from backend.config.config import HUGGINGFACE_MODEL, OPENAI_MODEL, TEMPERATURE
+from backend.config.config import (
+    HUGGINGFACE_MODEL,
+    OPENAI_API_KEY,
+    OPENAI_MODEL,
+    TEMPERATURE,
+)
 from backend.src.prompts import AGENT_SYSTEM_PROMPT
 from backend.tools.graphrag import graphrag_retrieval
 from backend.tools.rag import rag_retrieval
@@ -42,6 +47,7 @@ class Chatbot:
             self.llm = ChatHuggingFace(llm=llm)
         elif model_option == 2:
             self.llm = ChatOpenAI(
+                api_key=OPENAI_API_KEY,
                 base_url="https://openrouter.ai/api/v1",
                 model=OPENAI_MODEL,
                 max_completion_tokens=1000,
