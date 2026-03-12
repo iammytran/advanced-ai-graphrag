@@ -1,40 +1,47 @@
-python-dotenv>=1.0.0
-numpy>=1.24.0
-requests>=2.31.0
-pydantic>=2.0.0
-
-torch>=2.2.0
-accelerate>=0.29.0
-bitsandbytes>=0.43.0
-
+# --- Core & GPU Infrastructure ---
+torch
+accelerate
+bitsandbytes
 vllm
-sentence_transformers>=5.2.3
+
+# --- AI & Embedding Engines ---
+sentence-transformers
 transformers
+sentencepiece
 
-faiss-cpu>=1.7.4
-langchain-chroma>=1.1.0
-graspologic>=3.0.0
-nltk>=3.9.3
+# --- Vector DB & Search ---
+faiss-cpu
+langchain-chroma
+graspologic
+nltk
 
-langchain>=0.1.0
-langchain-core>=0.1.0
-langchain-community>=0.0.30
-langgraph>=0.0.30
-langchain-text-splitters>=0.0.1
+# --- LangChain Framework ---
+langchain
+langchain-core
+langchain-community
+langgraph
+langchain-text-splitters
 
-openai>=1.0.0
-langchain-openai>=0.1.0
-langchain-google-genai>=0.0.10
-google-generativeai>=0.3.0
-langchain-huggingface>=0.0.3
+# --- Model Providers (APIs) ---
+openai
+langchain-openai
+langchain-google-genai
+google-generativeai
+langchain-huggingface
 
-pypdf>=6.7.0
-PyMuPDF>=1.24.1
-python-docx>=1.1.0
-pymupdf-layout>=0.0.1
+# --- Document Processing ---
+pypdf
+PyMuPDF
+python-docx
+pymupdf-layout
 pymupdf4llm
-markitdown>=0.0.1
+markitdown
 markitdown[all]
 
-fastapi>=0.100.0
-uvicorn>=0.20.0
+# --- Base Utilities ---
+python-dotenv
+numpy
+requests
+pydantic
+fastapi
+uvicorn
