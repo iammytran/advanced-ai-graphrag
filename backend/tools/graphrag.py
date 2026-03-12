@@ -39,7 +39,7 @@ import numpy as np
 from backend.tools.graph_rag.chunking import get_law_texts as get_law_texts_external, chunk_civil_code_markdown
 from backend.tools.graph_rag.compute_leiden_communities import _compute_leiden_communities
 from backend.tools.graph_rag.generate_community_summary import generate_hierarchical_community_reports
-from backend.tools.graph_rag.global_query_vllm import run_global_search
+from backend.tools.graph_rag.global_query import run_global_search
 from backend.tools.graph_rag.local_query import run_local_search
 
 # 1. Nạp các biến từ tệp .env

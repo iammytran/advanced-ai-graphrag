@@ -105,6 +105,7 @@ Bạn PHẢI trả về JSON duy nhất theo cấu trúc:
 
     print(f"🚀 Giai đoạn Map: Đang xử lý {len(prompts)} chunks song song...")
     raw_responses = processor.generate_batch(prompts, temperature=0.1, max_tokens=1024)
+    print(f"raw_responses: {raw_responses}")
     
     results = []
     for res in raw_responses:
