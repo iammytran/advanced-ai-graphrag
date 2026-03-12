@@ -248,7 +248,7 @@ def route_graphrag_query(query: str, llm):
     """
     Sử dụng thư viện vLLM để xác định loại query cho GraphRAG.
     """
-    
+    print("In route_graphrag_query...")
     # Thiết lập tham số lấy mẫu
     sampling_params = SamplingParams(
         temperature=0.0,  # Để kết quả ổn định nhất cho việc phân loại
@@ -411,7 +411,7 @@ async def indexing(output_folder):
 def graphrag_retrieval(query: str, output_folder: str) -> str:
     """Retrieves information using the GraphRAG system."""
     model_path = "Qwen/Qwen2.5-14B-Instruct" 
-    graphrag_manager = LLM(model=model_path, tensor_parallel_size=1, gpu_memory_utilization=0.7)
+    graphrag_manager = LLM(model=model_path, tensor_parallel_size=2, gpu_memory_utilization=0.7)
     result = route_graphrag_query(query, graphrag_manager)
 
     print(f"Quyết định: {result['search_type'].upper()}")
@@ -428,7 +428,7 @@ def graphrag_retrieval(query: str, output_folder: str) -> str:
     
 if __name__ == '__main__':
     # 0. Create output_folder
-    output_folder = "outputs"
+    output_folder = "outputs_20260312_001744"
     Path(output_folder).mkdir(parents=True, exist_ok=True)
 
     asyncio.run(indexing(output_folder))
