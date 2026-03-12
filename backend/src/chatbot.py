@@ -1,5 +1,6 @@
 from typing import Annotated, TypedDict
 
+from backend.tools.graphrag_vllm import graphrag_retrieval
 from langchain.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.messages import BaseMessage
 from langchain_huggingface import ChatHuggingFace, HuggingFacePipeline
@@ -14,7 +15,6 @@ from backend.config.config import (
     TEMPERATURE,
 )
 from backend.src.prompts import AGENT_SYSTEM_PROMPT
-from backend.tools.graphrag_vllm import graphrag_retrieval
 from backend.tools.rag import rag_retrieval
 
 
