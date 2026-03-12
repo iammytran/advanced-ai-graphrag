@@ -9,8 +9,8 @@ from langgraph.graph.message import add_messages
 
 from backend.config.config import HUGGINGFACE_MODEL, OPENAI_MODEL, TEMPERATURE
 from backend.src.prompts import AGENT_SYSTEM_PROMPT
+from backend.tools.graphrag import graphrag_retrieval
 from backend.tools.rag import rag_retrieval
-from backend.tools.graphrag_vllm import graphrag_retrieval
 
 
 class State(TypedDict):
@@ -27,7 +27,7 @@ class Chatbot:
         """
         self.message_history: list[BaseMessage] = []
         self.graph = self.build_graph()
-        tools = [rag_retrieval]
+        tools = [rag_retrieval, graphrag_retrieval]
 
         if model_option == 1:
             llm = HuggingFacePipeline.from_model_id(
