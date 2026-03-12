@@ -16,7 +16,6 @@ from backend.config.config import (
 from backend.src.prompts import AGENT_SYSTEM_PROMPT
 from backend.tools.graphrag_vllm import graphrag_retrieval
 from backend.tools.rag import rag_retrieval
-from backend.tools.graphrag_vllm import graphrag_retrieval
 
 
 class State(TypedDict):
