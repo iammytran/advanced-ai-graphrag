@@ -127,7 +127,7 @@ def query_type_classifier(query: str, llm):
         return {"search_type": "local", "reason": "error fallback"}
 
 async def indexing(output_folder):
-    # llm = get_llm()
+    llm = get_llm()
 
     # new_folder_name = output_folder
     # # 5. Chunking
@@ -236,7 +236,7 @@ async def indexing(output_folder):
     summaries_path = "outputs_20260312_001744/community_summaries.json"
 
     print("Run global search...\n")
-    print(run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path, 5))
+    print(run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path, llm, 5))
 
     # # print("Run local search...\n")
     # # print(run_local_search("Đang hưởng án treo có được thay đổi nơi cư trú không?", "outputs_20260312_001744"))

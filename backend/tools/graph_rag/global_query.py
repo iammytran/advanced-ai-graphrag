@@ -209,7 +209,7 @@ Nếu bạn không thể tìm thấy câu trả lời hoặc nếu các báo cá
     responses = processor.generate_batch([prompt], temperature=0.3, max_tokens=2048)
     return responses[0]
 
-def run_global_search(query, summaries_path, top_k_sources, llm):
+def run_global_search(query, summaries_path, llm, top_k_sources=10):
     # Cấu hình
     MODEL_PATH = "Qwen/Qwen2.5-7B-Instruct"
     max_new_tokens = 4096
