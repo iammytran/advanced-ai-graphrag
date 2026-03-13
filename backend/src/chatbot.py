@@ -1,6 +1,5 @@
 from typing import Annotated, TypedDict
 
-from backend.tools.graphrag_vllm import graphrag_retrieval
 from langchain.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.messages import BaseMessage
 from langchain_huggingface import ChatHuggingFace, HuggingFacePipeline
@@ -32,7 +31,7 @@ class Chatbot:
         """
         self.message_history: list[BaseMessage] = []
         self.graph = self.build_graph()
-        tools = [rag_retrieval, graphrag_retrieval]
+        tools = [rag_retrieval]
 
         if model_option == 1:
             llm = HuggingFacePipeline.from_model_id(
@@ -47,6 +46,7 @@ class Chatbot:
             self.llm = ChatHuggingFace(llm=llm)
         elif model_option == 2:
             self.llm = ChatOpenAI(
+                api_key=OPENAI_API_KEY,
                 base_url="https://openrouter.ai/api/v1",
                 model=OPENAI_MODEL,
                 max_completion_tokens=1000,
@@ -78,15 +78,6 @@ class Chatbot:
 
                 if tool_name == "rag_retrieval":
                     tool_result = rag_retrieval.invoke(tool_input)
-
-                    tool_message = ToolMessage(
-                        content=tool_result,
-                        tool_call_id=tool_call.get("id", ""),
-                        name=tool_name,
-                    )
-                    state["messages"].append(tool_message)
-                if tool_name == "graphrag_retrieval":
-                    tool_result = graphrag_retrieval.invoke(tool_input)
 
                     tool_message = ToolMessage(
                         content=tool_result,

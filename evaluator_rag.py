@@ -8,8 +8,10 @@ import os
 import sys
 from typing import TypedDict
 
-# Import LLMs
 from langchain_huggingface import ChatHuggingFace, HuggingFacePipeline
+
+# Import LLMs
+from langchain_openai import ChatOpenAI
 from langsmith import Client, traceable
 from typing_extensions import Annotated
 
@@ -295,7 +297,7 @@ def main():
         experiment_prefix="rag-chatbot-original",
         metadata={
             "description": "RAG Chatbot Evaluation - Original Questions",
-            "llm_model": HUGGINGFACE_MODEL,
+            "llm_model": OPENAI_MODEL,
         },
     )
 

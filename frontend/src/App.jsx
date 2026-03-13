@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { sendMessage, getSuggestedQuestions } from './services/mockApi'
 import { generateImageFromGemini } from './services/geminiApi'
-import { getSuggestedQuestions, sendMessage } from './services/mockApi'
 
 function App() {
     const [messages, setMessages] = useState([])
