@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getCoachFeedback, getOpponentResponse, scenarios } from '../../services/courtroomMockApi'
+import { scenarios, getOpponentResponse, getCoachFeedback } from '../../services/courtroomMockApi'
 
 function Courtroom() {
     const navigate = useNavigate()
