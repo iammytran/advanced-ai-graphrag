@@ -1,18 +1,16 @@
-import multiprocessing
-import os
-import sys
-
-# Bước 1: Ép spawn PHẢI là dòng thực thi đầu tiên
-if __name__ == "__main__":
-    try:
-        multiprocessing.set_start_method('spawn', force=True)
-    except RuntimeError:
-        pass
-
+# # Bước 1: Ép spawn PHẢI là dòng thực thi đầu tiên
+# if __name__ == "__main__":
+#     try:
+#         multiprocessing.set_start_method('spawn', force=True)
+#     except RuntimeError:
+#         pass
 import asyncio
 import json
 import logging
+import multiprocessing
+import os
 import pickle
+import sys
 from pathlib import Path
 from threading import Lock
 
@@ -36,6 +34,7 @@ from backend.tools.graph_rag.generate_community_summary import (
 )
 from backend.tools.graph_rag.global_query import run_global_search
 from backend.tools.graph_rag.local_query import run_local_search
+from backend.tools.graph_rag.query_classifier import query_type_classifier
 
 # 1. Nạp các biến từ tệp .env
 load_dotenv()
@@ -86,48 +85,8 @@ def calculate_similarity(text1, text2):
     sim = cosine_similarity([embeddings[0]], [embeddings[1]])[0][0]
     return float(sim)
 
-def query_type_classifier(query: str, llm):
-    """
-    Sử dụng thư viện vLLM để xác định loại query cho GraphRAG.
-    """
-    # Thiết lập tham số lấy mẫu
-    sampling_params = SamplingParams(
-        temperature=0.0,  # Để kết quả ổn định nhất cho việc phân loại
-        max_tokens=200,
-        stop=["}"],       # Dừng ngay khi đóng JSON
-    )
-
-    prompt_template = f"""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-    Bạn là một chuyên gia điều phối hệ thống GraphRAG. Bạn chỉ được phép trả về định dạng JSON.
-    Nhiệm vụ: Xác định câu hỏi dùng 'local' hay 'global' search.
-    - 'local': Hỏi về thực thể cụ thể, người, vật, địa điểm, chi tiết sâu.
-    - 'global': Hỏi về chủ đề chung, tóm tắt toàn bộ dữ liệu, xu hướng.
-    Trả về JSON: {{"search_type": "local" | "global", "reason": "giải thích"}}<|eot_id|>
-    <|start_header_id|>user<|end_header_id|>
-    Câu hỏi người dùng: "{query}"<|message_end|>
-    <|start_header_id|>assistant<|end_header_id|>
-    """
-
-    # Thực hiện inference
-    outputs = llm.generate([prompt_template], sampling_params)
-    
-    # Xử lý kết quả trả về
-    generated_text = outputs[0].outputs[0].text + "}" # Thêm lại dấu ngoặc do stop word
-    
-    try:
-        # Làm sạch chuỗi nếu model trả về thừa ký tự
-        start_idx = generated_text.find('{')
-        end_idx = generated_text.rfind('}') + 1
-        json_str = generated_text[start_idx:end_idx]
-        
-        decision = json.loads(json_str)
-        return decision
-    except Exception as e:
-        print(f"Lỗi parse JSON: {e}. Raw: {generated_text}")
-        return {"search_type": "local", "reason": "error fallback"}
-
 async def indexing(output_folder):
-    llm = get_llm()
+    # llm = get_llm()
 
     # new_folder_name = output_folder
     # # 5. Chunking
@@ -235,31 +194,43 @@ async def indexing(output_folder):
     # print("Extract community summaries thành công!")
     summaries_path = "outputs_20260312_001744/community_summaries.json"
 
-    print("Run global search...\n")
-    print(run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path, llm, 5))
+    # print("Run global search...\n")
+    # print(run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path, top_k_sources=5))
 
-    # # print("Run local search...\n")
-    # # print(run_local_search("Đang hưởng án treo có được thay đổi nơi cư trú không?", "outputs_20260312_001744"))
+    print("Run local search...\n")
+    print(run_local_search("Đang hưởng án treo có được thay đổi nơi cư trú không?", "outputs_20260312_001744"))
 
 
 @tool
-def graphrag_retrieval(query: str, output_folder: str) -> str:
+def graphrag_retrieval(query: str, output_folder: str) -> list[str]:
     """Retrieves information using the GraphRAG system."""
-    graphrag_manager = get_llm()
-    result = query_type_classifier(query, graphrag_manager)
+    # llm = get_llm()
+    result = query_type_classifier(query)
 
     print(f"Query: {query}")
     print(f"Quyết định: {result['search_type'].upper()}")
     print(f"Lý do: {result['reason']}")
 
     # Tích hợp gọi GraphRAG
+    formatted_context=""
     response = None
     if result['search_type'] == "local":
-        response = run_local_search(query, output_folder, graphrag_manager)
+        response = run_local_search(query, output_folder)
     else:
         summaries_path = f"{output_folder}/community_summaries.json"
-        response = run_global_search(query, summaries_path, 10, graphrag_manager)
-    return result['search_type'], response
+        response = run_global_search(
+            query,
+            summaries_path,
+            top_k_sources=10,
+        )
+    for i, doc in enumerate(response):
+        formatted_context += f"--- Tài liệu {i+1} ---\n{doc}\n\n"
+    # if isinstance(response, list):
+    #     response = "\n\n".join(str(item) for item in response)
+
+    return formatted_context
+
+    # return result, ""
     
 if __name__ == '__main__':
     # 0. Create output_folder

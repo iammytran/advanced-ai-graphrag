@@ -1,40 +1,229 @@
+import importlib
 import json
 import logging
+import os
 import random
 import warnings
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List
 
+from tqdm.auto import tqdm
 from transformers import AutoTokenizer
-from vllm import SamplingParams
 
 # Cấu hình log và cảnh báo
 warnings.filterwarnings("ignore", category=FutureWarning)
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-class VLLMProcessor:
-    def __init__(self, model_name: str, llm, max_model_len: int = 16384):
-        # Khởi tạo vLLM engine
+class LLMProcessor:
+    def __init__(self, model_name: str, llm=None, provider: str = None, max_model_len: int = 16384):
+        # Khởi tạo processor đa provider cho Global Search
         self.llm = llm
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.provider_name = (
+            provider
+            or os.getenv("GLOBAL_QUERY_PROVIDER")
+            or os.getenv("LLM_PROVIDER")
+            or "vllm"
+        ).strip().lower()
+        self.hf_model_name = model_name
+        self.huggingface_model_name = os.getenv("HUGGINGFACE_MODEL", model_name)
+        tokenizer_model_name = self.huggingface_model_name if self.provider_name == "huggingface" else model_name
+        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_model_name)
+        self.openai_model_name = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+        self.gemini_model_name = os.getenv("GEMINI_MODEL") or os.getenv("LLM_MODEL", "gemini-1.5-pro")
+        self._huggingface_pipeline = None
+        self.max_concurrency = int(os.getenv("GLOBAL_QUERY_MAX_CONCURRENCY", "4"))
+        self.huggingface_batch_size = int(os.getenv("GLOBAL_QUERY_HF_BATCH_SIZE", "4"))
 
     def apply_template(self, system_prompt: str, user_prompt: str) -> str:
-        """Chuyển đổi sang Chat Template chuẩn của model."""
+        """Tạo prompt phù hợp với provider hiện tại."""
+        if self.provider_name in {"openai", "gemini"}:
+            return (
+                f"[HƯỚNG DẪN HỆ THỐNG]\n{system_prompt}\n\n"
+                f"[NỘI DUNG NGƯỜI DÙNG]\n{user_prompt}"
+            )
+
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
         ]
         return self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 
-    def generate_batch(self, prompts: List[str], temperature: float, max_tokens: int) -> List[str]:
-        sampling_params = SamplingParams(
+    def _get_huggingface_pipeline(self):
+        if self._huggingface_pipeline is None:
+            from transformers import AutoModelForCausalLM, pipeline
+
+            logger.info("global_query: khởi tạo Hugging Face model=%s", self.huggingface_model_name)
+            model = AutoModelForCausalLM.from_pretrained(
+                self.huggingface_model_name,
+                device_map="auto",
+                trust_remote_code=True,
+            )
+            self._huggingface_pipeline = pipeline(
+                "text-generation",
+                model=model,
+                tokenizer=self.tokenizer,
+            )
+        return self._huggingface_pipeline
+
+    def _generate_openai_single(self, prompt: str, temperature: float, max_tokens: int, response_format: str = None) -> str:
+        from openai import OpenAI
+
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("Thiếu OPENAI_API_KEY")
+
+        client = OpenAI(api_key=api_key)
+        request_kwargs = {
+            "model": self.openai_model_name,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "messages": [{"role": "user", "content": prompt}],
+        }
+        if response_format == "json_object":
+            request_kwargs["response_format"] = {"type": "json_object"}
+
+        completion = client.chat.completions.create(**request_kwargs)
+        return completion.choices[0].message.content or ""
+
+    def _generate_gemini_single(self, prompt: str, temperature: float, max_tokens: int, response_format: str = None) -> str:
+        import google.generativeai as genai
+
+        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            raise ValueError("Thiếu GEMINI_API_KEY hoặc GOOGLE_API_KEY")
+
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(self.gemini_model_name)
+        generation_config = {
+            "temperature": temperature,
+            "max_output_tokens": max_tokens,
+        }
+        if response_format == "json_object":
+            generation_config["response_mime_type"] = "application/json"
+
+        response = model.generate_content(
+            prompt,
+            generation_config=generation_config,
+        )
+        return getattr(response, "text", "") or ""
+
+    def _run_parallel_inference(self, prompts: List[str], inference_func, description: str) -> List[str]:
+        worker_count = max(1, min(self.max_concurrency, len(prompts)))
+        logger.info("global_query: %s với %s request song song", description, worker_count)
+
+        responses = [""] * len(prompts)
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
+            future_to_index = {
+                executor.submit(inference_func, prompt): index
+                for index, prompt in enumerate(prompts)
+            }
+            for future in tqdm(
+                as_completed(future_to_index),
+                total=len(future_to_index),
+                desc=description,
+                unit="prompt",
+            ):
+                index = future_to_index[future]
+                responses[index] = future.result()
+
+        return responses
+
+    def generate_batch(
+        self,
+        prompts: List[str],
+        temperature: float,
+        max_tokens: int,
+        response_format: str = None,
+    ) -> List[str]:
+        if self.provider_name == "openai":
+            api_key = os.getenv("OPENAI_API_KEY")
+            logger.info(
+                "global_query: dùng OpenAI, trạng thái OPENAI_API_KEY: %s",
+                "đã tìm thấy" if api_key else "chưa tìm thấy",
+            )
+            if not api_key:
+                raise ValueError("Thiếu OPENAI_API_KEY")
+
+            return self._run_parallel_inference(
+                prompts,
+                lambda prompt: self._generate_openai_single(
+                    prompt,
+                    temperature,
+                    max_tokens,
+                    response_format,
+                ),
+                description="OpenAI inference",
+            )
+
+        if self.provider_name == "gemini":
+            api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+            logger.info(
+                "global_query: dùng Gemini, trạng thái API key: %s",
+                "đã tìm thấy" if api_key else "chưa tìm thấy",
+            )
+            if not api_key:
+                raise ValueError("Thiếu GEMINI_API_KEY hoặc GOOGLE_API_KEY")
+
+            return self._run_parallel_inference(
+                prompts,
+                lambda prompt: self._generate_gemini_single(
+                    prompt,
+                    temperature,
+                    max_tokens,
+                    response_format,
+                ),
+                description="Gemini inference",
+            )
+
+        if self.provider_name == "huggingface":
+            text_generation_pipeline = self._get_huggingface_pipeline()
+            do_sample = temperature > 0
+            logger.info(
+                "global_query: chạy batch Hugging Face với %s prompts, batch_size=%s",
+                len(prompts),
+                self.huggingface_batch_size,
+            )
+            responses = []
+            for batch_start in tqdm(
+                range(0, len(prompts), self.huggingface_batch_size),
+                desc="Hugging Face inference",
+                unit="batch",
+            ):
+                prompt_batch = prompts[batch_start:batch_start + self.huggingface_batch_size]
+                outputs = text_generation_pipeline(
+                    prompt_batch,
+                    max_new_tokens=max_tokens,
+                    temperature=temperature,
+                    do_sample=do_sample,
+                    top_p=0.9,
+                    return_full_text=False,
+                    pad_token_id=self.tokenizer.eos_token_id,
+                    batch_size=self.huggingface_batch_size,
+                )
+
+                for output in outputs:
+                    if isinstance(output, list):
+                        responses.append(output[0]["generated_text"].strip())
+                    else:
+                        responses.append(output["generated_text"].strip())
+            return responses
+
+        if self.llm is None:
+            raise ValueError("llm đang là None khi provider là vllm")
+
+        vllm_module = importlib.import_module("vllm")
+        sampling_params = vllm_module.SamplingParams(
             temperature=temperature,
             max_tokens=max_tokens,
             top_p=0.9,
-            repetition_penalty=1.05
+            repetition_penalty=1.05,
         )
-        # vLLM xử lý Batch song song ở đây
         outputs = self.llm.generate(prompts, sampling_params, use_tqdm=True)
         return [output.outputs[0].text.strip() for output in outputs]
+
+
+VLLMProcessor = LLMProcessor
 
 def prepare_global_context(query, community_reports, tokenizer, context_window=6000):
     random.shuffle(community_reports)
@@ -56,13 +245,15 @@ def prepare_global_context(query, community_reports, tokenizer, context_window=6
         if len(tokenizer.encode(current_chunk + report_text)) < safe_limit:
             current_chunk += report_text
         else:
-            if current_chunk: chunks.append(current_chunk.strip())
+            if current_chunk:
+                chunks.append(current_chunk.strip())
             current_chunk = report_text
             
-    if current_chunk: chunks.append(current_chunk.strip())
+    if current_chunk:
+        chunks.append(current_chunk.strip())
     return chunks
 
-def run_map_step(query, chunks, max_new_tokens, processor: VLLMProcessor):
+def run_map_step(query, chunks, max_new_tokens, processor: LLMProcessor):
     system_prompt = f"""
 ---Vai trò---
 Bạn là một chuyên gia phân tích pháp luật và trợ lý AI thông minh. 
@@ -99,141 +290,90 @@ Bạn PHẢI trả về JSON duy nhất theo cấu trúc:
         user_content = f"Dựa trên dữ liệu: {chunk}\n\nCâu hỏi: {query}"
         prompts.append(processor.apply_template(system_prompt, user_content))
 
-    print(f"🚀 Giai đoạn Map: Đang xử lý {len(prompts)} chunks song song...")
-    raw_responses = processor.generate_batch(prompts, temperature=0.1, max_tokens=1024)
+    logger.info("Giai đoạn Map: đang xử lý %s chunks", len(prompts))
+    raw_responses = processor.generate_batch(
+        prompts,
+        temperature=0.1,
+        max_tokens=1024,
+        response_format="json_object",
+    )
 
     # --- BẮT ĐẦU ĐOẠN LƯU DEBUG ---
-    log_filename = "debug_global_query.json"
+    log_filename = "debug_global_query.jsonl"
     with open(log_filename, "w", encoding="utf-8") as f:
         for i, res in enumerate(raw_responses):
             debug_entry = {
-                "query": query, 
                 "chunk_index": i,
                 "prompt_sent": prompts[i], # Lưu luôn prompt để đối chiếu
                 "raw_output": res,
             }
             f.write(json.dumps(debug_entry, ensure_ascii=False) + "\n")
-    print(f"✅ Đã lưu output thô vào file: {log_filename}")
+    logger.info("Đã lưu output thô vào file: %s", log_filename)
     
     results = []
     for res in raw_responses:
         try:
-            # 1. Làm sạch chuỗi
             clean_res = res.replace("```json", "").replace("```", "").strip()
             data = json.loads(clean_res)
 
-            results = []
-            
-            # 2. Thay vì chỉ lấy "points", hãy lấy toàn bộ object 
-            # để giữ lại "score" (hoặc "rating") cho bước Reduce sau này
             if isinstance(data, dict):
-                # Đảm bảo object có score để không bị lỗi khi sort
-                if 'score' not in data and 'rating' in data:
-                    data['score'] = data['rating'] # Đồng bộ hóa tên khóa
-                
-                results.append(data) 
-                
-        except Exception as e:
-            print(f"Lỗi parse JSON: {e}")
+                if "points" in data and isinstance(data["points"], list):
+                    results.append(data)
+                else:
+                    logger.warning("Kết quả map không có trường 'points' hợp lệ")
+
+        except Exception as error:
+            logger.warning("Lỗi parse JSON ở giai đoạn Map: %s", error)
             continue
 
-    # 1. Thu thập tất cả các điểm (points) từ tất cả các kết quả map
-    all_points = []
-    for item in results:
-        # Lấy danh sách points bên trong mỗi kết quả
-        points = item.get('points', [])
-        all_points.extend(points)    
+    return results
 
+
+def _flatten_map_results(map_results):
+    all_points = []
+    for item in map_results:
+        if isinstance(item, dict) and "points" in item:
+            points = item.get("points", [])
+            if isinstance(points, list):
+                all_points.extend(points)
+        elif isinstance(item, dict):
+            all_points.append(item)
     return all_points
 
-def get_relevant_results(map_results, top_k_sources):
-    # 1. Thu thập tất cả các điểm (points) từ tất cả các kết quả map
-    all_points = []
-    for item in map_results:
-        # Lấy danh sách points bên trong mỗi kết quả
-        points = item.get('points', [])
-        all_points.extend(points)
-
-    # 2. Sắp xếp dựa trên all_points đã thu thập được
-    sorted_results=[]
-    sorted_results = sorted(all_points, key=lambda x: x.get('score', 0), reverse=True)[:top_k_sources] 
-
-    return sorted_results
-
-def run_reduce_step(query, map_results, max_new_tokens, processor: VLLMProcessor):
-    # 1. Thu thập tất cả các điểm (points) từ tất cả các kết quả map
-    all_points = []
-    for item in map_results:
-        # Lấy danh sách points bên trong mỗi kết quả
-        points = item.get('points', [])
-        all_points.extend(points)
-
-    # 2. Sắp xếp dựa trên all_points đã thu thập được
-    sorted_results = sorted(all_points, key=lambda x: x.get('score', 0), reverse=True)[:15]
-
-    # 3. Bây giờ bạn có thể join description mà không bị KeyError
-    context = "\n".join([f"- {r.get('description', '')}" for r in sorted_results])
+def get_relevant_resources(map_results, top_k_sources):
+    if not map_results:
+        logger.warning("get_relevant_resources: map_results rỗng, trả về danh sách trống")
+        return []
     
-    system_prompt = f"""
-    ---Vai trò---
-Bạn là một chuyên gia pháp lý cao cấp hoặc Thẩm phán có kinh nghiệm. 
-Nhiệm vụ: tổng hợp các báo cáo phân tích từ nhiều nguồn dữ liệu khác nhau để đưa ra câu trả lời cuối cùng, thống nhất và toàn diện cho người dùng.
+    all_points = _flatten_map_results(map_results)
+    sorted_list = sorted(all_points, key=lambda x: x.get('score', 0), reverse=True)[:top_k_sources]
+    descriptions = [item.get('description', '') for item in sorted_list]
+    descriptions_without_sources = [item.split(' [Data:')[0].strip() for item in descriptions]
+    return descriptions_without_sources
 
----Mục tiêu---
-Tạo một văn bản trả lời với độ dài và định dạng yêu cầu để giải đáp câu hỏi của người dùng. Bạn cần tổng hợp các báo cáo từ nhiều phân tích viên vốn tập trung vào các phần khác nhau của bộ dữ liệu pháp luật.
-Lưu ý rằng các báo cáo phân tích dưới đây đã được sắp xếp theo **thứ tự tầm quan trọng giảm dần**.
-Nếu bạn không thể tìm thấy câu trả lời hoặc nếu các báo cáo được cung cấp không chứa đủ thông tin, hãy trả lời rõ là dữ liệu hiện tại không đủ để giải đáp. Tuyệt đối không tự ý bịa đặt quy định pháp luật.
+def run_global_search(query, summaries_path, llm=None, top_k_sources=10, provider: str = None):
+    if isinstance(llm, int) and not isinstance(top_k_sources, int):
+        llm, top_k_sources = top_k_sources, llm
 
----ĐỊNH DẠNG ĐẦU RA (Markdown)---
-1. Loại bỏ tất cả các thông tin không liên quan từ các báo cáo thành phần.
-2. Hợp nhất các thông tin đã được làm sạch thành một câu trả lời chặt chẽ, có giải thích đầy đủ các điểm chính và hệ quả pháp lý phù hợp với định dạng yêu cầu.
-3. Chia các phần (sections) và thêm các lời bình luận, dẫn dắt phù hợp để văn bản có cấu trúc logic.
-4. Trình bày nội dung bằng định dạng Markdown.
-
----QUY TẮC PHÁP LÝ---
-1. Phải giữ nguyên ý nghĩa gốc và sử dụng chính xác các trợ động từ tình thái chuyên dụng trong văn bản luật như: "phải", "được", "có thể", "không được", "chịu trách nhiệm".
-2. Giữ lại tất cả các tham chiếu dữ liệu (Data references) đã có trong các báo cáo thành phần, nhưng **không được nhắc đến vai trò của các phân tích viên** hay quá trình tổng hợp trong văn bản cuối cùng.
-
----QUY TẮC TRÍCH DẪN---
-- Không liệt kê quá 5 ID bản ghi trong một tham chiếu đơn lẻ. Hãy liệt kê 5 ID liên quan nhất và thêm "+còn nữa" nếu còn nhiều hơn.
-- Ví dụ: "Hành vi X bị coi là vi phạm quy định về quản lý kinh tế và có thể bị truy cứu trách nhiệm hình sự [Data: Báo cáo (2, 7, 34, 46, 64, +more)]. Hình phạt bổ sung có thể bao gồm cấm đảm nhiệm chức vụ [Data: Báo cáo (1, 3)]".
-- Trong đó 1, 2, 3, 7, 34, 46, và 64 đại diện cho ID của báo cáo dữ liệu tương ứng.
-- Tuyệt đối không đưa vào các thông tin không có bằng chứng hỗ trợ từ dữ liệu nguồn.
-- Giới hạn tổng độ dài câu trả lời trong khoảng {max_new_tokens} từ."""
-    
-    user_content = f"Các luận điểm nguồn:\n{context}\n\nCâu hỏi: {query}\n\nTrả lời chi tiết:"
-    
-    prompt = processor.apply_template(system_prompt, user_content)
-    
-    print("📝 Giai đoạn Reduce: Đang tổng hợp kết quả cuối cùng...")
-    responses = processor.generate_batch([prompt], temperature=0.3, max_tokens=2048)
-    return responses[0]
-
-def run_global_search(query, summaries_path, llm, top_k_sources=10):
-    # Cấu hình
-    MODEL_PATH = "Qwen/Qwen2.5-7B-Instruct"
+    model_path = os.getenv("GLOBAL_QUERY_MODEL_PATH", "Qwen/Qwen2.5-7B-Instruct")
     max_new_tokens = 4096
+    processor = LLMProcessor(model_path, llm=llm, provider=provider)
+    logger.info("run_global_search: dùng provider=%s", processor.provider_name)
     
-    processor = VLLMProcessor(MODEL_PATH, llm)
-    
-    # Load Data
     try:
         with open(summaries_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-    except Exception as e:
-        print(f"Lỗi đọc file: {e}")
-        return
+    except Exception as error:
+        logger.exception("Lỗi đọc file summaries: %s", error)
+        return []
     
-    # 1. Chia chunk
     chunks = prepare_global_context(query, data, processor.tokenizer)
-    
-    # 2. Map
     map_results = run_map_step(query, chunks, max_new_tokens, processor)
 
-    sorted_map_output = get_relevant_results(map_results, top_k_sources)
+    sorted_map_output = get_relevant_resources(map_results, top_k_sources)
 
     return sorted_map_output
 
 if __name__ == '__main__':
     query = "Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?"
-    run_global_search(query)
+    run_global_search(query, "outputs_20260312_001744/community_summaries.json")
