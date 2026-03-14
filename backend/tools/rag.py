@@ -44,6 +44,35 @@ def indexing():
     )
 
 
+def format_rag_documents(documents: list[str]) -> str:
+    formatted_context = ""
+    for i, doc in enumerate(documents):
+        formatted_context += f"--- Tài liệu {i+1} ---\n{doc}\n\n"
+    return formatted_context
+
+
+def retrieve_rag_documents(query: str) -> list[str]:
+    vector_db = Chroma(
+        persist_directory=CHROMA_DB_PATH,
+        collection_name="docs",
+        embedding_function=embeddings,
+    )
+
+    retriever = vector_db.as_retriever(
+        search_type="mmr",
+        search_kwargs={
+            "k": 5,
+            "fetch_k": 20,
+            "lambda_mult": 0.5,
+        },
+    )
+
+    print(f"\n[Tool Execution] Đang tìm kiếm thông tin cho: '{query}'...")
+
+    retrieved_docs = retriever.invoke(query)
+    return [doc.page_content for doc in retrieved_docs]
+
+
 @tool
 def rag_retrieval(query: str) -> str:
     """
@@ -56,32 +85,12 @@ def rag_retrieval(query: str) -> str:
     - Người dùng chỉ đang chào hỏi (Xin chào, bạn là ai...).
     - Người dùng yêu cầu tóm tắt lại câu trả lời trước đó.
     """
-    vector_db = Chroma(
-        persist_directory=CHROMA_DB_PATH,
-        collection_name="docs",
-        embedding_function=embeddings,
-    )
+    retrieved_documents = retrieve_rag_documents(query)
 
-    retriever = vector_db.as_retriever(
-        search_type="mmr",
-        search_kwargs={
-            "k": 5,  # Số lượng chunk cuối cùng trả về cho LLM
-            "fetch_k": 20,  # Số lượng chunk lấy ra ban đầu để lọc MMR
-            "lambda_mult": 0.5,  # Cân bằng giữa độ tương đồng (1.0) và độ đa dạng (0.0)
-        },
-    )
-
-    print(f"\n[Tool Execution] Đang tìm kiếm thông tin cho: '{query}'...")
-
-    retrieved_docs = retriever.invoke(query)
-
-    formatted_context = ""
-    for i, doc in enumerate(retrieved_docs):
-        formatted_context += f"--- Tài liệu {i+1} ---\n{doc.page_content}\n\n"
-
-    if not retrieved_docs:
+    if not retrieved_documents:
         return "Không tìm thấy thông tin tài chính nào liên quan đến câu hỏi trong cơ sở dữ liệu."
 
+    formatted_context = format_rag_documents(retrieved_documents)
     print(formatted_context)
     return formatted_context
 
