@@ -14,18 +14,19 @@ from backend.config.config import (
     TEMPERATURE,
 )
 from backend.src.prompts import AGENT_SYSTEM_PROMPT
-from backend.tools.graphrag_vllm import graphrag_retrieval
-from backend.tools.rag import rag_retrieval
+from backend.tools.graphrag import format_graphrag_documents, graphrag_retrieval
+from backend.tools.rag import rag_retrieval, retrieve_rag_documents
 
 
 class State(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
     options_dict: dict
+    retrieved_documents: list[str]
 
 
 class Chatbot:
 
-    DEFAULT_OUTPUT_FOLDER = "outputs_20260312_001744"
+    DEFAULT_ARTIFACT_FOLDER = "artifacts"
 
     def __init__(self, model_option: int = 1, retrieval_mode: str = "auto"):
         """
@@ -76,12 +77,13 @@ class Chatbot:
     def LogicNode(self, state: State) -> State:
         messages = state["messages"]
         options_dict = state.get("options_dict", {})
+        state.setdefault("retrieved_documents", [])
 
         output_folder = options_dict.get("output_folder") or options_dict.get(
             "outputFolder"
         )
         if not output_folder:
-            output_folder = self.DEFAULT_OUTPUT_FOLDER
+            output_folder = self.DEFAULT_ARTIFACT_FOLDER
 
         if not isinstance(messages[0], SystemMessage):
             messages = [SystemMessage(content=AGENT_SYSTEM_PROMPT)] + messages
@@ -99,6 +101,10 @@ class Chatbot:
                     tool_input = {"query": str(tool_input)}
 
                 if tool_name == "rag_retrieval":
+                    retrieved_documents = retrieve_rag_documents(
+                        tool_input.get("query", "")
+                    )
+                    state["retrieved_documents"] = retrieved_documents
                     tool_result = rag_retrieval.invoke(tool_input)
 
                     tool_message = ToolMessage(
@@ -109,7 +115,11 @@ class Chatbot:
                     state["messages"].append(tool_message)
                 elif tool_name == "graphrag_retrieval":
                     tool_input["output_folder"] = output_folder
-                    tool_result = graphrag_retrieval.invoke(tool_input)
+                    retrieved_documents = graphrag_retrieval.invoke(tool_input)  # returns list[str]
+                    state["retrieved_documents"] = retrieved_documents
+                    tool_result = format_graphrag_documents(retrieved_documents)
+                    if not retrieved_documents:
+                        tool_result = "Không tìm thấy thông tin phù hợp trong GraphRAG."
 
                     tool_message = ToolMessage(
                         content=tool_result,
@@ -151,7 +161,11 @@ class Chatbot:
         human_message = HumanMessage(content=user_input)
         self.message_history.append(human_message)
 
-        state = State(messages=self.message_history, options_dict=options_dict)
+        state = State(
+            messages=self.message_history,
+            options_dict=options_dict,
+            retrieved_documents=[],
+        )
 
         output_state = self.graph.invoke(state)
 
@@ -163,10 +177,14 @@ class Chatbot:
                 answer = message.content
                 break
 
-        return {"answer": answer, "retrieved_documents": []}
+        return {
+            "answer": answer,
+            "retrieved_documents": output_state.get("retrieved_documents", []),
+        }
 
 
 if __name__ == "__main__":
     # Choose 1 for HuggingFace, 2 for OpenAI
     chatbot = Chatbot(model_option=2, retrieval_mode="graphrag_only")
-    print(chatbot.chat("đánh bài phạt bao nhiêu tiền?")["answer"])
+    response = chatbot.chat("đánh bài phạt bao nhiêu tiền?")
+    print(f"response: {response}")
