@@ -476,10 +476,10 @@ export const calculateScores = async (session) => {
             totalTime: (session.settings?.timeLimit || 10) * 60
         })
         // Validate response shape
-        const { legalAccuracy, evidenceUse, persuasion, timeManagement, etiquette } = result
+        const { legalAccuracy, evidenceUse, persuasion, timeManagement, etiquette, strengths, weaknesses } = result
         if ([legalAccuracy, evidenceUse, persuasion, timeManagement, etiquette].every(v => typeof v === 'number')) {
             console.log('[Scores] Backend API returned:', result)
-            return { legalAccuracy, evidenceUse, persuasion, timeManagement, etiquette }
+            return { legalAccuracy, evidenceUse, persuasion, timeManagement, etiquette, strengths, weaknesses }
         }
         throw new Error('Invalid score format from backend')
     } catch (error) {
@@ -588,7 +588,29 @@ const calculateScoresLocal = (session) => {
     if (roundsCompleted >= totalRounds) etiquette += 5
     etiquette = Math.max(0, Math.min(etiquette, 100))
 
-    return { legalAccuracy, evidenceUse, persuasion, timeManagement, etiquette }
+    // Mock strengths & weaknesses based on scores
+    const strengthsList = []
+    const weaknessesList = []
+
+    if (legalAccuracy >= 70) strengthsList.push('Kiến thức pháp lý vững vàng, viện dẫn điều luật phù hợp')
+    else weaknessesList.push('Cần nâng cao kiến thức pháp lý, viện dẫn điều luật cụ thể hơn')
+
+    if (evidenceUse >= 70) strengthsList.push('Sử dụng chứng cứ hiệu quả, liên kết tốt với luận điểm')
+    else weaknessesList.push('Chưa tận dụng tốt chứng cứ đã chuẩn bị, cần đề cập chứng cứ nhiều hơn trong tranh luận')
+
+    if (persuasion >= 70) strengthsList.push('Lập luận có sức thuyết phục, trình bày mạch lạc')
+    else weaknessesList.push('Lập luận chưa đủ sức thuyết phục, nên phát triển luận điểm chi tiết hơn')
+
+    if (timeManagement >= 70) strengthsList.push('Quản lý thời gian tốt, phân bổ hợp lý giữa các vòng')
+    else weaknessesList.push('Cần cải thiện quản lý thời gian, phân bổ đều hơn giữa các vòng tranh luận')
+
+    if (etiquette >= 70) strengthsList.push('Phong thái lịch sự, ứng xử chuyên nghiệp trước tòa')
+    else weaknessesList.push('Cần chú ý phong thái ứng xử, sử dụng ngôn ngữ trang trọng hơn')
+
+    const strengths = strengthsList.join('. ') + '.'
+    const weaknesses = weaknessesList.length > 0 ? weaknessesList.join('. ') + '.' : ''
+
+    return { legalAccuracy, evidenceUse, persuasion, timeManagement, etiquette, strengths, weaknesses }
 }
 
 // --- Session history for cumulative badges ---
