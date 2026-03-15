@@ -25,6 +25,11 @@ app.add_middleware(
 
 # Initialize chatbot
 chatbot = Chatbot(model_option=2)
+app.state.chatbot = chatbot
+
+from src.evaluate import evaluate_router
+
+app.include_router(evaluate_router)
 
 
 class Options(BaseModel):
@@ -59,7 +64,7 @@ async def chat_endpoint(request: ChatRequest):
         from datetime import datetime
 
         frontend_response = {
-            "text": rag_response.get("answer", ""),
+            "answer": rag_response.get("answer", ""),
             "character": options_dict.get("character", "normal"),
             "timestamp": datetime.now().isoformat(),
             "retrieved_documents": rag_response.get(

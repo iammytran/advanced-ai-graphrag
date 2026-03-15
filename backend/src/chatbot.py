@@ -10,6 +10,7 @@ from langgraph.graph.message import add_messages
 from backend.config.config import (
     HUGGINGFACE_MODEL,
     OPENAI_API_KEY,
+    OPENAI_ENDPOINT,
     OPENAI_MODEL,
     TEMPERATURE,
 )
@@ -47,7 +48,7 @@ class Chatbot:
         elif model_option == 2:
             self.llm = ChatOpenAI(
                 api_key=OPENAI_API_KEY,
-                base_url="https://openrouter.ai/api/v1",
+                base_url=OPENAI_ENDPOINT,
                 model=OPENAI_MODEL,
                 max_completion_tokens=1000,
                 temperature=float(TEMPERATURE),
