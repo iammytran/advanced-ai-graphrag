@@ -96,7 +96,7 @@ class CourtroomEvaluationResult(BaseModel):
         )
     )
     explanation: str = Field(
-        description="Giải thích chi tiết (2-4 câu) lý do đánh giá tổng quan, nêu rõ điểm số từng tiêu chí và tại sao."
+        description="Giải thích chi tiết (2-4 câu) lý do chấm các điểm số định tính trên."
     )
     strengths: str = Field(
         description="Liệt kê các điểm mạnh nổi bật của người chơi trong phiên tranh tụng này."
