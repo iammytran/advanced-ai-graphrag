@@ -23,7 +23,7 @@ bitsandbytes>=0.43.0
 torch>=2.2.0
 
 graspologic
-markitdown[all]
+markitdown[docx]
 pymupdf4llm
 python-docx
 sentence-transformers
