@@ -4,12 +4,14 @@
 #         multiprocessing.set_start_method('spawn', force=True)
 #     except RuntimeError:
 #         pass
+import argparse
 import asyncio
 import json
 import logging
 import multiprocessing
 import os
 import pickle
+import shutil
 import sys
 from pathlib import Path
 from threading import Lock
@@ -226,70 +228,75 @@ def graphrag_retrieval(query: str, output_folder: str) -> list[str]:
 
     return [str(doc) for doc in response]
     
-if __name__ == '__main__':
-    # 0. Create output_folder
-    output_folder = "artifacts"
-    Path(output_folder).mkdir(parents=True, exist_ok=True)
+def is_indexing_complete(folder: str) -> bool:
+    """Kiểm tra xem các file artifacts cần thiết đã tồn tại hay chưa."""
+    if not os.path.exists(folder):
+        return False
+    
+    required_files = [
+        'entities.pkl',
+        'relationships.pkl',
+        'claims.pkl',
+        'entity_embeddings.npy',
+        'communities.json',
+        'community_summaries.json'
+    ]
+    
+    for filename in required_files:
+        if not os.path.exists(os.path.join(folder, filename)):
+            print(f"Kiểm tra thấy thiếu file index: {filename}")
+            return False
+            
+    return True
 
-    asyncio.run(indexing(output_folder))
+if __name__ == '__main__':
+    # Thiết lập argparse để xử lý tham số dòng lệnh
+    parser = argparse.ArgumentParser(description="GraphRAG Indexing and Querying")
+    parser.add_argument(
+        '--force-index-from-scratch',
+        action='store_true',
+        help="Xóa thư mục đầu ra và chạy lại indexing từ đầu."
+    )
+    parser.add_argument(
+        '--output-folder', '-o',
+        type=str,
+        default='artifacts',
+        help="Chỉ định thư mục đầu ra cho indexing. Mặc định là 'artifacts'."
+    )
+    args = parser.parse_args()
+
+    output_folder = args.output_folder
+
+    # Logic xử lý dựa trên tham số
+    if args.force_index_from_scratch:
+        print(f"Tham số --force-index-from-scratch được bật cho thư mục '{output_folder}'.")
+        if os.path.exists(output_folder):
+            print(f"Đang xóa thư mục '{output_folder}'...")
+            shutil.rmtree(output_folder)
+            print("Đã xóa xong.")
+        
+        # Tạo lại thư mục và chạy indexing
+        Path(output_folder).mkdir(parents=True, exist_ok=True)
+        print("Bắt đầu quá trình indexing từ đầu...")
+        asyncio.run(indexing(output_folder))
+        print(f"Hoàn tất indexing cho '{output_folder}'.")
+
+    else:
+        print(f"Kiểm tra trạng thái indexing cho thư mục '{output_folder}'...")
+        if is_indexing_complete(output_folder):
+            print(f"=> Indexing tại '{output_folder}' đã hoàn thiện. Bỏ qua bước indexing.")
+        else:
+            print(f"=> Indexing tại '{output_folder}' chưa hoàn thiện hoặc thiếu file. Tự động chạy lại indexing...")
+            Path(output_folder).mkdir(parents=True, exist_ok=True)
+            asyncio.run(indexing(output_folder))
+            print(f"Hoàn tất indexing cho '{output_folder}'.")
+
+    print(f"\nSẵn sàng để query trên bộ index tại: '{output_folder}'")
+    # Phần code để query có thể đặt ở đây nếu bạn muốn chạy query ngay sau đó
+    # Ví dụ:
     # query = "Được gia hạn tạm giam tối đa bao nhiêu lần để tiến hành điều tra?"
-    # query_type, answer = graphrag_retrieval.invoke({
+    # response = graphrag_retrieval.invoke({
     #             "query": query, 
     #             "output_folder": output_folder
     #         })
-    # print(f"For {query}, run {query_type}...")
-    # print(f"Answer: {answer}")
-
-# # 2. Đường dẫn file
-#     input_questions_path = "dataset/qa.json"
-#     output_results_path = f"{output_folder}/final_results_with_qa.json"
-
-#     try:
-#         with open(input_questions_path, "r", encoding="utf-8") as f:
-#             questions_list = json.load(f)
-#     except FileNotFoundError:
-#         print(f"❌ Không tìm thấy file {input_questions_path}")
-#         questions_list = []
-
-#     final_outputs = []
-
-#     # 4. Lặp qua từng câu hỏi
-#     print(f"🚀 Bắt đầu xử lý {len(questions_list)} câu hỏi...")
-    
-#     for item in questions_list:
-#         question = item.get("original_question")
-#         gold_answer = item.get("answer", "")
-#         gold_truth_references = item.get("references", [])
-#         print(f"👉 Đang xử lý: {question}")
-        
-#         try:
-#             # Gọi hàm retrieval
-#             # Lưu ý: invoke trả về kết quả cuối cùng từ LLM
-#             query_type, answer = graphrag_retrieval.invoke({
-#                 "query": question, 
-#                 "output_folder": output_folder
-#             })
-
-#             # 2. Tính độ tương đồng với gold_answer
-#             similarity_score = 0.0
-#             if gold_answer:
-#                 similarity_score = calculate_similarity(gold_answer, answer)
-#                 print(f"📊 Similarity Score: {similarity_score:.4f}")
-            
-#             # Lưu kết quả vào list
-#             final_outputs.append({
-#                 "question": question,
-#                 "query_type": query_type,
-#                 "answer": answer,
-#                 "gold_answer": gold_answer,
-#                 "gold_truth_references": gold_truth_references,
-#                 "similarity_score": round(similarity_score, 4)
-#             })
-#         except Exception as e:
-#             print(f"❌ Lỗi khi xử lý câu hỏi '{question}': {e}")
-
-#     # 5. Lưu toàn bộ kết quả vào file mới
-#     with open(output_results_path, "w", encoding="utf-8") as f:
-#         json.dump(final_outputs, f, ensure_ascii=False, indent=4)
-
-#     print(f"✅ Hoàn thành! Kết quả đã được lưu tại: {output_results_path}")
+    # print(f"Câu trả lời cho '{query}':\n{response}")
