@@ -58,7 +58,7 @@ def get_llm():
                 # 3. Khởi tạo vLLM trên GPU 0
                 _llm = LLM(
                     model="Qwen/Qwen2.5-7B-Instruct",
-                    tensor_parallel_size=1,
+                    tensor_parallel_size=2,
                     gpu_memory_utilization=0.8,
                     trust_remote_code=True,
                     # max_model_len=4096,
