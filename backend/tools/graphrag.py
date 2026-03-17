@@ -102,7 +102,7 @@ async def indexing(output_folder):
     print("Đọc chunks từ file JSON...")
     final_df = None
     try:
-        final_df = pd.read_json(f"{output_folder}/chunking_result.json", orient="records")
+        final_df = pd.read_json(f"dataset/chunking_result.json", orient="records")
     except FileNotFoundError:
         print(f"Lỗi: Không tìm thấy file chunking_result.json trong {output_folder}. Vui lòng chạy lại bước chunking trước.")
         return

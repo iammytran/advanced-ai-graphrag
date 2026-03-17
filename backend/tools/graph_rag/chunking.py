@@ -214,6 +214,6 @@ if __name__ == "__main__":
     print(f"law_texts_df: {final_df}")
 
     # Lưu kết quả chunking ra file JSON
-    output_path = "artifacts/chunking_result.json"
+    output_path = "dataset/chunking_result.json"
     final_df.to_json(output_path, orient="records", lines=False, force_ascii=False, indent=4)
     print(f"Đã lưu kết quả chunking vào file: {output_path}")
