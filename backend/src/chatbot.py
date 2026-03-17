@@ -10,6 +10,7 @@ from langgraph.graph.message import add_messages
 from backend.config.config import (
     HUGGINGFACE_MODEL,
     OPENAI_API_KEY,
+    OPENAI_ENDPOINT,
     OPENAI_MODEL,
     TEMPERATURE,
 )

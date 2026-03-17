@@ -1,7 +1,7 @@
 export async function generateImageFromGemini(character, toneValue, illustrationType, text) {
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    const apiKey = import.meta.env.VITE_GEMINI_IMAGE_API_KEY;
     if (!apiKey) {
-        console.warn('VITE_GEMINI_API_KEY is not set. Falling back to mock image.');
+        console.warn('VITE_GEMINI_IMAGE_API_KEY is not set. Falling back to mock image.');
         return null;
     }
 

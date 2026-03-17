@@ -60,7 +60,7 @@ async def chat_endpoint(request: ChatRequest):
         from datetime import datetime
 
         frontend_response = {
-            "text": rag_response.get("answer", ""),
+            "answer": rag_response.get("answer", ""),
             "character": options_dict.get("character", "normal"),
             "timestamp": datetime.now().isoformat(),
             "retrieved_documents": rag_response.get(

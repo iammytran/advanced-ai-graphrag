@@ -44,7 +44,8 @@ function Results() {
 
     const getTotalScore = () => {
         if (!scores) return 0
-        return Object.values(scores).reduce((a, b) => a + b, 0)
+        const { legalAccuracy, evidenceUse, persuasion, timeManagement, etiquette } = scores
+        return (legalAccuracy || 0) + (evidenceUse || 0) + (persuasion || 0) + (timeManagement || 0) + (etiquette || 0)
     }
 
     const getScoreGrade = (total) => {
@@ -133,6 +134,71 @@ function Results() {
                                     </div>
                                 )
                             })}
+                        </div>
+                    </div>
+                )}
+
+                {/* Strengths & Weaknesses */}
+                {(scores.strengths || scores.weaknesses) && (
+                    <div className="vc-section">
+                        <div className="vc-section-label">Nhận xét chi tiết</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            {scores.strengths && (
+                                <div style={{
+                                    background: 'rgba(34, 197, 94, 0.08)',
+                                    border: '1px solid rgba(34, 197, 94, 0.25)',
+                                    borderRadius: 12,
+                                    padding: '14px 16px'
+                                }}>
+                                    <div style={{
+                                        fontSize: 13,
+                                        fontWeight: 600,
+                                        color: '#22c55e',
+                                        marginBottom: 6,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 6
+                                    }}>
+                                        <span>💪</span> Điểm mạnh
+                                    </div>
+                                    <div style={{
+                                        fontSize: 13,
+                                        color: 'var(--text-secondary, #b0b0b0)',
+                                        lineHeight: 1.6,
+                                        whiteSpace: 'pre-wrap'
+                                    }}>
+                                        {scores.strengths}
+                                    </div>
+                                </div>
+                            )}
+                            {scores.weaknesses && (
+                                <div style={{
+                                    background: 'rgba(239, 68, 68, 0.08)',
+                                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                                    borderRadius: 12,
+                                    padding: '14px 16px'
+                                }}>
+                                    <div style={{
+                                        fontSize: 13,
+                                        fontWeight: 600,
+                                        color: '#ef4444',
+                                        marginBottom: 6,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 6
+                                    }}>
+                                        <span>📝</span> Cần cải thiện
+                                    </div>
+                                    <div style={{
+                                        fontSize: 13,
+                                        color: 'var(--text-secondary, #b0b0b0)',
+                                        lineHeight: 1.6,
+                                        whiteSpace: 'pre-wrap'
+                                    }}>
+                                        {scores.weaknesses}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

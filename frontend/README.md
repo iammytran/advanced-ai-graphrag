@@ -16,8 +16,25 @@ cd Frontend
 
 # Cài đặt các gói phụ thuộc
 npm install
+```
 
-# Chạy ứng dụng ở chế độ phát triển
+### Cấu Hình Environment
+
+Tạo file `.env` trong thư mục `frontend/`:
+
+```bash
+VITE_GEMINI_API_KEY=your_gemini_api_key
+VITE_GEMINI_IMAGE_API_KEY=your_gemini_image_api_key
+```
+
+| Key | Service | Mô tả |
+|-----|---------|-------|
+| `VITE_GEMINI_API_KEY` | `geminiService.js` | Gemini API key cho text generation (đối thủ tranh tụng, coach feedback) |
+| `VITE_GEMINI_IMAGE_API_KEY` | `geminiApi.js` | Gemini API key cho image generation (minh hoạ truyện tranh, poster) |
+
+### Chạy Ứng Dụng
+
+```bash
 npm run dev
 ```
 
