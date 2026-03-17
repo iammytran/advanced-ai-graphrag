@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { sendMessage, getSuggestedQuestions } from './services/mockApi'
+import { getSuggestedQuestions, sendMessage } from './services/backendApi'
 import { generateImageFromGemini } from './services/geminiApi'
 
 function App() {
@@ -66,11 +66,16 @@ function App() {
                 illustrationType
             })
 
+            const responseText =
+                typeof response?.text === 'string'
+                    ? response.text
+                    : (typeof response?.answer === 'string' ? response.answer : '')
+
             const botMessageId = Date.now() + 1
             const botMessage = {
                 id: botMessageId,
                 type: 'bot',
-                text: response.text,
+                text: responseText,
                 character: response.character,
                 illustration: response.illustration ? { ...response.illustration, isLoadingImage: true } : null,
                 timestamp: new Date()
@@ -79,7 +84,7 @@ function App() {
             setMessages(prev => [...prev, botMessage])
 
             if (response.illustration) {
-                generateImageFromGemini(response.character, toneValue, illustrationType, response.text)
+                generateImageFromGemini(response.character, toneValue, illustrationType, responseText)
                     .then(imageUrl => {
                         setMessages(prev => prev.map(msg => {
                             if (msg.id === botMessageId) {
@@ -298,10 +303,10 @@ function App() {
                                 </div>
                                 <div className="app-msg-content">
                                     <div className="app-msg-bubble">
-                                        {message.text.split('\n').map((line, i) => (
+                                        {String(message.text ?? '').split('\n').map((line, i, lines) => (
                                             <span key={i}>
                                                 {line}
-                                                {i < message.text.split('\n').length - 1 && <br />}
+                                                {i < lines.length - 1 && <br />}
                                             </span>
                                         ))}
                                     </div>

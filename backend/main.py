@@ -24,18 +24,14 @@ app.add_middleware(
 )
 
 # Initialize chatbot
-chatbot = Chatbot(model_option=2)
-app.state.chatbot = chatbot
-
-from src.evaluate import evaluate_router
-
-app.include_router(evaluate_router)
-
+chatbot = Chatbot(model_option=2, retrieval_mode="graphrag_only")
 
 class Options(BaseModel):
     character: Optional[str] = None
     toneValue: Optional[int] = None
     illustrationType: Optional[str] = None
+    output_folder: Optional[str] = None
+    outputFolder: Optional[str] = None
 
 
 class ChatRequest(BaseModel):
@@ -58,7 +54,7 @@ async def chat_endpoint(request: ChatRequest):
             rag_response = {
                 "answer": "This is a mock answer from backend.",
                 "retrieved_documents": [],
-            }
+            }    
 
         # Format response to match frontend expectation
         from datetime import datetime
