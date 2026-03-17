@@ -58,7 +58,10 @@ def get_llm():
     if _llm is None:
         with _lock:
             if _llm is None:
-                os.environ["CUDA_VISIBLE_DEVICES"] = "0" 
+                # 1. Ép sử dụng kiến trúc V0 (Vô cùng quan trọng)
+                os.environ["VLLM_USE_V1"] = "0"
+                # 2. Đảm bảo biến môi trường chỉ định rõ 2 GPU
+                os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
                 from vllm import LLM
                 # 3. Khởi tạo vLLM trên GPU 0
                 _llm = LLM(
@@ -66,7 +69,7 @@ def get_llm():
                     tensor_parallel_size=num_gpus if num_gpus > 0 else 1,
                     gpu_memory_utilization=0.8,
                     trust_remote_code=True,
-                    distributed_executor_backend="mp", # Khắc phục lỗi World size > Available GPUs
+                    distributed_executor_backend="ray",
                     # max_model_len=4096,
                 )
     return _llm
