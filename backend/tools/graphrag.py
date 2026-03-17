@@ -93,20 +93,14 @@ async def indexing(output_folder):
 
     new_folder_name = output_folder
     # 5. Chunking
-    print("Chunking...")
-    law_texts_df = get_law_texts_external()
-    law_texts_df["chunk"] = law_texts_df["content"].apply(chunk_civil_code_markdown)
-
-    new_df = law_texts_df.explode('chunk', ignore_index=True)
-
-    # 6. (Tùy chọn) Nếu bạn muốn bung các key trong dict của chunk 
-    # (như 'chuong', 'dieu') ra thành các cột riêng biệt:
-    chunk_details = pd.json_normalize(new_df['chunk'])
-
-    # 7. Đổi tên cột 'content' thành 'chunk' (nếu trong dict key là 'content')
-    chunk_details = chunk_details.rename(columns={'content': 'chunk'})
-
-    final_df = pd.concat([new_df[['file_name']], chunk_details], axis=1)
+    print("Đọc chunks từ file JSON...")
+    final_df = None
+    try:
+        final_df = pd.read_json(f"{output_folder}/chunking_result.json", orient="records")
+    except FileNotFoundError:
+        print(f"Lỗi: Không tìm thấy file chunking_result.json trong {output_folder}. Vui lòng chạy lại bước chunking trước.")
+        return
+    
     print("Ready for extracting entities and relationships...")
 
     # Đường dẫn model (vLLM hỗ trợ load trực tiếp từ HuggingFace hoặc thư mục local)

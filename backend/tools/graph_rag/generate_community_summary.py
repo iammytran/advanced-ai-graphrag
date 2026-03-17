@@ -54,6 +54,7 @@ def generate_hierarchical_community_reports(
     
     final_reports = []
     report_cache = {} 
+    chunk_id_cache = {}
 
     for current_level in sorted_levels:
         print(f"--- Đang xử lý Level {current_level} ---")
@@ -75,9 +76,11 @@ def generate_hierarchical_community_reports(
             prompts_to_generate = []
             batch_cids = []
             batch_nodes = []
+            batch_chunk_ids = [] # Store chunk_ids for the batch
 
             for cid, nodes in batch:
-                # --- LOGIC CHUẨN BỊ INPUT_TEXT (Giữ nguyên Idea cũ) ---
+                # --- LOGIC CHUẨN BỊ INPUT_TEXT ---
+                source_chunk_ids = set()
                 if current_level == max(sorted_levels):
                     # Level Lá: Thực thể và Quan hệ
                     relevant_entities = entities_df[entities_df['name'].isin(nodes)]
@@ -97,6 +100,14 @@ def generate_hierarchical_community_reports(
                         claims_df['subject'].isin(nodes) | 
                         claims_df['object'].isin(nodes)
                     ]
+
+                    # Collect chunk_ids
+                    if 'chunk_id' in relevant_entities.columns:
+                        source_chunk_ids.update(relevant_entities['chunk_id'].dropna().tolist())
+                    if 'chunk_id' in relevant_rel.columns:
+                        source_chunk_ids.update(relevant_rel['chunk_id'].dropna().tolist())
+                    if 'chunk_id' in relevant_claims.columns:
+                        source_chunk_ids.update(relevant_claims['chunk_id'].dropna().tolist())
                     
                     if not relevant_claims.empty:
                         input_text += "\n\n### 3. CHI TIẾT QUY ĐỊNH & CHẾ TÀI (CLAIMS):\n"
@@ -115,6 +126,9 @@ def generate_hierarchical_community_reports(
                     sub_reports = [report_cache[int(scid)] for scid in sub_comm_ids if int(scid) in report_cache]
                     sub_reports.sort(key=len, reverse=True)
                     input_text = "BÁO CÁO TÓM TẮT TỪ CÁC CỤM CON:\n" + "\n---\n".join(sub_reports)
+                    for scid in sub_comm_ids:
+                        if int(scid) in chunk_id_cache:
+                            source_chunk_ids.update(chunk_id_cache[int(scid)])
 
                 # Kiểm soát Context Window
                 # Ví dụ trong vòng lặp chuẩn bị prompt
@@ -174,6 +188,7 @@ Bạn PHẢI trả về JSON, không lời dẫn. Giới hạn số lượng m�
                 prompts_to_generate.append(full_prompt)
                 batch_cids.append(cid)
                 batch_nodes.append(nodes)
+                batch_chunk_ids.append(list(source_chunk_ids)) # Add collected chunk_ids
 
             # --- VLLM GENERATION ---
             outputs = llm.generate(prompts_to_generate, sampling_params)
@@ -181,6 +196,7 @@ Bạn PHẢI trả về JSON, không lời dẫn. Giới hạn số lượng m�
             for idx, output in enumerate(outputs):
                 cid = batch_cids[idx]
                 nodes = batch_nodes[idx]
+                source_chunk_ids = batch_chunk_ids[idx] # Get chunk_ids for this item
                 raw_output = output.outputs[0].text
                 
                 # # Debug file
@@ -219,18 +235,11 @@ Bạn PHẢI trả về JSON, không lời dẫn. Giới hạn số lượng m�
                 final_reports.append({
                     "community_id": cid,
                     "level": current_level,
+                    "source_chunk_ids": source_chunk_ids, # Add chunk_ids to the final report
                     "report_detail": data_json,
                     "nodes": nodes
                 })
                 report_cache[cid] = data_json.get('summary', raw_output)
+                chunk_id_cache[cid] = source_chunk_ids # Cache chunk_ids for parent levels
 
     return final_reports
-
-
-# def save_full_graph_context(result, hierarchy, filename="graph_context_old_prompt.json"):
-#     full_context = {
-#         "community_mapping": result, # {level: {node: cluster_id}}
-#         "community_hierarchy": hierarchy # {cluster_id: parent_id}
-#     }
-#     with open(filename, 'w', encoding='utf-8') as f:
-#         json.dump(full_context, f, ensure_ascii=False, indent=4)
