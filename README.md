@@ -6,7 +6,10 @@ Final Project for class Advanced AI
 ### Run Example
 1. **Install Dependencies**: Install the necessary requirements:
 ```bash
-pip install -r .\backend\requirement.txt
+conda create -n graphrag python=3.10 -y
+conda activate graphrag
+pip install uv
+uv pip install -r ./backend/requirement.txt
 ```
 
 2. **Indexing RAG**: Run the following command to import chunks into the vector database:
