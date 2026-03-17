@@ -13,6 +13,7 @@ import pickle
 import sys
 from pathlib import Path
 from threading import Lock
+import torch
 
 import numpy as np
 import pandas as pd
@@ -47,6 +48,8 @@ logging.basicConfig(level=logging.ERROR)
 
 _llm = None
 _lock = Lock()
+# Tự động lấy số GPU khả dụng
+num_gpus = torch.cuda.device_count()
 
 def get_llm():
     global _llm
@@ -58,7 +61,7 @@ def get_llm():
                 # 3. Khởi tạo vLLM trên GPU 0
                 _llm = LLM(
                     model="Qwen/Qwen2.5-7B-Instruct",
-                    tensor_parallel_size=2,
+                    tensor_parallel_size=num_gpus if num_gpus > 0 else 1,
                     gpu_memory_utilization=0.8,
                     trust_remote_code=True,
                     # max_model_len=4096,
