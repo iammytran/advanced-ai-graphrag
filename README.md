@@ -12,9 +12,9 @@ pip install uv
 uv pip install -r ./backend/requirement.txt
 ```
 
-2. **Indexing RAG**: Run the following command to import chunks into the vector database:
+2. **Indexing RAG**: Run the following command to create chunks, extract Entities & Relationships & Claims, create graph, perform community detection, and create community summaries:
 ```bash
-python -m backend.tools.rag
+python -m backend.tools.graphrag
 ```
 
 3. **Configuration**: Create a `.env` file with the required environment variables.
