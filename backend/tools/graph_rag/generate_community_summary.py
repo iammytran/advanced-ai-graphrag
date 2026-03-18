@@ -37,7 +37,7 @@ def generate_hierarchical_community_reports(
     model_name: str, # Tên model hoặc path
     folder_for_debug: str,
     llm,
-    max_new_tokens=3072,
+    max_new_tokens=15000,
     context_window=32768 # vLLM thường hỗ trợ context lớn hơn
 ):
     # 1. Khởi tạo Tokenizer
