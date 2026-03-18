@@ -7,8 +7,12 @@ import warnings
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List
 
+from dotenv import load_dotenv
 from tqdm.auto import tqdm
 from transformers import AutoTokenizer
+
+# Tải các biến môi trường từ file .env
+load_dotenv()
 
 # Cấu hình log và cảnh báo
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -226,34 +230,64 @@ class LLMProcessor:
 VLLMProcessor = LLMProcessor
 
 def prepare_global_context(query, community_reports, tokenizer, context_window=6000):
-    random.shuffle(community_reports)
+    """
+    Chuẩn bị ngữ cảnh toàn cục bằng cách xử lý từng báo cáo cộng đồng.
+    - Nếu báo cáo đủ ngắn, nó sẽ trở thành một chunk.
+    - Nếu báo cáo quá dài, nó sẽ được chia thành nhiều chunk nhỏ hơn.
+    """
     chunks = []
-    current_chunk = ""
-    safe_limit = context_window - 500 
+    safe_limit = context_window - 500  # Giới hạn an toàn cho mỗi chunk
 
     for r in community_reports:
         detail = r.get('report_detail', {})
         findings = "\n".join([f"- {f['summary']}" for f in detail.get('findings', [])])
         
         report_text = (
-            f"\n\n### BÁO CÁO ID: {r['community_id']}\n"
+            f"\n\n### BÁO CÁO ID: {{r['community_id']}}\n"
             f"Tiêu đề: {detail.get('title', 'N/A')}\n"
             f"Tóm tắt: {detail.get('report', '')}\n"
             f"Phát hiện: {findings}\n---"
         )
         
-        if len(tokenizer.encode(current_chunk + report_text)) < safe_limit:
-            current_chunk += report_text
+        # source_ids chính là ids của các chunk từ các văn bản mà làm nên bản summary hiện tại
+        source_ids = sorted(list(set(r.get('source_chunk_ids', []))))
+        
+        # Kiểm tra xem toàn bộ report_text có vượt quá giới hạn không
+        if len(tokenizer.encode(report_text)) <= safe_limit:
+            # Nếu không, coi toàn bộ report là một chunk
+            chunks.append((report_text.strip(), source_ids))
         else:
-            if current_chunk:
-                chunks.append(current_chunk.strip())
-            current_chunk = report_text
+            # Nếu có, chia report thành các phần nhỏ hơn (ví dụ: theo dòng hoặc câu)
+            # Ở đây, chúng ta sẽ chia theo các "finding" để giữ ngữ cảnh
             
-    if current_chunk:
-        chunks.append(current_chunk.strip())
+            base_text = (
+                f"\n\n### BÁO CÁO ID: {{r['community_id']}}\n"
+                f"Tiêu đề: {detail.get('title', 'N/A')}\n"
+                f"Tóm tắt: {detail.get('report', '')}\n"
+            )
+            
+            current_sub_chunk = base_text
+            
+            # Thêm các finding vào cho đến khi đầy
+            for finding in detail.get('findings', []):
+                finding_text = f"- {finding['summary']}\n"
+                
+                if len(tokenizer.encode(current_sub_chunk + finding_text)) > safe_limit:
+                    # Nếu chunk con hiện tại đầy, lưu nó lại
+                    if current_sub_chunk != base_text:
+                        chunks.append((current_sub_chunk.strip() + "\n---", source_ids))
+                    # Bắt đầu chunk con mới
+                    current_sub_chunk = base_text + finding_text
+                else:
+                    current_sub_chunk += finding_text
+            
+            # Thêm chunk con cuối cùng nếu còn
+            if current_sub_chunk != base_text:
+                chunks.append((current_sub_chunk.strip() + "\n---", source_ids))
+
     return chunks
 
-def run_map_step(query, chunks, max_new_tokens, processor: LLMProcessor):
+def run_map_step(query, summary_chunks_with_source_ids, max_new_tokens, processor: LLMProcessor):
     system_prompt = f"""
 ---Vai trò---
 Bạn là một chuyên gia phân tích pháp luật và trợ lý AI thông minh. 
@@ -286,6 +320,10 @@ Bạn PHẢI trả về JSON duy nhất theo cấu trúc:
 4. Độ dài tối đa: {max_new_tokens} từ."""
 
     prompts = []
+    # Tách chunks và chunk_ids để xử lý
+    chunks = [item[0] for item in summary_chunks_with_source_ids]
+    source_ids = [item[1] for item in summary_chunks_with_source_ids]
+
     for chunk in chunks:
         user_content = f"Dựa trên dữ liệu: {chunk}\n\nCâu hỏi: {query}"
         prompts.append(processor.apply_template(system_prompt, user_content))
@@ -311,13 +349,16 @@ Bạn PHẢI trả về JSON duy nhất theo cấu trúc:
     logger.info("Đã lưu output thô vào file: %s", log_filename)
     
     results = []
-    for res in raw_responses:
+    for i, res in enumerate(raw_responses):
         try:
             clean_res = res.replace("```json", "").replace("```", "").strip()
             data = json.loads(clean_res)
 
             if isinstance(data, dict):
                 if "points" in data and isinstance(data["points"], list):
+                    # Gắn chunk_ids vào mỗi point
+                    for point in data["points"]:
+                        point['source_ids'] = source_ids[i]
                     results.append(data)
                 else:
                     logger.warning("Kết quả map không có trường 'points' hợp lệ")
@@ -341,19 +382,40 @@ def _flatten_map_results(map_results):
     return all_points
 
 def get_relevant_resources(map_results, top_k_sources):
+    """
+    Trích xuất các nguồn tài liệu liên quan nhất từ kết quả của giai đoạn map.
+    Hàm này lấy ra top_k points có điểm cao nhất.
+    """
     if not map_results:
         logger.warning("get_relevant_resources: map_results rỗng, trả về danh sách trống")
         return []
     
+    # 1. Gộp tất cả các 'points' từ các kết quả map lại
     all_points = _flatten_map_results(map_results)
-    sorted_list = sorted(all_points, key=lambda x: x.get('score', 0), reverse=True)[:top_k_sources]
-    descriptions = [item.get('description', '') for item in sorted_list]
-    descriptions_without_sources = [item.split(' [Data:')[0].strip() for item in descriptions]
-    return descriptions_without_sources
+    
+    # 2. Sắp xếp tất cả các points theo 'score' giảm dần
+    sorted_points = sorted(all_points, key=lambda x: x.get('score', 0), reverse=True)
+    
+    # 3. Lấy top_k points đầu tiên
+    top_k_points = sorted_points[:top_k_sources]
+    
+    # 4. Trích xuất thông tin cần thiết
+    final_results = []
+    for point in top_k_points:
+        description = point.get('description', '').split(' [Data:')[0].strip()
+        source_ids = point.get('source_ids', [])
+        
+        if description:
+            final_results.append({
+                "description": description,
+                "source_ids": sorted(list(set(source_ids))) # Đảm bảo ID là duy nhất và được sắp xếp
+            })
+            
+    return final_results
 
 def run_global_search(query, summaries_path, llm=None, top_k_sources=10, provider: str = None):
     if isinstance(llm, int) and not isinstance(top_k_sources, int):
-        llm, top_k_sources = top_k_sources, llm
+        llm, top_k_sources = llm, top_k_sources
 
     model_path = os.getenv("GLOBAL_QUERY_MODEL_PATH", "Qwen/Qwen2.5-7B-Instruct")
     max_new_tokens = 4096
@@ -367,13 +429,16 @@ def run_global_search(query, summaries_path, llm=None, top_k_sources=10, provide
         logger.exception("Lỗi đọc file summaries: %s", error)
         return []
     
-    chunks = prepare_global_context(query, data, processor.tokenizer)
-    map_results = run_map_step(query, chunks, max_new_tokens, processor)
+    summary_chunks_with_source_ids = prepare_global_context(query, data, processor.tokenizer)
+    map_results = run_map_step(query, summary_chunks_with_source_ids, max_new_tokens, processor)
+    print(map_results)
 
-    sorted_map_output = get_relevant_resources(map_results, top_k_sources)
+    # sorted_map_output = get_relevant_resources(map_results, top_k_sources)
 
-    return sorted_map_output
+    # return sorted_map_output
+    return ""
 
 if __name__ == '__main__':
     query = "Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?"
-    run_global_search(query, "outputs_20260312_001744/community_summaries.json")
+    # Để dùng OpenAI, chúng ta truyền provider="openai" vào hàm
+    print(run_global_search(query, "artifacts_v2/community_summaries.json", provider="openai"))

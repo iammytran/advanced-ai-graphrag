@@ -53,8 +53,8 @@ def generate_hierarchical_community_reports(
     sorted_levels = sorted([int(k) for k in community_results.keys()], reverse=True)
     
     final_reports = []
+    # Cache sẽ lưu tuple: (nội dung tóm tắt, danh sách source_chunk_ids)
     report_cache = {} 
-    chunk_id_cache = {}
 
     for current_level in sorted_levels:
         print(f"--- Đang xử lý Level {current_level} ---")
@@ -76,13 +76,13 @@ def generate_hierarchical_community_reports(
             prompts_to_generate = []
             batch_cids = []
             batch_nodes = []
-            batch_chunk_ids = [] # Store chunk_ids for the batch
+            batch_chunk_ids = [] # Lưu chunk_ids cho batch
 
             for cid, nodes in batch:
                 # --- LOGIC CHUẨN BỊ INPUT_TEXT ---
                 source_chunk_ids = set()
                 if current_level == max(sorted_levels):
-                    # Level Lá: Thực thể và Quan hệ
+                    # Level Lá: Lấy chunk_id trực tiếp từ các DataFrame
                     relevant_entities = entities_df[entities_df['name'].isin(nodes)]
                     input_text = "THỰC THỂ (Ưu tiên theo độ quan trọng):\n"
                     input_text += "\n".join([f"ID:{idx}, {r['name']}: {r['description']}" for idx, r in relevant_entities.iterrows()])
@@ -94,26 +94,23 @@ def generate_hierarchical_community_reports(
                     input_text += "\n\nQUAN HỆ:\n"
                     input_text += "\n".join([f"ID:{idx}, {r['source']} -> {r['target']}: {r['description']}" for idx, r in relevant_rel.iterrows()])
 
-                    # 3. THÊM: Lấy Claims (Quy định chi tiết)
-                    # Lọc các claim mà chủ thể hoặc đối tượng liên quan nằm trong cụm này
                     relevant_claims = claims_df[
                         claims_df['subject'].isin(nodes) | 
                         claims_df['object'].isin(nodes)
                     ]
 
-                    # Collect chunk_ids
+                    # Thu thập chunk_ids một cách an toàn
                     if 'chunk_id' in relevant_entities.columns:
-                        source_chunk_ids.update(relevant_entities['chunk_id'].dropna().tolist())
+                        source_chunk_ids.update(relevant_entities['chunk_id'].dropna().unique())
                     if 'chunk_id' in relevant_rel.columns:
-                        source_chunk_ids.update(relevant_rel['chunk_id'].dropna().tolist())
+                        source_chunk_ids.update(relevant_rel['chunk_id'].dropna().unique())
                     if 'chunk_id' in relevant_claims.columns:
-                        source_chunk_ids.update(relevant_claims['chunk_id'].dropna().tolist())
+                        source_chunk_ids.update(relevant_claims['chunk_id'].dropna().unique())
                     
                     if not relevant_claims.empty:
                         input_text += "\n\n### 3. CHI TIẾT QUY ĐỊNH & CHẾ TÀI (CLAIMS):\n"
                         claim_entries = []
                         for idx, r in relevant_claims.iterrows():
-                            # Tổng hợp thông tin từ description và source_text (câu trích dẫn)
                             entry = (f"ID:C{idx}, Chủ thể: {r['subject']}, Loại: {r['claim_type']}, "
                                      f"Trạng thái: {r['status']}\n"
                                      f"   - Nội dung: {r['description']}\n"
@@ -121,22 +118,27 @@ def generate_hierarchical_community_reports(
                             claim_entries.append(entry)
                         input_text += "\n".join(claim_entries)
                 else:
-                    # Level Cha: Tổng hợp từ Summary của con
+                    # Level Cha: Tổng hợp từ Summary và chunk_ids của con
                     sub_comm_ids = [child for child, parent in community_hierarchy.items() if str(parent) == str(cid)]
-                    sub_reports = [report_cache[int(scid)] for scid in sub_comm_ids if int(scid) in report_cache]
-                    sub_reports.sort(key=len, reverse=True)
-                    input_text = "BÁO CÁO TÓM TẮT TỪ CÁC CỤM CON:\n" + "\n---\n".join(sub_reports)
+                    
+                    sub_reports_content = []
                     for scid in sub_comm_ids:
-                        if int(scid) in chunk_id_cache:
-                            source_chunk_ids.update(chunk_id_cache[int(scid)])
+                        if int(scid) in report_cache:
+                            # Lấy cả nội dung và chunk_ids từ cache
+                            cached_content, cached_chunk_ids = report_cache[int(scid)]
+                            sub_reports_content.append(cached_content)
+                            source_chunk_ids.update(cached_chunk_ids)
+                    
+                    sub_reports_content.sort(key=len, reverse=True)
+                    
+                    input_text = f"BÁO CÁO TỔNG HỢP CHO CỤM CHA ID: {cid}\n\n"
+                    input_text += "DỮ LIỆU TỪ CÁC CỤM CON:\n" + "\n---\n".join(sub_reports_content)
 
                 # Kiểm soát Context Window
-                # Ví dụ trong vòng lặp chuẩn bị prompt
-                safe_input_limit = 28000 # Chừa chỗ cho output
+                safe_input_limit = 28000 
                 tokens = tokenizer.encode(input_text)
 
                 if len(tokens) > safe_input_limit:
-                    # Nếu dài quá, ta cắt bớt phần Context (danh sách thực thể/quan hệ)
                     full_prompt = tokenizer.decode(tokens[:safe_input_limit])
                     print(f"⚠️ Đã cắt bớt prompt cho cụm vì quá dài ({len(tokens)} tokens)")
 
@@ -188,7 +190,7 @@ Bạn PHẢI trả về JSON, không lời dẫn. Giới hạn số lượng m�
                 prompts_to_generate.append(full_prompt)
                 batch_cids.append(cid)
                 batch_nodes.append(nodes)
-                batch_chunk_ids.append(list(source_chunk_ids)) # Add collected chunk_ids
+                batch_chunk_ids.append(list(source_chunk_ids)) 
 
             # --- VLLM GENERATION ---
             outputs = llm.generate(prompts_to_generate, sampling_params)
@@ -196,24 +198,15 @@ Bạn PHẢI trả về JSON, không lời dẫn. Giới hạn số lượng m�
             for idx, output in enumerate(outputs):
                 cid = batch_cids[idx]
                 nodes = batch_nodes[idx]
-                source_chunk_ids = batch_chunk_ids[idx] # Get chunk_ids for this item
+                final_source_chunk_ids = batch_chunk_ids[idx] # Lấy chunk_ids cho mục này
                 raw_output = output.outputs[0].text
                 
-                # # Debug file
-                # with open(f"{folder_for_debug}/debug_cluster_{cid}.txt", "w", encoding="utf-8") as f:
-                #     f.write(raw_output)
-
                 # --- XỬ LÝ JSON ---
                 try:
-                    # 1. Tìm khối văn bản nghi vấn là JSON
-                    match = re.search(r'\{.*', raw_output, re.DOTALL) # Tìm từ dấu { đến hết
+                    match = re.search(r'\{.*', raw_output, re.DOTALL)
                     if match:
                         potential_json = match.group(0)
-                        
-                        # 2. Loại bỏ ký tự điều khiển lỗi
                         potential_json = re.sub(r'[\x00-\x1F\x7F]', '', potential_json)
-                        
-                        # 3. THÊM BƯỚC REPAIR: Thử parse thẳng, nếu lỗi thì sửa rồi parse lại
                         try:
                             data_json = json.loads(potential_json)
                         except json.JSONDecodeError:
@@ -227,7 +220,7 @@ Bạn PHẢI trả về JSON, không lời dẫn. Giới hạn số lượng m�
                     print(f"❌ Lỗi parse JSON tại cụm {cid}: {e}")
                     data_json = {
                         "title": f"Báo cáo cụm {cid} (Lỗi định dạng)", 
-                        "report": raw_output[:500] + "...", # Lấy tạm text thô
+                        "report": raw_output[:500] + "...",
                         "rating": 0, 
                         "findings": []
                     }
@@ -235,11 +228,12 @@ Bạn PHẢI trả về JSON, không lời dẫn. Giới hạn số lượng m�
                 final_reports.append({
                     "community_id": cid,
                     "level": current_level,
-                    "source_chunk_ids": source_chunk_ids, # Add chunk_ids to the final report
+                    "source_chunk_ids": final_source_chunk_ids, # Thêm chunk_ids vào báo cáo cuối cùng
                     "report_detail": data_json,
                     "nodes": nodes
                 })
-                report_cache[cid] = data_json.get('summary', raw_output)
-                chunk_id_cache[cid] = source_chunk_ids # Cache chunk_ids for parent levels
+                # Cache cả nội dung tóm tắt và chunk_ids để cấp cha sử dụng
+                summary_content = data_json.get('report', raw_output) # Ưu tiên report, fallback về raw
+                report_cache[cid] = (summary_content, final_source_chunk_ids)
 
     return final_reports
