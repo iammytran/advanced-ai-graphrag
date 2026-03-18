@@ -153,7 +153,7 @@ Hỗ trợ luật sư và người dân hiểu rõ tác động pháp lý. Báo 
 1. CHI TIẾT ĐỊNH LƯỢNG: Ghi rõ hành vi, mức phạt (tiền, năm tù), và cơ quan thẩm quyền.
 2. TÍNH ĐỘC LẬP: Tuyệt đối không dùng đại từ (đây, đó, ấy). Phải lặp lại tên thực thể/nội dung cụ thể.
 3. KHÔNG BỊA ĐẶT: Chỉ sử dụng dữ liệu được cung cấp. 
-4. KIỂM SOÁT ĐỘ DÀI: Để tránh lỗi hệ thống, bạn PHẢI viết cực kỳ súc tích, dưới {max_new_tokens} từ, nhưng vẫn nên đảm bảo đủ ý.
+4. KIỂM SOÁT ĐỘ DÀI: Để tránh lỗi hệ thống, bạn PHẢI viết cực kỳ súc tích, dưới 3000 từ, nhưng vẫn nên đảm bảo đủ ý.
 
 ### QUY TẮC TRÍCH DẪN
 - Mọi ý phải kèm: "[Data: Thực thể (id1, id2); Quan hệ (id3)]". Tối đa 3 ID mỗi lần trích dẫn.
