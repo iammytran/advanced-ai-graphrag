@@ -133,7 +133,7 @@ def extract_info_from_chunk(text_units, folder_path, model_path, llm):
         
         # Sử dụng tokenizer của vLLM để apply template
         prompt = llm.get_tokenizer().apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        chunk_ids_for_prompts.append(row.get('chunk_id', 'unknown'))
+        chunk_ids_for_prompts.append(row.get('id', 'unknown'))
         all_prompts.append(prompt)
 
     # 4. Inference siêu tốc với vLLM
