@@ -69,7 +69,7 @@ def generate_hierarchical_community_reports(
         
         # Với vLLM, chúng ta có thể xử lý toàn bộ Level trong 1 Batch nếu VRAM cho phép
         # Hoặc chia batch lớn (ví dụ 32-64)
-        batch_size = 32
+        batch_size = 16
         
         for i in range(0, len(level_comms), batch_size):
             batch = level_comms[i : i + batch_size]

@@ -229,21 +229,35 @@ class LLMProcessor:
 
 VLLMProcessor = LLMProcessor
 
-def prepare_global_context(query, community_reports, tokenizer, context_window=6000):
+def prepare_global_context(query, community_reports, tokenizer, context_window=6000, top_k_levels=1):
     """
     Chuẩn bị ngữ cảnh toàn cục bằng cách xử lý từng báo cáo cộng đồng.
+    - Lọc để chỉ lấy báo cáo từ `top_k_levels` cấp độ thấp nhất.
     - Nếu báo cáo đủ ngắn, nó sẽ trở thành một chunk.
     - Nếu báo cáo quá dài, nó sẽ được chia thành nhiều chunk nhỏ hơn.
     """
     chunks = []
     safe_limit = context_window - 500  # Giới hạn an toàn cho mỗi chunk
 
-    for r in community_reports:
+    # Lọc báo cáo theo 2 level thấp nhất
+    if not community_reports:
+        return []
+
+    all_levels = sorted(list(set(r['level'] for r in community_reports)), reverse=True)
+    
+    # Lấy top_k_levels từ dưới lên (ví dụ: 2 level cuối)
+    levels_to_use = all_levels[:top_k_levels]
+    
+    print(f"INFO: Sử dụng các báo cáo từ level: {levels_to_use}")
+    
+    filtered_reports = [r for r in community_reports if r['level'] in levels_to_use]
+
+    for r in filtered_reports:
         detail = r.get('report_detail', {})
         findings = "\n".join([f"- {f['summary']}" for f in detail.get('findings', [])])
         
         report_text = (
-            f"\n\n### BÁO CÁO ID: {{r['community_id']}}\n"
+            f"\n\n### BÁO CÁO ID: {r['community_id']}\n"
             f"Tiêu đề: {detail.get('title', 'N/A')}\n"
             f"Tóm tắt: {detail.get('report', '')}\n"
             f"Phát hiện: {findings}\n---"
