@@ -176,7 +176,7 @@ Bạn PHẢI trả về JSON, không lời dẫn. Giới hạn số lượng m�
 ### CẢNH BÁO KỸ THUẬT:
 - CHỈ TRẢ VỀ JSON. Bắt đầu bằng '{{' và kết thúc bằng '}}'.
 - Nếu dữ liệu quá lớn, chỉ chọn lọc 5 nội dung quan trọng nhất để trình bày. Tuyệt đối không viết lan man dẫn đến bị cắt ngang văn bản.
-- Tổng độ dài mong muốn: dưới {max_new_tokens} từ."""
+"""
                 
                 user_msg = f"""Viết báo cáo cho cụm thực thể sau đây. 
 {input_text}"""
