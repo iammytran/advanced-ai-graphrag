@@ -84,8 +84,8 @@ function App() {
 
             setMessages(prev => [...prev, botMessage])
 
-            if (response.illustration) {
-                generateImageFromGemini(response.character, toneValue, illustrationType, responseText)
+            if (shouldGenerateImage) {
+                generateImageFromGemini(character, toneValue, illustrationType, responseText)
                     .then(imageUrl => {
                         setMessages(prev => prev.map(msg => {
                             if (msg.id === botMessageId) {
