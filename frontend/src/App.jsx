@@ -72,12 +72,13 @@ function App() {
                     : (typeof response?.answer === 'string' ? response.answer : '')
 
             const botMessageId = Date.now() + 1
+            const shouldGenerateImage = illustrationType && illustrationType !== 'none'
             const botMessage = {
                 id: botMessageId,
                 type: 'bot',
                 text: responseText,
                 character: response.character,
-                illustration: response.illustration ? { ...response.illustration, isLoadingImage: true } : null,
+                illustration: shouldGenerateImage ? { type: illustrationType, isLoadingImage: true } : null,
                 timestamp: new Date()
             }
 
