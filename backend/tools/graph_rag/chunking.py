@@ -212,7 +212,8 @@ if __name__ == "__main__":
     # Tham số: (vị trí, tên_cột, dữ_liệu)
     final_df.insert(0, 'id', ids)
     print(f"law_texts_df: {final_df}")
-    # law_text = law_texts_df["content"][1]
-    # # print(f"law_text: {law_text}")
-    # df_chunks = chunk_civil_code_markdown(law_text)
-    # print(f"df_chunks: {df_chunks[0]}")
+
+    # Lưu kết quả chunking ra file JSON
+    output_path = "dataset/chunking_result.json"
+    final_df.to_json(output_path, orient="records", lines=False, force_ascii=False, indent=4)
+    print(f"Đã lưu kết quả chunking vào file: {output_path}")

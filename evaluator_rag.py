@@ -32,7 +32,7 @@ from backend.src.chatbot import Chatbot
 warnings.filterwarnings("ignore")
 
 # Initialize Chatbot
-chatbot = Chatbot(model_option=2)
+chatbot = Chatbot(model_option=2, retrieval_mode="graphrag_only")
 
 
 def get_judge_llm():
@@ -48,7 +48,7 @@ def get_judge_llm():
     # )
     # return ChatHuggingFace(llm=llm)
     llm = ChatOpenAI(
-        base_url="https://openrouter.ai/api/v1",
+        # base_url="https://openrouter.ai/api/v1",
         model=OPENAI_MODEL,
         max_completion_tokens=800,
         temperature=0,
@@ -169,7 +169,7 @@ def groundedness(inputs: dict, outputs: dict) -> bool:
     if not docs:
         return False  # No documents -> Not grounded (or trivial)
 
-    doc_string = "\n\n".join(doc.page_content for doc in docs)
+    doc_string = "\n\n".join(docs)  # Directly join strings
     answer = f"DỮ KIỆN: {doc_string}\nCÂU TRẢ LỜI CỦA HỌC SINH: {outputs['answer']}"
 
     grade = llm.invoke(
@@ -214,7 +214,7 @@ def retrieval_relevance(inputs: dict, outputs: dict) -> bool:
     if not docs:
         return False
 
-    doc_string = "\n\n".join(doc.page_content for doc in docs)
+    doc_string = "\n\n".join(docs)  # Directly join strings
     answer = f"DỮ KIỆN: {doc_string}\nCÂU HỎI: {inputs['question']}"
 
     grade = llm.invoke(
@@ -315,6 +315,13 @@ def main():
     df_results_original = experiment_results_original.to_pandas()
     print("\nEvaluations Complete!")
     print(f"Original Question Results: {df_results_original}")
+
+    # Lưu kết quả ra file JSON
+    results_path = "evaluation_results.json"
+    print(f"\n✅ Đang lưu kết quả đánh giá vào file: {results_path}")
+    with open(results_path, 'w', encoding='utf-8') as f:
+        df_results_original.to_json(f, orient="records", force_ascii=False, indent=4)
+    print(f"✅ Đã lưu kết quả đánh giá vào file: {results_path}")
     # print(f"Reframed Question Results: {experiment_results_reframed.url}")
 
 

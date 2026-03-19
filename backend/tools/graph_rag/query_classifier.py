@@ -24,7 +24,7 @@ def query_type_classifier(query: str, llm=None, provider: str = None, get_llm_fu
     system_prompt = """Bạn là một chuyên gia điều phối hệ thống GraphRAG. Bạn chỉ được phép trả về định dạng JSON.
     Nhiệm vụ: Xác định câu hỏi dùng 'local' hay 'global' search.
 - 'local': Hỏi về thực thể cụ thể, người, vật, địa điểm, chi tiết sâu.
-- 'global': Hỏi về chủ đề chung, tóm tắt toàn bộ dữ liệu, xu hướng.
+- 'global': Hỏi về chủ đề chung, tóm tắt dữ liệu, xu hướng.
 Trả về JSON: {"search_type": "local" | "global", "reason": "giải thích"}
 """
     user_prompt = f'Câu hỏi người dùng: "{query}"'
@@ -37,21 +37,45 @@ Trả về JSON: {"search_type": "local" | "global", "reason": "giải thích"}
     ).strip().lower()
 
     def _extract_decision(raw_text: str):
+        # 1. Làm sạch text và tìm phạm vi JSON
         clean_text = (raw_text or "").replace("```json", "").replace("```", "").strip()
         start_idx = clean_text.find("{")
         end_idx = clean_text.rfind("}") + 1
+
+        # Mặc định ban đầu
+        default_reason = f"được phân loại mặc định (global) do phản hồi không hợp lệ từ {provider_name}"
+
+        # 2. Kiểm tra nếu không tìm thấy cấu trúc JSON {}
         if start_idx < 0 or end_idx <= start_idx:
-            raise ValueError("Không tìm thấy đối tượng JSON trong phản hồi của mô hình")
+            return {
+                "search_type": "global",
+                "reason": f"Không tìm thấy JSON, {default_reason}"
+            }
 
-        decision = json.loads(clean_text[start_idx:end_idx])
-        search_type = str(decision.get("search_type", "")).strip().lower()
-        if search_type not in {"local", "global"}:
-            raise ValueError(f"Giá trị search_type không hợp lệ: {search_type}")
+        try:
+            # 3. Parse JSON
+            decision = json.loads(clean_text[start_idx:end_idx])
+            search_type = str(decision.get("search_type", "")).strip().lower()
+            reason = str(decision.get("reason", "")).strip()
 
-        return {
-            "search_type": search_type,
-            "reason": str(decision.get("reason", "")).strip() or f"được phân loại bởi {provider_name}",
-        }
+            # 4. Nếu search_type không nằm trong tập cho phép, trả về global
+            if search_type not in {"local", "global"}:
+                return {
+                    "search_type": "global",
+                    "reason": f"search_type '{search_type}' không hợp lệ. {default_reason}"
+                }
+
+            return {
+                "search_type": search_type,
+                "reason": reason or f"được phân loại bởi {provider_name}",
+            }
+
+        except (json.JSONDecodeError, Exception) as e:
+            # 5. Nếu có lỗi parse JSON, trả về global thay vì raise error
+            return {
+                "search_type": "global",
+                "reason": f"Lỗi parse JSON ({str(e)}). {default_reason}"
+            }
 
     try:
         if provider_name == "openai":

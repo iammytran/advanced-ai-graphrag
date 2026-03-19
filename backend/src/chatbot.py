@@ -13,6 +13,7 @@ from backend.config.config import (
     OPENAI_ENDPOINT,
     OPENAI_MODEL,
     TEMPERATURE,
+    ARTIFACT_FOLDER,
 )
 from backend.src.prompts import AGENT_SYSTEM_PROMPT
 from backend.tools.graphrag import format_graphrag_documents, graphrag_retrieval
@@ -23,11 +24,12 @@ class State(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
     options_dict: dict
     retrieved_documents: list[str]
+    source_chunk_ids: list[str]
 
 
 class Chatbot:
 
-    DEFAULT_ARTIFACT_FOLDER = "artifacts"
+    DEFAULT_ARTIFACT_FOLDER = ARTIFACT_FOLDER
 
     def __init__(self, model_option: int = 1, retrieval_mode: str = "auto"):
         """
@@ -116,8 +118,14 @@ class Chatbot:
                     state["messages"].append(tool_message)
                 elif tool_name == "graphrag_retrieval":
                     tool_input["output_folder"] = output_folder
-                    retrieved_documents = graphrag_retrieval.invoke(tool_input)  # returns list[str]
+                    
+                    # Unpack the tuple returned by the tool
+                    retrieved_documents, source_chunk_ids = graphrag_retrieval.invoke(tool_input)
+                    
+                    # Update state with both lists
                     state["retrieved_documents"] = retrieved_documents
+                    state["source_chunk_ids"] = source_chunk_ids
+                    
                     tool_result = format_graphrag_documents(retrieved_documents)
                     if not retrieved_documents:
                         tool_result = "Không tìm thấy thông tin phù hợp trong GraphRAG."
@@ -166,6 +174,7 @@ class Chatbot:
             messages=self.message_history,
             options_dict=options_dict,
             retrieved_documents=[],
+            source_chunk_ids=[]
         )
 
         output_state = self.graph.invoke(state)
@@ -181,11 +190,27 @@ class Chatbot:
         return {
             "answer": answer,
             "retrieved_documents": output_state.get("retrieved_documents", []),
+            "source_chunk_ids": output_state.get("source_chunk_ids", [])
         }
 
 
 if __name__ == "__main__":
     # Choose 1 for HuggingFace, 2 for OpenAI
     chatbot = Chatbot(model_option=2, retrieval_mode="graphrag_only")
-    response = chatbot.chat("đánh bài phạt bao nhiêu tiền?")
-    print(f"response: {response}")
+    result = chatbot.chat("đánh bài phạt bao nhiêu tiền?")
+    
+    documents = result.get("retrieved_documents", [])
+    source_ids = result.get("source_chunk_ids", [])
+    answer = result.get("answer", "Không có câu trả lời.")
+
+    print("--- ANSWER ---")
+    print(answer)
+    print("\n--- RETRIEVED DOCUMENTS ---")
+    print(documents)
+    print("\n--- SOURCE CHUNK IDs ---")
+    print(source_ids)
+    # for desc in documents:
+    #     print(f"- {desc}\n")
+    
+    print("\n--- FLATTENED & UNIQUE SOURCE CHUNK IDs ---")
+    print(source_ids)

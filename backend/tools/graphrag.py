@@ -4,12 +4,14 @@
 #         multiprocessing.set_start_method('spawn', force=True)
 #     except RuntimeError:
 #         pass
+import argparse
 import asyncio
 import json
 import logging
 import multiprocessing
 import os
 import pickle
+import shutil
 import sys
 from pathlib import Path
 from threading import Lock
@@ -56,14 +58,18 @@ def get_llm():
     if _llm is None:
         with _lock:
             if _llm is None:
-                os.environ["CUDA_VISIBLE_DEVICES"] = "0" 
+                # 1. Ép sử dụng kiến trúc V0 (Vô cùng quan trọng)
+                os.environ["VLLM_USE_V1"] = "0"
+                # 2. Đảm bảo biến môi trường chỉ định rõ 2 GPU
+                os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
                 from vllm import LLM
                 # 3. Khởi tạo vLLM trên GPU 0
                 _llm = LLM(
                     model="Qwen/Qwen2.5-7B-Instruct",
-                    tensor_parallel_size=num_gpus if num_gpus > 0 else 1,
+                    tensor_parallel_size=num_gpus if num_gpus else 1,
                     gpu_memory_utilization=0.8,
                     trust_remote_code=True,
+                    distributed_executor_backend="mp",
                     # max_model_len=4096,
                 )
     return _llm
@@ -93,20 +99,14 @@ async def indexing(output_folder):
 
     new_folder_name = output_folder
     # 5. Chunking
-    print("Chunking...")
-    law_texts_df = get_law_texts_external()
-    law_texts_df["chunk"] = law_texts_df["content"].apply(chunk_civil_code_markdown)
-
-    new_df = law_texts_df.explode('chunk', ignore_index=True)
-
-    # 6. (Tùy chọn) Nếu bạn muốn bung các key trong dict của chunk 
-    # (như 'chuong', 'dieu') ra thành các cột riêng biệt:
-    chunk_details = pd.json_normalize(new_df['chunk'])
-
-    # 7. Đổi tên cột 'content' thành 'chunk' (nếu trong dict key là 'content')
-    chunk_details = chunk_details.rename(columns={'content': 'chunk'})
-
-    final_df = pd.concat([new_df[['file_name']], chunk_details], axis=1)
+    print("Đọc chunks từ file JSON...")
+    final_df = None
+    try:
+        final_df = pd.read_json(f"dataset/chunking_result.json", orient="records")
+    except FileNotFoundError:
+        print(f"Lỗi: Không tìm thấy file chunking_result.json trong {output_folder}. Vui lòng chạy lại bước chunking trước.")
+        return
+    
     print("Ready for extracting entities and relationships...")
 
     # Đường dẫn model (vLLM hỗ trợ load trực tiếp từ HuggingFace hoặc thư mục local)
@@ -232,70 +232,67 @@ def graphrag_retrieval(query: str, output_folder: str) -> list[str]:
 
     return [str(doc) for doc in response]
     
-if __name__ == '__main__':
-    # 0. Create output_folder
-    output_folder = "artifacts"
-    Path(output_folder).mkdir(parents=True, exist_ok=True)
-
-    asyncio.run(indexing(output_folder))
-    # query = "Được gia hạn tạm giam tối đa bao nhiêu lần để tiến hành điều tra?"
-    # query_type, answer = graphrag_retrieval.invoke({
-    #             "query": query, 
-    #             "output_folder": output_folder
-    #         })
-    # print(f"For {query}, run {query_type}...")
-    # print(f"Answer: {answer}")
-
-# # 2. Đường dẫn file
-#     input_questions_path = "dataset/qa.json"
-#     output_results_path = f"{output_folder}/final_results_with_qa.json"
-
-#     try:
-#         with open(input_questions_path, "r", encoding="utf-8") as f:
-#             questions_list = json.load(f)
-#     except FileNotFoundError:
-#         print(f"❌ Không tìm thấy file {input_questions_path}")
-#         questions_list = []
-
-#     final_outputs = []
-
-#     # 4. Lặp qua từng câu hỏi
-#     print(f"🚀 Bắt đầu xử lý {len(questions_list)} câu hỏi...")
+def is_indexing_complete(folder: str) -> bool:
+    """Kiểm tra xem các file artifacts cần thiết đã tồn tại hay chưa."""
+    if not os.path.exists(folder):
+        return False
     
-#     for item in questions_list:
-#         question = item.get("original_question")
-#         gold_answer = item.get("answer", "")
-#         gold_truth_references = item.get("references", [])
-#         print(f"👉 Đang xử lý: {question}")
-        
-#         try:
-#             # Gọi hàm retrieval
-#             # Lưu ý: invoke trả về kết quả cuối cùng từ LLM
-#             query_type, answer = graphrag_retrieval.invoke({
-#                 "query": question, 
-#                 "output_folder": output_folder
-#             })
-
-#             # 2. Tính độ tương đồng với gold_answer
-#             similarity_score = 0.0
-#             if gold_answer:
-#                 similarity_score = calculate_similarity(gold_answer, answer)
-#                 print(f"📊 Similarity Score: {similarity_score:.4f}")
+    required_files = [
+        'entities.pkl',
+        'relationships.pkl',
+        'claims.pkl',
+        'entity_embeddings.npy',
+        'communities.json',
+        'community_summaries.json'
+    ]
+    
+    for filename in required_files:
+        if not os.path.exists(os.path.join(folder, filename)):
+            print(f"Kiểm tra thấy thiếu file index: {filename}")
+            return False
             
-#             # Lưu kết quả vào list
-#             final_outputs.append({
-#                 "question": question,
-#                 "query_type": query_type,
-#                 "answer": answer,
-#                 "gold_answer": gold_answer,
-#                 "gold_truth_references": gold_truth_references,
-#                 "similarity_score": round(similarity_score, 4)
-#             })
-#         except Exception as e:
-#             print(f"❌ Lỗi khi xử lý câu hỏi '{question}': {e}")
+    return True
 
-#     # 5. Lưu toàn bộ kết quả vào file mới
-#     with open(output_results_path, "w", encoding="utf-8") as f:
-#         json.dump(final_outputs, f, ensure_ascii=False, indent=4)
+if __name__ == '__main__':
+    # Thiết lập argparse để xử lý tham số dòng lệnh
+    parser = argparse.ArgumentParser(description="GraphRAG Indexing and Querying")
+    parser.add_argument(
+        '--force-index-from-scratch',
+        action='store_true',
+        help="Xóa thư mục đầu ra và chạy lại indexing từ đầu."
+    )
+    parser.add_argument(
+        '--output-folder', '-o',
+        type=str,
+        default='artifacts',
+        help="Chỉ định thư mục đầu ra cho indexing. Mặc định là 'artifacts'."
+    )
+    args = parser.parse_args()
 
-#     print(f"✅ Hoàn thành! Kết quả đã được lưu tại: {output_results_path}")
+    output_folder = args.output_folder
+
+    # Logic xử lý dựa trên tham số
+    if args.force_index_from_scratch:
+        print(f"Tham số --force-index-from-scratch được bật cho thư mục '{output_folder}'.")
+        if os.path.exists(output_folder):
+            print(f"Đang xóa thư mục '{output_folder}'...")
+            shutil.rmtree(output_folder)
+            print("Đã xóa xong.")
+        
+        # Tạo lại thư mục và chạy indexing
+        Path(output_folder).mkdir(parents=True, exist_ok=True)
+        print("Bắt đầu quá trình indexing từ đầu...")
+        asyncio.run(indexing(output_folder))
+        print(f"Hoàn tất indexing cho '{output_folder}'.")
+
+    else:
+        print(f"Kiểm tra trạng thái indexing cho thư mục '{output_folder}'...")
+        if is_indexing_complete(output_folder):
+            print(f"=> Indexing tại '{output_folder}' đã hoàn thiện. Bỏ qua bước indexing.")
+        else:
+            print(f"=> Indexing tại '{output_folder}' chưa hoàn thiện hoặc thiếu file. Tự động chạy lại indexing...")
+            Path(output_folder).mkdir(parents=True, exist_ok=True)
+            asyncio.run(indexing(output_folder))
+            print(f"Hoàn tất indexing cho '{output_folder}'.")
+
+    print(f"\nSẵn sàng để query trên bộ index tại: '{output_folder}'")
