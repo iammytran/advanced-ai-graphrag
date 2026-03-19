@@ -83,6 +83,7 @@ def generate_hierarchical_community_reports(
                 source_chunk_ids = set()
                 if current_level == max(sorted_levels):
                     # Level Lá: Lấy chunk_id trực tiếp từ các DataFrame
+                    print(f"\n[DEBUG] Cụm lá ID: {cid} (Level {current_level})")
                     relevant_entities = entities_df[entities_df['name'].isin(nodes)]
                     input_text = "THỰC THỂ (Ưu tiên theo độ quan trọng):\n"
                     input_text += "\n".join([f"ID:{idx}, {r['name']}: {r['description']}" for idx, r in relevant_entities.iterrows()])
@@ -101,12 +102,20 @@ def generate_hierarchical_community_reports(
 
                     # Thu thập chunk_ids một cách an toàn
                     if 'chunk_id' in relevant_entities.columns:
-                        source_chunk_ids.update(relevant_entities['chunk_id'].dropna().unique())
+                        entity_chunks = relevant_entities['chunk_id'].dropna().unique()
+                        source_chunk_ids.update(entity_chunks)
+                        print(f"  -> Tìm thấy {len(entity_chunks)} chunk_ids từ Entities.")
                     if 'chunk_id' in relevant_rel.columns:
-                        source_chunk_ids.update(relevant_rel['chunk_id'].dropna().unique())
+                        rel_chunks = relevant_rel['chunk_id'].dropna().unique()
+                        source_chunk_ids.update(rel_chunks)
+                        print(f"  -> Tìm thấy {len(rel_chunks)} chunk_ids từ Relationships.")
                     if 'chunk_id' in relevant_claims.columns:
-                        source_chunk_ids.update(relevant_claims['chunk_id'].dropna().unique())
+                        claim_chunks = relevant_claims['chunk_id'].dropna().unique()
+                        source_chunk_ids.update(claim_chunks)
+                        print(f"  -> Tìm thấy {len(claim_chunks)} chunk_ids từ Claims.")
                     
+                    print(f"  -> Tổng số chunk_ids cho cụm lá {cid}: {len(source_chunk_ids)}. IDs: {source_chunk_ids}")
+
                     if not relevant_claims.empty:
                         input_text += "\n\n### 3. CHI TIẾT QUY ĐỊNH & CHẾ TÀI (CLAIMS):\n"
                         claim_entries = []
@@ -119,7 +128,9 @@ def generate_hierarchical_community_reports(
                         input_text += "\n".join(claim_entries)
                 else:
                     # Level Cha: Tổng hợp từ Summary và chunk_ids của con
+                    print(f"\n[DEBUG] Cụm cha ID: {cid} (Level {current_level})")
                     sub_comm_ids = [child for child, parent in community_hierarchy.items() if str(parent) == str(cid)]
+                    print(f"  -> Tìm thấy {len(sub_comm_ids)} cụm con: {sub_comm_ids}")
                     
                     sub_reports_content = []
                     for scid in sub_comm_ids:
@@ -128,9 +139,16 @@ def generate_hierarchical_community_reports(
                             cached_content, cached_chunk_ids = report_cache[int(scid)]
                             sub_reports_content.append(cached_content)
                             source_chunk_ids.update(cached_chunk_ids)
+                            if cached_chunk_ids:
+                                print(f"  -> Lấy được {len(cached_chunk_ids)} chunk_ids từ cache của con ID: {scid}")
+                            else:
+                                print(f"  -> !!! Cache của con ID: {scid} không có chunk_ids.")
+                        else:
+                            print(f"  -> !!! Không tìm thấy cache cho con ID: {scid}")
                     
                     sub_reports_content.sort(key=len, reverse=True)
                     
+                    print(f"  -> Tổng số chunk_ids kế thừa cho cha {cid}: {len(source_chunk_ids)}. IDs: {source_chunk_ids}")
                     input_text = f"BÁO CÁO TỔNG HỢP CHO CỤM CHA ID: {cid}\n\n"
                     input_text += "DỮ LIỆU TỪ CÁC CỤM CON:\n" + "\n---\n".join(sub_reports_content)
 
