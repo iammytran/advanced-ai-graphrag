@@ -494,62 +494,10 @@ def run_local_search(query: str, artifacts_path: str, llm=None, provider: str = 
 
 if __name__ == '__main__':
     # Ví dụ cách sử dụng
-    artifacts_path = "artifacts_v4" 
+    artifacts_path = "artifacts" 
     
     query = "Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?"
     # Gọi hàm run_local_search độc lập
     context_parts, chunk_ids = run_local_search(query, artifacts_path, provider="openai")
 
     print(context_parts)
-
-    # print("\n\n" + "="*20 + " CONTEXT PARTS " + "="*20)
-    # for key, value in context_parts.items():
-    #     print(f"\n--- {key.upper()} ---")
-    #     print(value)
-
-    # print("\n\n" + "="*20 + " SOURCE CHUNK IDs " + "="*20)
-    # print(chunk_ids)
-            # response = self.processor.generate(final_prompt, temperature=0.3, max_tokens=1024)
-            # return response
-#         except Exception as e:
-#             logger.exception("Lỗi sinh câu trả lời cuối cùng: %s", e)
-#             return ""
-    
-#     def get_relevant_resources(self, user_query:str):
-#         # 1. Trích xuất
-#         extracted_names = self.extract_entities_from_query(user_query)
-#         logger.info(f"🔍 Thực thể trích xuất từ query: {extracted_names}")
-        
-#         # 2 & 3. So khớp ngữ nghĩa (Meaning Comparison)
-#         matched_ents = self.find_best_matches(extracted_names)
-#         logger.info(f"📍 Đã khớp với {len(matched_ents)} thực thể trong đồ thị.")
-#         logger.info(f"📍 Các thực thể khớp: {matched_ents}")
-        
-#         # 4. Gom context
-#         ents, rels, claims, reports = self.get_graph_context(matched_ents)
-
-#         context_parts = [
-#             self._process_entities_context(ents),
-#             self._process_relations_context(rels),
-#             self._process_claims_context(claims),
-#             self._process_reports_context(reports)
-#         ]
-
-#         return context_parts
-
-# # --- CÁCH CHẠY ---
-# def run_local_search(query, artifact_path, llm=None, provider: str = None):
-#     search_engine = AdvancedLocalSearch(
-#         model_name="Qwen/Qwen2.5-7B-Instruct",
-#         embedding_model_name="keepitreal/vietnamese-sbert", 
-#         artifacts_path=artifact_path,
-#         llm=llm,
-#         provider=provider
-#     )
-    
-#     response = search_engine.get_relevant_resources(query)
-#     return response
-
-# if __name__ == "__main__":
-#     query = "Người cho vay có quyền đòi lại tài sản trước hạn không?"
-#     asyncio.run(run_local_search(query, "outputs_20260312_001744"))

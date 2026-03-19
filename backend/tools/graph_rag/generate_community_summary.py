@@ -5,6 +5,34 @@ from vllm import LLM, SamplingParams
 import json
 import re
 from transformers import AutoTokenizer
+import logging
+
+# --- Cấu hình Logging ---
+# Tạo một logger riêng cho module này
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)  # Bắt tất cả các level từ DEBUG trở lên
+
+# Tạo handler để ghi ra file
+# 'w' để ghi đè file mỗi lần chạy, 'a' để ghi tiếp
+file_handler = logging.FileHandler('debug_community_summary.log', mode='w', encoding='utf-8')
+file_handler.setLevel(logging.DEBUG)
+
+# Tạo handler để in ra console
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO) # Chỉ in ra console những thông tin INFO trở lên
+
+# Định dạng cho log message
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+console_handler.setFormatter(formatter)
+
+# Thêm handlers vào logger
+# Tránh thêm handler nhiều lần nếu module được import lại
+if not logger.handlers:
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+# --- Kết thúc cấu hình Logging ---
+
 
 def repair_truncated_json(json_str):
     """Cứu vãn chuỗi JSON bị cắt ngang bằng cách đóng các ngoặc còn thiếu"""
@@ -57,7 +85,7 @@ def generate_hierarchical_community_reports(
     report_cache = {} 
 
     for current_level in sorted_levels:
-        print(f"--- Đang xử lý Level {current_level} ---")
+        logger.info(f"--- Đang xử lý Level {current_level} ---")
         
         nodes_in_level = community_results[str(current_level) if isinstance(list(community_results.keys())[0], str) else current_level]
         clusters = {}
@@ -83,7 +111,7 @@ def generate_hierarchical_community_reports(
                 source_chunk_ids = set()
                 if current_level == max(sorted_levels):
                     # Level Lá: Lấy chunk_id trực tiếp từ các DataFrame
-                    print(f"\n[DEBUG] Cụm lá ID: {cid} (Level {current_level})")
+                    logger.debug(f"\n[Cụm lá ID: {cid} (Level {current_level})]")
                     relevant_entities = entities_df[entities_df['name'].isin(nodes)]
                     input_text = "THỰC THỂ (Ưu tiên theo độ quan trọng):\n"
                     input_text += "\n".join([f"ID:{idx}, {r['name']}: {r['description']}" for idx, r in relevant_entities.iterrows()])
@@ -104,17 +132,17 @@ def generate_hierarchical_community_reports(
                     if 'chunk_id' in relevant_entities.columns:
                         entity_chunks = relevant_entities['chunk_id'].dropna().unique()
                         source_chunk_ids.update(entity_chunks)
-                        print(f"  -> Tìm thấy {len(entity_chunks)} chunk_ids từ Entities.")
+                        logger.debug(f"  -> Tìm thấy {len(entity_chunks)} chunk_ids từ Entities.")
                     if 'chunk_id' in relevant_rel.columns:
                         rel_chunks = relevant_rel['chunk_id'].dropna().unique()
                         source_chunk_ids.update(rel_chunks)
-                        print(f"  -> Tìm thấy {len(rel_chunks)} chunk_ids từ Relationships.")
+                        logger.debug(f"  -> Tìm thấy {len(rel_chunks)} chunk_ids từ Relationships.")
                     if 'chunk_id' in relevant_claims.columns:
                         claim_chunks = relevant_claims['chunk_id'].dropna().unique()
                         source_chunk_ids.update(claim_chunks)
-                        print(f"  -> Tìm thấy {len(claim_chunks)} chunk_ids từ Claims.")
+                        logger.debug(f"  -> Tìm thấy {len(claim_chunks)} chunk_ids từ Claims.")
                     
-                    print(f"  -> Tổng số chunk_ids cho cụm lá {cid}: {len(source_chunk_ids)}. IDs: {source_chunk_ids}")
+                    logger.debug(f"  -> Tổng số chunk_ids cho cụm lá {cid}: {len(source_chunk_ids)}. IDs: {source_chunk_ids}")
 
                     if not relevant_claims.empty:
                         input_text += "\n\n### 3. CHI TIẾT QUY ĐỊNH & CHẾ TÀI (CLAIMS):\n"
@@ -128,9 +156,9 @@ def generate_hierarchical_community_reports(
                         input_text += "\n".join(claim_entries)
                 else:
                     # Level Cha: Tổng hợp từ Summary và chunk_ids của con
-                    print(f"\n[DEBUG] Cụm cha ID: {cid} (Level {current_level})")
+                    logger.debug(f"\n[Cụm cha ID: {cid} (Level {current_level})]")
                     sub_comm_ids = [child for child, parent in community_hierarchy.items() if str(parent) == str(cid)]
-                    print(f"  -> Tìm thấy {len(sub_comm_ids)} cụm con: {sub_comm_ids}")
+                    logger.debug(f"  -> Tìm thấy {len(sub_comm_ids)} cụm con: {sub_comm_ids}")
                     
                     sub_reports_content = []
                     for scid in sub_comm_ids:
@@ -140,15 +168,15 @@ def generate_hierarchical_community_reports(
                             sub_reports_content.append(cached_content)
                             source_chunk_ids.update(cached_chunk_ids)
                             if cached_chunk_ids:
-                                print(f"  -> Lấy được {len(cached_chunk_ids)} chunk_ids từ cache của con ID: {scid}")
+                                logger.debug(f"  -> Lấy được {len(cached_chunk_ids)} chunk_ids từ cache của con ID: {scid}")
                             else:
-                                print(f"  -> !!! Cache của con ID: {scid} không có chunk_ids.")
+                                logger.warning(f"  -> !!! Cache của con ID: {scid} không có chunk_ids.")
                         else:
-                            print(f"  -> !!! Không tìm thấy cache cho con ID: {scid}")
+                            logger.warning(f"  -> !!! Không tìm thấy cache cho con ID: {scid}")
                     
                     sub_reports_content.sort(key=len, reverse=True)
                     
-                    print(f"  -> Tổng số chunk_ids kế thừa cho cha {cid}: {len(source_chunk_ids)}. IDs: {source_chunk_ids}")
+                    logger.debug(f"  -> Tổng số chunk_ids kế thừa cho cha {cid}: {len(source_chunk_ids)}. IDs: {source_chunk_ids}")
                     input_text = f"BÁO CÁO TỔNG HỢP CHO CỤM CHA ID: {cid}\n\n"
                     input_text += "DỮ LIỆU TỪ CÁC CỤM CON:\n" + "\n---\n".join(sub_reports_content)
 
@@ -158,7 +186,8 @@ def generate_hierarchical_community_reports(
 
                 if len(tokens) > safe_input_limit:
                     full_prompt = tokenizer.decode(tokens[:safe_input_limit])
-                    print(f"⚠️ Đã cắt bớt prompt cho cụm vì quá dài ({len(tokens)} tokens)")
+                    logger.warning(f"⚠️ Đã cắt bớt prompt cho cụm vì quá dài ({len(tokens)} tokens)")
+
 
                 # --- CHUYỂN SANG CHAT TEMPLATE ---
                 system_msg = f"""

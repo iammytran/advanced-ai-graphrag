@@ -14,6 +14,7 @@ from langchain_huggingface import ChatHuggingFace, HuggingFacePipeline
 from langchain_openai import ChatOpenAI
 from langsmith import Client, traceable
 from typing_extensions import Annotated
+from dotenv import load_dotenv
 
 # Ensure we can import from src
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -32,7 +33,10 @@ from backend.src.chatbot import Chatbot
 warnings.filterwarnings("ignore")
 
 # Initialize Chatbot
-chatbot = Chatbot(model_option=2)
+chatbot = Chatbot(model_option=2, retrieval_mode="graphrag_only")
+
+# Tải các biến môi trường từ file .env
+load_dotenv()
 
 
 def get_judge_llm():
@@ -48,7 +52,7 @@ def get_judge_llm():
     # )
     # return ChatHuggingFace(llm=llm)
     llm = ChatOpenAI(
-        base_url="https://openrouter.ai/api/v1",
+        # base_url="https://openrouter.ai/api/v1",
         model=OPENAI_MODEL,
         max_completion_tokens=800,
         temperature=0,
@@ -169,7 +173,7 @@ def groundedness(inputs: dict, outputs: dict) -> bool:
     if not docs:
         return False  # No documents -> Not grounded (or trivial)
 
-    doc_string = "\n\n".join(doc.page_content for doc in docs)
+    doc_string = "\n\n".join(docs)  # Directly join strings
     answer = f"DỮ KIỆN: {doc_string}\nCÂU TRẢ LỜI CỦA HỌC SINH: {outputs['answer']}"
 
     grade = llm.invoke(
@@ -214,7 +218,7 @@ def retrieval_relevance(inputs: dict, outputs: dict) -> bool:
     if not docs:
         return False
 
-    doc_string = "\n\n".join(doc.page_content for doc in docs)
+    doc_string = "\n\n".join(docs)  # Directly join strings
     answer = f"DỮ KIỆN: {doc_string}\nCÂU HỎI: {inputs['question']}"
 
     grade = llm.invoke(

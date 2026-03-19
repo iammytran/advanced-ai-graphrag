@@ -462,7 +462,7 @@ def run_global_search(query, summaries_path, llm=None, top_k_sources=5, provider
 if __name__ == '__main__':
     query = "Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?"
     # Để dùng OpenAI, chúng ta truyền provider="openai" vào hàm
-    descriptions, source_ids = run_global_search(query, "artifacts_v4/community_summaries.json", provider="openai")
+    descriptions, source_ids = run_global_search(query, "artifacts/community_summaries.json", provider="openai")
     print("--- DESCRIPTIONS ---")
     for desc in descriptions:
         print(f"- {desc}\n")

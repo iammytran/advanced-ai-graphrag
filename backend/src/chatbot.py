@@ -28,7 +28,7 @@ class State(TypedDict):
 
 class Chatbot:
 
-    DEFAULT_ARTIFACT_FOLDER = "artifacts_v4"
+    DEFAULT_ARTIFACT_FOLDER = "artifacts"
 
     def __init__(self, model_option: int = 1, retrieval_mode: str = "auto"):
         """
