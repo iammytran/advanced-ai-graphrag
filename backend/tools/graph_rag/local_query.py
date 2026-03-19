@@ -7,6 +7,7 @@ import pickle
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List
 
+from dotenv import load_dotenv
 import numpy as np
 import pandas as pd
 from sentence_transformers import SentenceTransformer
@@ -16,6 +17,8 @@ from transformers import AutoTokenizer
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Tải các biến môi trường từ file .env
+load_dotenv()
 
 class LLMProcessor:
     """Processor đa provider cho Local Search (vllm, openai, gemini, huggingface)"""
@@ -334,26 +337,32 @@ class AdvancedLocalSearch:
             logger.warning("Lỗi trích xuất thực thể: %s", e)
             return []
 
-    def find_best_matches(self, extracted_entities: List[str], top_k_per_entity: int = 10) -> pd.DataFrame:
-        """Bước 2 & 3: Encode thực thể trích xuất và so sánh similarity với entity_df"""
-        if not extracted_entities:
+    def find_best_matches(self, extracted_entities: List[str], top_k: int = 5) -> pd.DataFrame:
+        """Bước 2 & 3: Encode thực thể trích xuất và so sánh similarity với entity_df để lấy top_k tổng thể."""
+        if not extracted_entities or self.entity_name_embeddings is None:
             return pd.DataFrame()
 
         # Encode các thực thể từ query
-        query_embeddings = self.embed_model.encode(extracted_entities)
-        # logging.info(f"query_embeddings: {query_embeddings}")
+        query_embeddings = self.embed_model.encode(extracted_entities, show_progress_bar=False)
         
-        matched_indices = []
-        for q_emb in query_embeddings:
-            # Tính Cosine Similarity
-            scores = np.dot(self.entity_name_embeddings, q_emb) / (
-                np.linalg.norm(self.entity_name_embeddings, axis=1) * np.linalg.norm(q_emb)
-            )
-            # Lấy top_k thực thể giống nhất trong đồ thị
-            top_idx = np.argsort(scores)[-top_k_per_entity:]
-            matched_indices.extend(top_idx)
+        # Tính Cosine Similarity cho tất cả các cặp (query_embedding, entity_embedding)
+        # Shape: (num_query_embeddings, num_entity_embeddings)
+        cosine_scores = np.dot(query_embeddings, self.entity_name_embeddings.T) / (
+            np.linalg.norm(query_embeddings, axis=1)[:, np.newaxis] * np.linalg.norm(self.entity_name_embeddings, axis=1)
+        )
+
+        # Lấy top_k giá trị cao nhất từ toàn bộ ma trận scores
+        # np.argsort trả về chỉ số, ta lấy -top_k: để có top k lớn nhất
+        # sau đó lấy giá trị của top k score đó
+        flat_top_k_indices = np.argsort(cosine_scores.flatten())[-top_k:]
+        
+        # Chuyển đổi chỉ số phẳng thành chỉ số (hàng, cột)
+        row_indices, col_indices = np.unravel_index(flat_top_k_indices, cosine_scores.shape)
+
+        # Lấy các chỉ số entity độc nhất
+        matched_indices = np.unique(col_indices)
             
-        return self.df_entities.iloc[list(set(matched_indices))]
+        return self.df_entities.iloc[matched_indices]
     
     def _process_entities_context(self, ents_df) -> str:
         if ents_df.empty:
@@ -406,7 +415,7 @@ class AdvancedLocalSearch:
         return header + "\n---\n".join(report_entries)
 
     def get_graph_context(self, matched_entities: pd.DataFrame):
-        """Bước 4: Tìm quan hệ và báo cáo cộng đồng xung quanh"""
+        """Bước 4: Tìm quan hệ và báo cáo cộng đồng xung quanh, đồng thời thu thập chunk_ids"""
         names = matched_entities['name'].unique().tolist()
         
         # Lấy quan hệ (Edges)
@@ -426,119 +435,121 @@ class AdvancedLocalSearch:
         node_names_set = set(names)
     
         for community in self.reports:
-            # Lấy list nodes của item đó
             entities_in_community = set(community.get("nodes", []))
-            
-            # Kiểm tra xem có node nào chung giữa 2 list không
             if not entities_in_community.isdisjoint(node_names_set):
                 reports.append(community)
-                
-                return matched_entities, rels, claims, reports
-
-    def query(self, user_query: str):
-        """Hàm chính điều phối toàn bộ luồng Local Search"""
         
-        # 1. Trích xuất
-        extracted_names = self.extract_entities_from_query(user_query)
-        logger.info(f"🔍 Thực thể trích xuất từ query: {extracted_names}")
-        
-        # 2 & 3. So khớp ngữ nghĩa (Meaning Comparison)
-        matched_ents = self.find_best_matches(extracted_names)
-        logger.info(f"📍 Đã khớp với {len(matched_ents)} thực thể trong đồ thị.")
-        logger.info(f"📍 Các thực thể khớp: {matched_ents}")
-        
-        # 4. Gom context
-        ents, rels, claims, reports = self.get_graph_context(matched_ents)
-        
-        # Xây dựng context prompt
-        context_str = "### THỰC THỂ\n" + "\n".join([f"- {r['name']}: {r['description']}" for _, r in ents.iterrows()])
-        context_str += "\n\n### QUAN HỆ\n" + "\n".join([f"- {r['source']} -> {r['target']}: {r['description']}" for _, r in rels.iterrows()])
-        context_str += "\n\n### QUY ĐỊNH & CHẾ TÀI CHI TIẾT \n"
-        if not claims.empty:
-            claim_lines = []
-            for _, r in claims.iterrows():
-                # Kết hợp Subject, Loại quy định và Nội dung chi tiết
-                line = f"- [Loại quy định: {r['claim_type']}], đối tượng {r['subject']} có mô tả: {r['description']}"
-                
-                # Nếu có trích dẫn nguồn, hãy đưa vào để model "grounding" tốt hơn
-                if 'source_text' in r and r['source_text'] not in ['NONE', '']:
-                    line += f" (Trích dẫn: {r['source_text']})"
-                    
-                claim_lines.append(line)
-            context_str += "\n".join(claim_lines)
-        else:
-            context_str += "- Không có dữ liệu quy định chi tiết cho cụm này."
-        
-        context_str += "\n\n### BÁO CÁO TÓM TẮT CỦA CÁC CỤM\n"
-
-        report_entries = []
+        # Thu thập chunk_ids từ tất cả các nguồn
+        source_chunk_ids = set()
+        if 'chunk_id' in matched_entities.columns:
+            source_chunk_ids.update(matched_entities['chunk_id'].dropna().unique())
+        if 'chunk_id' in rels.columns:
+            source_chunk_ids.update(rels['chunk_id'].dropna().unique())
+        if 'chunk_id' in claims.columns:
+            source_chunk_ids.update(claims['chunk_id'].dropna().unique())
         for r in reports:
-            # Lấy phần detail ra để xử lý cho gọn
-            detail = r.get('report_detail', {})
-            title = detail.get('title', 'Không có tiêu đề')
-            summary = detail.get('summary', 'Không có tóm tắt')
-            
-            # Tạo chuỗi cho mỗi báo cáo
-            entry = f" ####{title}\n{summary}"
-            
-            # Nếu muốn lấy thêm cả các 'findings' bên trong JSON để context dày hơn:
-            findings = detail.get('findings', [])
-            if findings:
-                finding_texts = "\n".join([f"- Phát hiện: {f['summary']}" for f in findings[:3]]) # Lấy tối đa 3 phát hiện
-                entry += f"\n{finding_texts}"
-                
-            report_entries.append(entry)
+            source_chunk_ids.update(r.get('source_chunk_ids', []))
 
-        context_str += "\n---\n".join(report_entries)
+        return matched_entities, rels, claims, reports, sorted(list(source_chunk_ids))
 
-        # 5. LLM tổng hợp câu trả lời cuối cùng
-        system_prompt = "Bạn là chuyên gia luật. Hãy trả lời câu hỏi dựa trên tổng hợp bối cảnh đồ thị tri thức được cung cấp."
-        user_content = f"BỐI CẢNH:\n{context_str}\n\nCÂU HỎI: {user_query}\n\nTRẢ LỜI:"
-        
-        final_prompt = self.processor.apply_template(system_prompt, user_content)
-        
-        try:
-            response = self.processor.generate(final_prompt, temperature=0.3, max_tokens=1024)
-            return response
-        except Exception as e:
-            logger.exception("Lỗi sinh câu trả lời cuối cùng: %s", e)
-            return ""
-    
-    def get_relevant_resources(self, user_query:str):
-        # 1. Trích xuất
-        extracted_names = self.extract_entities_from_query(user_query)
-        logger.info(f"🔍 Thực thể trích xuất từ query: {extracted_names}")
-        
-        # 2 & 3. So khớp ngữ nghĩa (Meaning Comparison)
-        matched_ents = self.find_best_matches(extracted_names)
-        logger.info(f"📍 Đã khớp với {len(matched_ents)} thực thể trong đồ thị.")
-        logger.info(f"📍 Các thực thể khớp: {matched_ents}")
-        
-        # 4. Gom context
-        ents, rels, claims, reports = self.get_graph_context(matched_ents)
+def run_local_search(query: str, artifacts_path: str, llm=None, provider: str = None):
+    """
+    Hàm độc lập để thực thi Local Search.
+    Hàm này khởi tạo AdvancedLocalSearch và trả về context cùng source IDs.
+    """
+    # Khởi tạo các model names
+    model_name = "Qwen/Qwen2.5-7B-Instruct"
+    embedding_model = "keepitreal/vietnamese-sbert"
 
-        context_parts = [
-            self._process_entities_context(ents),
-            self._process_relations_context(rels),
-            self._process_claims_context(claims),
-            self._process_reports_context(reports)
-        ]
-
-        return context_parts
-
-# --- CÁCH CHẠY ---
-def run_local_search(query, artifact_path, llm=None, provider: str = None):
+    # Khởi tạo searcher
     search_engine = AdvancedLocalSearch(
-        model_name="Qwen/Qwen2.5-7B-Instruct",
-        embedding_model_name="keepitreal/vietnamese-sbert", 
-        artifacts_path=artifact_path,
-        llm=llm,
+        model_name, 
+        embedding_model, 
+        artifacts_path, 
+        llm=llm, 
         provider=provider
     )
     
-    response = search_engine.get_relevant_resources(query)
-    return response
+    # 1. Trích xuất
+    extracted_names = search_engine.extract_entities_from_query(query)
+    logger.info(f"🔍 Thực thể trích xuất từ query: {extracted_names}")
+    
+    # 2 & 3. So khớp ngữ nghĩa (Meaning Comparison)
+    matched_ents = search_engine.find_best_matches(extracted_names)
+    logger.info(f"📍 Đã khớp với {len(matched_ents)} thực thể trong đồ thị.")
+    
+    # 4. Gom context và chunk_ids
+    ents, rels, claims, reports, source_chunk_ids = search_engine.get_graph_context(matched_ents)
+    
+    # Xây dựng các phần context riêng lẻ
+    context_parts = [
+        search_engine._process_entities_context(ents),
+        search_engine._process_relations_context(rels),
+        search_engine._process_claims_context(claims),
+        search_engine._process_reports_context(reports)
+    ]
+    
+    logger.info(f"✅ Đã thu thập xong context và {len(source_chunk_ids)} source chunk IDs.")
+    return context_parts, source_chunk_ids
 
-if __name__ == "__main__":
-    query = "Người cho vay có quyền đòi lại tài sản trước hạn không?"
-    asyncio.run(run_local_search(query, "outputs_20260312_001744"))
+if __name__ == '__main__':
+    # Ví dụ cách sử dụng
+    artifacts_path = "artifacts_v4" 
+    
+    query = "Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?"
+    # Gọi hàm run_local_search độc lập
+    context_parts, chunk_ids = run_local_search(query, artifacts_path, provider="openai")
+
+    print(context_parts)
+
+    # print("\n\n" + "="*20 + " CONTEXT PARTS " + "="*20)
+    # for key, value in context_parts.items():
+    #     print(f"\n--- {key.upper()} ---")
+    #     print(value)
+
+    # print("\n\n" + "="*20 + " SOURCE CHUNK IDs " + "="*20)
+    # print(chunk_ids)
+            # response = self.processor.generate(final_prompt, temperature=0.3, max_tokens=1024)
+            # return response
+#         except Exception as e:
+#             logger.exception("Lỗi sinh câu trả lời cuối cùng: %s", e)
+#             return ""
+    
+#     def get_relevant_resources(self, user_query:str):
+#         # 1. Trích xuất
+#         extracted_names = self.extract_entities_from_query(user_query)
+#         logger.info(f"🔍 Thực thể trích xuất từ query: {extracted_names}")
+        
+#         # 2 & 3. So khớp ngữ nghĩa (Meaning Comparison)
+#         matched_ents = self.find_best_matches(extracted_names)
+#         logger.info(f"📍 Đã khớp với {len(matched_ents)} thực thể trong đồ thị.")
+#         logger.info(f"📍 Các thực thể khớp: {matched_ents}")
+        
+#         # 4. Gom context
+#         ents, rels, claims, reports = self.get_graph_context(matched_ents)
+
+#         context_parts = [
+#             self._process_entities_context(ents),
+#             self._process_relations_context(rels),
+#             self._process_claims_context(claims),
+#             self._process_reports_context(reports)
+#         ]
+
+#         return context_parts
+
+# # --- CÁCH CHẠY ---
+# def run_local_search(query, artifact_path, llm=None, provider: str = None):
+#     search_engine = AdvancedLocalSearch(
+#         model_name="Qwen/Qwen2.5-7B-Instruct",
+#         embedding_model_name="keepitreal/vietnamese-sbert", 
+#         artifacts_path=artifact_path,
+#         llm=llm,
+#         provider=provider
+#     )
+    
+#     response = search_engine.get_relevant_resources(query)
+#     return response
+
+# if __name__ == "__main__":
+#     query = "Người cho vay có quyền đòi lại tài sản trước hạn không?"
+#     asyncio.run(run_local_search(query, "outputs_20260312_001744"))

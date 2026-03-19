@@ -296,11 +296,3 @@ if __name__ == '__main__':
             print(f"Hoàn tất indexing cho '{output_folder}'.")
 
     print(f"\nSẵn sàng để query trên bộ index tại: '{output_folder}'")
-    # Phần code để query có thể đặt ở đây nếu bạn muốn chạy query ngay sau đó
-    # Ví dụ:
-    # query = "Được gia hạn tạm giam tối đa bao nhiêu lần để tiến hành điều tra?"
-    # response = graphrag_retrieval.invoke({
-    #             "query": query, 
-    #             "output_folder": output_folder
-    #         })
-    # print(f"Câu trả lời cho '{query}':\n{response}")

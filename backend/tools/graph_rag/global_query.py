@@ -427,7 +427,7 @@ def get_relevant_resources(map_results, top_k_sources):
             
     return final_results
 
-def run_global_search(query, summaries_path, llm=None, top_k_sources=10, provider: str = None):
+def run_global_search(query, summaries_path, llm=None, top_k_sources=5, provider: str = None):
     if isinstance(llm, int) and not isinstance(top_k_sources, int):
         llm, top_k_sources = llm, top_k_sources
 
@@ -445,14 +445,27 @@ def run_global_search(query, summaries_path, llm=None, top_k_sources=10, provide
     
     summary_chunks_with_source_ids = prepare_global_context(query, data, processor.tokenizer)
     map_results = run_map_step(query, summary_chunks_with_source_ids, max_new_tokens, processor)
-    print(map_results)
+    # print(map_results)
 
-    # sorted_map_output = get_relevant_resources(map_results, top_k_sources)
+    sorted_map_output = get_relevant_resources(map_results, top_k_sources)
 
-    # return sorted_map_output
-    return ""
+    # Tách description và source_ids thành 2 list riêng
+    descriptions = [item['description'] for item in sorted_map_output]
+    
+    # Làm phẳng (flatten) và lấy các ID duy nhất từ list của các list
+    source_ids_list = [item['source_ids'] for item in sorted_map_output]
+    flattened_ids = [id for sublist in source_ids_list for id in sublist]
+    unique_source_ids = sorted(list(set(flattened_ids)))
+
+    return descriptions, unique_source_ids
 
 if __name__ == '__main__':
     query = "Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?"
     # Để dùng OpenAI, chúng ta truyền provider="openai" vào hàm
-    print(run_global_search(query, "artifacts_v2/community_summaries.json", provider="openai"))
+    descriptions, source_ids = run_global_search(query, "artifacts_v4/community_summaries.json", provider="openai")
+    print("--- DESCRIPTIONS ---")
+    for desc in descriptions:
+        print(f"- {desc}\n")
+    
+    print("\n--- FLATTENED & UNIQUE SOURCE CHUNK IDs ---")
+    print(source_ids)
