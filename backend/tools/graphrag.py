@@ -110,7 +110,7 @@ async def indexing(output_folder):
     print("Ready for extracting entities and relationships...")
 
     # Đường dẫn model (vLLM hỗ trợ load trực tiếp từ HuggingFace hoặc thư mục local)
-    model_path = "Qwen/Qwen2.5-7B-Instruct"
+    model_path = "Qwen/Qwen2.5-14B-Instruct"
 
     # Gọi hàm xử lý
     entities_df, relationships_df, claims_df = extract_info_from_chunk(
