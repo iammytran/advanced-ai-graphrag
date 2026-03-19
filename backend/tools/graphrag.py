@@ -69,7 +69,7 @@ def get_llm():
                     tensor_parallel_size=2,
                     gpu_memory_utilization=0.8,
                     trust_remote_code=True,
-                    distributed_executor_backend="mp",
+                    distributed_executor_backend="ray",
                     # max_model_len=4096,
                 )
     return _llm
