@@ -13,6 +13,7 @@ from backend.config.config import (
     OPENAI_ENDPOINT,
     OPENAI_MODEL,
     TEMPERATURE,
+    ARTIFACT_FOLDER,
 )
 from backend.src.prompts import AGENT_SYSTEM_PROMPT
 from backend.tools.graphrag import format_graphrag_documents, graphrag_retrieval
@@ -28,7 +29,7 @@ class State(TypedDict):
 
 class Chatbot:
 
-    DEFAULT_ARTIFACT_FOLDER = "artifacts"
+    DEFAULT_ARTIFACT_FOLDER = ARTIFACT_FOLDER
 
     def __init__(self, model_option: int = 1, retrieval_mode: str = "auto"):
         """

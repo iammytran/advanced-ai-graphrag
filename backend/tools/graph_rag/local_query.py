@@ -14,6 +14,10 @@ from sentence_transformers import SentenceTransformer
 from tqdm.auto import tqdm
 from transformers import AutoTokenizer
 
+from backend.config.config import (
+    ARTIFACT_FOLDER,
+)
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -494,7 +498,7 @@ def run_local_search(query: str, artifacts_path: str, llm=None, provider: str = 
 
 if __name__ == '__main__':
     # Ví dụ cách sử dụng
-    artifacts_path = "artifacts" 
+    artifacts_path = ARTIFACT_FOLDER 
     
     query = "Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?"
     # Gọi hàm run_local_search độc lập

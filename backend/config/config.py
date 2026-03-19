@@ -14,3 +14,4 @@ HUGGINGFACE_MODEL = os.getenv(
 )
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
 LANGSMITH_API_KEY = os.getenv("LANGSMITH_API_KEY")
+ARTIFACT_FOLDER = "artifacts"

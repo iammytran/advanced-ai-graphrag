@@ -14,7 +14,6 @@ from langchain_huggingface import ChatHuggingFace, HuggingFacePipeline
 from langchain_openai import ChatOpenAI
 from langsmith import Client, traceable
 from typing_extensions import Annotated
-from dotenv import load_dotenv
 
 # Ensure we can import from src
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -34,9 +33,6 @@ warnings.filterwarnings("ignore")
 
 # Initialize Chatbot
 chatbot = Chatbot(model_option=2, retrieval_mode="graphrag_only")
-
-# Tải các biến môi trường từ file .env
-load_dotenv()
 
 
 def get_judge_llm():
@@ -319,6 +315,13 @@ def main():
     df_results_original = experiment_results_original.to_pandas()
     print("\nEvaluations Complete!")
     print(f"Original Question Results: {df_results_original}")
+
+    # Lưu kết quả ra file JSON
+    results_path = "evaluation_results.json"
+    print(f"\n✅ Đang lưu kết quả đánh giá vào file: {results_path}")
+    with open(results_path, 'w', encoding='utf-8') as f:
+        df_results_original.to_json(f, orient="records", force_ascii=False, indent=4)
+    print(f"✅ Đã lưu kết quả đánh giá vào file: {results_path}")
     # print(f"Reframed Question Results: {experiment_results_reframed.url}")
 
 
