@@ -341,7 +341,7 @@ class AdvancedLocalSearch:
             logger.warning("Lỗi trích xuất thực thể: %s", e)
             return []
 
-    def find_best_matches(self, extracted_entities: List[str], top_k: int = 5) -> pd.DataFrame:
+    def find_best_matches(self, extracted_entities: List[str], top_k: int = 2) -> pd.DataFrame:
         """Bước 2 & 3: Encode thực thể trích xuất và so sánh similarity với entity_df để lấy top_k tổng thể."""
         if not extracted_entities or self.entity_name_embeddings is None:
             return pd.DataFrame()
@@ -421,6 +421,7 @@ class AdvancedLocalSearch:
     def get_graph_context(self, matched_entities: pd.DataFrame):
         """Bước 4: Tìm quan hệ và báo cáo cộng đồng xung quanh, đồng thời thu thập chunk_ids"""
         names = matched_entities['name'].unique().tolist()
+        print(f"Thực thể được trích xuất:{names}")
         
         # Lấy quan hệ (Edges)
         rels = self.df_relationships[
@@ -481,6 +482,8 @@ def run_local_search(query: str, artifacts_path: str, llm=None, provider: str = 
     # 2 & 3. So khớp ngữ nghĩa (Meaning Comparison)
     matched_ents = search_engine.find_best_matches(extracted_names)
     logger.info(f"📍 Đã khớp với {len(matched_ents)} thực thể trong đồ thị.")
+    if not matched_ents.empty:
+        logger.info(f"Các thực thể khớp nhất:\n{matched_ents[['name', 'description']].to_string()}")
     
     # 4. Gom context và chunk_ids
     ents, rels, claims, reports, source_chunk_ids = search_engine.get_graph_context(matched_ents)
@@ -488,10 +491,13 @@ def run_local_search(query: str, artifacts_path: str, llm=None, provider: str = 
     # Xây dựng các phần context riêng lẻ
     context_parts = [
         search_engine._process_entities_context(ents),
-        search_engine._process_relations_context(rels),
-        search_engine._process_claims_context(claims),
+        # search_engine._process_relations_context(rels),
+        # search_engine._process_claims_context(claims),
         search_engine._process_reports_context(reports)
     ]
+
+    print("\nVăn bản lấy về:")
+    print(context_parts)
     
     logger.info(f"✅ Đã thu thập xong context và {len(source_chunk_ids)} source chunk IDs.")
     return context_parts, source_chunk_ids

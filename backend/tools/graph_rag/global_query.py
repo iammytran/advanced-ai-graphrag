@@ -402,7 +402,7 @@ def get_relevant_resources(map_results, top_k_sources):
             
     return final_results
 
-def run_global_search(query, summaries_path, llm=None, top_k_sources=5, provider: str = None):
+def run_global_search(query, summaries_path, llm=None, top_k_sources=2, provider: str = None):
     if isinstance(llm, int) and not isinstance(top_k_sources, int):
         llm, top_k_sources = llm, top_k_sources
 
@@ -432,6 +432,9 @@ def run_global_search(query, summaries_path, llm=None, top_k_sources=5, provider
     flattened_ids = [id for sublist in source_ids_list for id in sublist]
     unique_source_ids = sorted(list(set(flattened_ids)))
 
+    print("\nVăn bản lấy về:")
+    print(descriptions)
+
     return descriptions, unique_source_ids
 
 if __name__ == '__main__':
@@ -440,9 +443,9 @@ if __name__ == '__main__':
     summaries_path = os.path.join(ARTIFACT_FOLDER, "community_summaries.json")
     # Để dùng OpenAI, chúng ta truyền provider="openai" vào hàm
     descriptions, source_ids = run_global_search(query, summaries_path, provider="openai")
-    print("--- DESCRIPTIONS ---")
-    for desc in descriptions:
-        print(f"- {desc}\n")
+    # print("--- DESCRIPTIONS ---")
+    # for desc in descriptions:
+    #     print(f"- {desc}\n")
     
-    print("\n--- FLATTENED & UNIQUE SOURCE CHUNK IDs ---")
-    print(source_ids)
+    # print("\n--- FLATTENED & UNIQUE SOURCE CHUNK IDs ---")
+    # print(source_ids)

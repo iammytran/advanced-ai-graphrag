@@ -196,6 +196,7 @@ class Chatbot:
 
 if __name__ == "__main__":
     # Choose 1 for HuggingFace, 2 for OpenAI
+    print(f"ARTIFACT_FOLDER: {ARTIFACT_FOLDER}")
     chatbot = Chatbot(model_option=2, retrieval_mode="graphrag_only")
     result = chatbot.chat("đánh bài phạt bao nhiêu tiền?")
     

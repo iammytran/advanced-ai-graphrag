@@ -75,6 +75,11 @@ def generate_hierarchical_community_reports(
     max_new_tokens=15000,
     context_window=32768 # vLLM thường hỗ trợ context lớn hơn
 ):
+    # DEBUG: In ra các cột của DataFrame để kiểm tra sự tồn tại của 'chunk_id'
+    logger.info(f"Các cột trong entities_df: {entities_df.columns.tolist()}")
+    logger.info(f"Các cột trong relationships_df: {relationships_df.columns.tolist()}")
+    logger.info(f"Các cột trong claims_df: {claims_df.columns.tolist()}")
+    
     # 1. Khởi tạo Tokenizer
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     
