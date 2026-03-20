@@ -18,19 +18,19 @@ file_handler = logging.FileHandler('debug_community_summary.log', mode='w', enco
 file_handler.setLevel(logging.DEBUG)
 
 # Tạo handler để in ra console
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO) # Chỉ in ra console những thông tin INFO trở lên
+# console_handler = logging.StreamHandler()
+# console_handler.setLevel(logging.INFO) # Chỉ in ra console những thông tin INFO trở lên
 
 # Định dạng cho log message
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(formatter)
-console_handler.setFormatter(formatter)
+# console_handler.setFormatter(formatter)
 
 # Thêm handlers vào logger
 # Tránh thêm handler nhiều lần nếu module được import lại
 if not logger.handlers:
     logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
+    # logger.addHandler(console_handler)
 # --- Kết thúc cấu hình Logging ---
 
 
@@ -259,12 +259,12 @@ Bạn PHẢI trả về JSON, không lời dẫn. Giới hạn số lượng m�
                         except json.JSONDecodeError:
                             repaired_str = repair_truncated_json(potential_json)
                             data_json = json.loads(repaired_str)
-                            print(f"⚠️ Đã cứu thành công dữ liệu bị cắt tại cụm {cid}")
+                            logger.warning(f"⚠️ Đã cứu thành công dữ liệu bị cắt tại cụm {cid}")
                     else:
                         raise ValueError("No JSON found")
                         
                 except Exception as e:
-                    print(f"❌ Lỗi parse JSON tại cụm {cid}: {e}")
+                    logger.error(f"❌ Lỗi parse JSON tại cụm {cid}: {e}")
                     data_json = {
                         "title": f"Báo cáo cụm {cid} (Lỗi định dạng)", 
                         "report": raw_output[:500] + "...",

@@ -84,8 +84,17 @@ def extract_info_from_chunk(text_units, folder_path, model_path, llm):
                                 + Loại thực thể (entity_type): 1 trong những lọai sau:[{ENTITY_TYPES}]
                                 + Mô tả (entity_description): Mô tả chi tiết về chức năng, quyền hạn, nghĩa vụ hoặc nội dung quy định của thực thể đó trong ngữ cảnh văn bản. Tuyệt đối không sử dụng các đại từ chỉ định hoặc từ thay thế (như: đây, đó, này, họ, nó, quy định ấy...). Thay vào đó, phải lặp lại chính xác tên thực thể hoặc nội dung cụ thể để đảm bảo mỗi mô tả đều có ý nghĩa độc lập.
 
-                            Lưu ý trường hợp đặc biệt sau:
-                                + Với thực thể liên quan đến Điều/Khoản: Phải kèm mã hiệu trong ngoặc. VD: "ĐIỀU 1 ({doc_name})".                                
+                            Lưu ý rằng:
+                                + Cho tất cả thực thể: Phải kèm theo tên của văn bản pháp luật {doc_name}. Hơn nữa, hãy biến các tên của văn bản luật thành chữ có dấu như sau:      
+                                    - "bo_luat_dan_su_2015"  thành "Bộ Luật Dân Sự 2015"
+                                    - "bo_luat_hinh_su_2015" thành "Bộ Luật Hình Sự 2015" 
+                                    - "bo_luat_lao_dong_2019" thành "Bộ Luật Lao Động 2019"
+                                    - "bo_luat_to_tung_hinh_su_2015" thành "Bộ Luật Tố Tụng Hình Sự 2015" 
+                                    - "nghi_dinh_04-2025-NQ-HĐTP_2025" thành "Nghị Định 04/2025/NQ-HĐTP"
+                                    - "nghi_dinh_144-2021-NĐ-CP_2021" thành "Nghị Định 144/2021/NĐ-CP"
+                                    - "phap_lenh_phong_chong_mai_dam_2003" thành "Pháp Lệnh Phòng Chống Mại Dâm"
+                                    - "thong_tu_64-2019-TT-BCA_2019" thành "Thông Tư 64/2019/TT-BCA"
+                                + Vậy nên, các thực thể nên có tên theo format như sau: "ĐIỀU 1 của Bộ Luật Hình Sự 2015", "Điều 82 của Bộ Luật Tố Tụng Hình Sự 2015"   
                         ## QUY TẮC TRÍCH XUẤT QUAN HỆ (RELATIONSHIPS)
                             Xác định các mối liên kết giữa các thực thể đã trích xuất. Cho phần này, hãy trả về:
                                 + source_entity: Tên thực thể nguồn (từ bước 1)
@@ -100,7 +109,7 @@ def extract_info_from_chunk(text_units, folder_path, model_path, llm):
                                 + Chủ thể (Subject): Tên đối tượng/nhóm đối tượng phải thực thi quy định (VIẾT HOA).
                                 + Đối tượng liên quan (Object): Cơ quan quản lý, hoặc bên chịu tác động của quy định này. Nếu không có, dùng **NONE**.
                                 + Loại quy định (Claim Type): Phân loại (ví dụ: NGHĨA VỤ, QUYỀN HẠN, ĐIỀU KIỆN, HÀNH VI CẤM).
-                                + Trạng thái (Claim Status): **TRUE** (Đang có hiệu lực), **SUSPECTED** (Cần kiểm tra văn bản sửa đổi).
+                                + Trạng thái (Claim Status): **TRUE** (Đang có hiệu lực), **SUSPECTED** (Cần kiểm tra văn bản).
                                 - Mô tả chi tiết (Claim Description): Nội dung cụ thể của quy định, các điều kiện kèm theo và hệ quả pháp lý.
                                 - Thời điểm (Claim Date): Khoảng thời gian (Ngày bắt đầu, Ngày kết thúc) theo định dạng ISO-8601. Nếu chỉ có một mốc thời gian, dùng mốc đó cho cả hai. Nếu không rõ, dùng **NONE**.
                                 - Trích dẫn (Claim Source Text): Danh sách **tất cả** các câu trích nguyên văn từ văn bản gốc có liên quan đến quy định này. Gộp các câu trích dẫn thành 1 chuỗi ký tự.
