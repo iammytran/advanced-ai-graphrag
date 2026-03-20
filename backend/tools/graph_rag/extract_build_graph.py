@@ -200,7 +200,7 @@ num_gpus = torch.cuda.device_count()
 if __name__ == '__main__':
     
     final_df = None
-    output_folder = ARTIFACT_FOLDER
+    output_folder = "artifacts_v7"
     try:
         final_df = pd.read_json("dataset/chunking_result.json", orient="records")
     except FileNotFoundError:
@@ -212,6 +212,6 @@ if __name__ == '__main__':
     entities_df, relationships_df, claims_df = extract_info_from_chunk(
         text_units = final_df,    
         folder_path = output_folder,
-        llm=get_llm
+        llm=get_llm()
     )
 
