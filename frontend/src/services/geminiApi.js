@@ -30,7 +30,7 @@ export async function generateImageFromGemini(character, toneValue, illustration
         prompt = `Thiết kế một poster tuyên truyền pháp luật Việt Nam chuyên nghiệp, khổ dọc. Nhân vật chính: ${charDesc}. ${toneDesc}. Nội dung poster phải truyền tải thông điệp pháp lý sau: "${text}". Yêu cầu: Tiêu đề lớn in đậm bằng tiếng Việt ở trên cùng, hình minh họa trung tâm nổi bật, slogan ngắn gọn súc tích ở dưới, logo nhà nước hoặc biểu tượng pháp lý góc dưới. Màu sắc: đỏ-vàng truyền thống Việt Nam hoặc xanh navy trang trọng. Phong cách: hiện đại, sắc nét, in ấn được, cảm hứng từ poster tuyên truyền Việt Nam.`;
     }
      // Use gemini-2.5-flash-image (stable) which supports generateContent with image output
-     const model = 'gemini-2.5-flash-image';
+    const model = 'gemini-3.1-flash-image-preview';
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
     const requestBody = {
