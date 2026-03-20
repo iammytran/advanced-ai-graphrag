@@ -117,8 +117,9 @@ def extract_info_from_chunk(text_units, folder_path, llm):
         actual_gen = output.outputs[0].text
 
         chunk_id = chunk_ids_for_prompts[i] # Get the corresponding chunk_id
-        with open(f"{folder_path}/debug_extract_entities_log.txt", "a", encoding="utf-8") as f:
-            f.print(f"\nCho dòng {i}, chunk_id is {chunk_id}")
+        print(f"\nCho dòng {i}, chunk_id is {chunk_id}")
+        # with open(f"{folder_path}/debug_extract_entities_log.txt", "a", encoding="utf-8") as f:
+        #     f.print(f"\nCho dòng {i}, chunk_id is {chunk_id}")
         prompt_sent = output.prompt # Lấy lại prompt đã gửi cho vLLM
         
         # Parse kết quả
