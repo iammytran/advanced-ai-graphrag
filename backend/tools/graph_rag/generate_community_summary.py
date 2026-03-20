@@ -19,14 +19,76 @@ logger = logging.getLogger(__name__)
 logger.propagate = False
 logger.setLevel(logging.DEBUG)  # Bắt tất cả các level từ DEBUG trở lên
 
+DEBUG_SUMMARY_PROMPTS = os.getenv("DEBUG_SUMMARY_PROMPTS", "0") == "1"
+DEBUG_PROMPT_MAX_CHARS = int(os.getenv("DEBUG_PROMPT_MAX_CHARS", "2000"))
+DEBUG_PROMPT_SAVE_FULL = os.getenv("DEBUG_PROMPT_SAVE_FULL", "0") == "1"
+DEBUG_SUMMARY_OUTPUTS = os.getenv("DEBUG_SUMMARY_OUTPUTS", "0") == "1"
+DEBUG_OUTPUT_MAX_CHARS = int(os.getenv("DEBUG_OUTPUT_MAX_CHARS", "2000"))
+DEBUG_OUTPUT_SAVE_FULL = os.getenv("DEBUG_OUTPUT_SAVE_FULL", "0") == "1"
+DEBUG_PROMPT_CIDS_RAW = os.getenv("DEBUG_PROMPT_CIDS", "").strip()
+DEBUG_SUMMARY_FIRST_N_CIDS = int(os.getenv("DEBUG_SUMMARY_FIRST_N_CIDS", "1000"))
+
+
+def _parse_debug_cids(raw_value: str) -> set[int]:
+    cids: set[int] = set()
+    if not raw_value:
+        return cids
+
+    for part in raw_value.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            cids.add(int(part))
+        except ValueError:
+            logger.warning(f"Bỏ qua community_id không hợp lệ trong DEBUG_PROMPT_CIDS: {part}")
+    return cids
+
+
+DEBUG_PROMPT_CIDS = _parse_debug_cids(DEBUG_PROMPT_CIDS_RAW)
+
+
+def _should_debug_prompt(cid) -> bool:
+    if not DEBUG_PROMPT_CIDS:
+        return True
+    try:
+        return int(cid) in DEBUG_PROMPT_CIDS
+    except (TypeError, ValueError):
+        return False
+
+
+def _normalize_cid(cid):
+    try:
+        return int(cid)
+    except (TypeError, ValueError):
+        return str(cid)
+
+
+def _should_debug_cid(cid, selected_debug_cids: set) -> bool:
+    if not _should_debug_prompt(cid):
+        return False
+
+    normalized_cid = _normalize_cid(cid)
+    if DEBUG_SUMMARY_FIRST_N_CIDS <= 0:
+        return True
+
+    if normalized_cid in selected_debug_cids:
+        return True
+
+    if len(selected_debug_cids) < DEBUG_SUMMARY_FIRST_N_CIDS:
+        selected_debug_cids.add(normalized_cid)
+        return True
+
+    return False
+
 # Tạo handler để ghi ra file
 # 'w' để ghi đè file mỗi lần chạy, 'a' để ghi tiếp
 file_handler = logging.FileHandler('debug_community_summary.log', mode='w', encoding='utf-8')
 file_handler.setLevel(logging.DEBUG)
 
 # Tạo handler để in ra console
-# console_handler = logging.StreamHandler()
-# console_handler.setLevel(logging.INFO) # Chỉ in ra console những thông tin INFO trở lên
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO) # Chỉ in ra console những thông tin INFO trở lên
 
 # Định dạng cho log message
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -95,6 +157,15 @@ def generate_hierarchical_community_reports(
     final_reports = []
     # Cache sẽ lưu tuple: (nội dung tóm tắt, danh sách source_chunk_ids)
     report_cache = {} 
+    selected_debug_cids = set()
+    prompt_debug_dir = None
+    if DEBUG_SUMMARY_PROMPTS and DEBUG_PROMPT_SAVE_FULL:
+        prompt_debug_dir = os.path.join(folder_for_debug, "debug_prompts")
+        os.makedirs(prompt_debug_dir, exist_ok=True)
+    output_debug_dir = None
+    if DEBUG_SUMMARY_OUTPUTS and DEBUG_OUTPUT_SAVE_FULL:
+        output_debug_dir = os.path.join(folder_for_debug, "debug_outputs")
+        os.makedirs(output_debug_dir, exist_ok=True)
 
     for current_level in sorted_levels:
         logger.info(f"--- Đang xử lý Level {current_level} ---")
@@ -115,6 +186,7 @@ def generate_hierarchical_community_reports(
             batch_cids = []
             batch_nodes = []
             batch_chunk_ids = [] # Lưu chunk_ids cho batch
+            batch_debug_flags = []
 
             for cid, nodes in batch:
                 # --- LOGIC CHUẨN BỊ INPUT_TEXT ---
@@ -205,10 +277,28 @@ def generate_hierarchical_community_reports(
                 ]
                 
                 full_prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+
+                debug_this_cid = _should_debug_cid(cid, selected_debug_cids)
+
+                if DEBUG_SUMMARY_PROMPTS and debug_this_cid:
+                    prompt_tokens = len(tokenizer.encode(full_prompt))
+                    logger.debug(
+                        f"[PROMPT DEBUG] level={current_level}, cid={cid}, "
+                        f"chars={len(full_prompt)}, tokens={prompt_tokens}"
+                    )
+                    logger.debug(
+                        f"[PROMPT PREVIEW] cid={cid}\n{full_prompt[:DEBUG_PROMPT_MAX_CHARS]}"
+                    )
+                    if DEBUG_PROMPT_SAVE_FULL and prompt_debug_dir is not None:
+                        prompt_path = os.path.join(prompt_debug_dir, f"level_{current_level}_cid_{cid}.txt")
+                        with open(prompt_path, "w", encoding="utf-8") as f:
+                            f.write(full_prompt)
+
                 prompts_to_generate.append(full_prompt)
                 batch_cids.append(cid)
                 batch_nodes.append(nodes)
                 batch_chunk_ids.append(list(source_chunk_ids)) 
+                batch_debug_flags.append(debug_this_cid)
 
             # --- VLLM GENERATION ---
             outputs = llm.generate(prompts_to_generate, sampling_params)
@@ -218,6 +308,19 @@ def generate_hierarchical_community_reports(
                 nodes = batch_nodes[idx]
                 final_source_chunk_ids = batch_chunk_ids[idx] # Lấy chunk_ids cho mục này
                 raw_output = output.outputs[0].text
+                debug_this_cid = batch_debug_flags[idx]
+
+                if DEBUG_SUMMARY_OUTPUTS and debug_this_cid:
+                    logger.debug(
+                        f"[OUTPUT DEBUG] level={current_level}, cid={cid}, chars={len(raw_output)}"
+                    )
+                    logger.debug(
+                        f"[OUTPUT PREVIEW] cid={cid}\n{raw_output[:DEBUG_OUTPUT_MAX_CHARS]}"
+                    )
+                    if DEBUG_OUTPUT_SAVE_FULL and output_debug_dir is not None:
+                        output_path = os.path.join(output_debug_dir, f"level_{current_level}_cid_{cid}.txt")
+                        with open(output_path, "w", encoding="utf-8") as f:
+                            f.write(raw_output)
                 
                 # --- XỬ LÝ JSON ---
                 try:
