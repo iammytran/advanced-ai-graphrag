@@ -5,6 +5,11 @@ from vllm import SamplingParams
 
 # Import prompt từ file config
 from backend.config.prompts.prompt_extract_build_graph import EXTRACT_PROMPT
+from backend.config.config import (
+    ARTIFACT_FOLDER,
+    VLLM_MODEL,
+    EMBEDDING_MODEL
+)
 
 # Định nghĩa danh sách các loại thực thể phù hợp với Luật
 # ENTITY_TYPES = "VĂN_BẢN_PHÁP_LUẬT, ĐIỀU_KHOẢN, CHỦ_THỂ, QUYỀN_HẠN, NGHĨA_VỤ, HÀNH_VI_VI_PHẠM, CHẾ_TÀI_PHÁP_LÝ, ĐIỀU_KIỆN_ÁP_DỤNG, THỜI_HẠN_THỜI_HIỆU, QUY_ĐỊNH_CỤ_THỂ"
@@ -94,7 +99,8 @@ def extract_info_from_chunk(text_units, folder_path, llm):
         
         # Sử dụng tokenizer của vLLM để apply template
         prompt = llm.get_tokenizer().apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        chunk_ids_for_prompts.append(row.get('id', 'unknown'))
+        chunk_id = row.get('id', 'unknown')
+        chunk_ids_for_prompts.append(chunk_id)
         all_prompts.append(prompt)
 
     # 4. Inference siêu tốc với vLLM
@@ -109,7 +115,10 @@ def extract_info_from_chunk(text_units, folder_path, llm):
     print("Bắt đầu phân tích kết quả...")
     for i, output in enumerate(outputs):
         actual_gen = output.outputs[0].text
+
         chunk_id = chunk_ids_for_prompts[i] # Get the corresponding chunk_id
+        with open(f"{folder_path}/debug_extract_entities_log.txt", "a", encoding="utf-8") as f:
+            f.print(f"\nCho dòng {i}, chunk_id is {chunk_id}")
         prompt_sent = output.prompt # Lấy lại prompt đã gửi cho vLLM
         
         # Parse kết quả
@@ -158,3 +167,51 @@ def extract_info_from_chunk(text_units, folder_path, llm):
         )
 
     return df_entities, df_relationships, df_claims
+
+def get_llm():
+    global _llm
+    if _llm is None:
+        with _lock:
+            if _llm is None:
+                # 1. Ép sử dụng kiến trúc V0 (Vô cùng quan trọng)
+                os.environ["VLLM_USE_V1"] = "0"
+                # 2. Đảm bảo biến môi trường chỉ định rõ 2 GPU
+                os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+                from vllm import LLM
+                # 3. Khởi tạo vLLM trên GPU 0
+                _llm = LLM(
+                    model=VLLM_MODEL,
+                    tensor_parallel_size=num_gpus if num_gpus else 1,
+                    gpu_memory_utilization=0.8,
+                    trust_remote_code=True,
+                    distributed_executor_backend="mp",
+                    # max_model_len=4096,
+                )
+    return _llm
+
+from threading import Lock
+import torch
+
+_llm = None
+_lock = Lock()
+# Tự động lấy số GPU khả dụng
+num_gpus = torch.cuda.device_count()
+
+if __name__ == '__main__':
+    
+    final_df = None
+    output_folder = ARTIFACT_FOLDER
+    try:
+        final_df = pd.read_json("dataset/chunking_result.json", orient="records")
+    except FileNotFoundError:
+        print(f"Lỗi: Không tìm thấy file chunking_result.json trong {output_folder}. Vui lòng chạy lại bước chunking trước.")
+    
+    print("Ready for extracting entities and relationships...")
+
+    # Gọi hàm xử lý
+    entities_df, relationships_df, claims_df = extract_info_from_chunk(
+        text_units = final_df,    
+        folder_path = output_folder,
+        llm=get_llm
+    )
+
