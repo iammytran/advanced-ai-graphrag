@@ -1,3 +1,6 @@
+import os
+os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
+
 import pandas as pd
 import asyncio
 from tqdm import tqdm
@@ -94,9 +97,7 @@ def generate_hierarchical_community_reports(
             clusters[cid].append(node)
 
         level_comms = list(clusters.items())
-        
-        # Với vLLM, chúng ta có thể xử lý toàn bộ Level trong 1 Batch nếu VRAM cho phép
-        # Hoặc chia batch lớn (ví dụ 32-64)
+
         batch_size = 16
         
         for i in range(0, len(level_comms), batch_size):
