@@ -192,6 +192,7 @@ def get_llm():
 
 from threading import Lock
 import torch
+import pickle
 
 _llm = None
 _lock = Lock()
@@ -215,4 +216,13 @@ if __name__ == '__main__':
         folder_path = output_folder,
         llm=get_llm()
     )
+
+    # 9. Lưu entities và relations sang pickle file
+    with open(f'entities.pkl', 'wb') as f:
+        pickle.dump(entities_df, f)
+    with open(f'relationships.pkl', 'wb') as f:
+        pickle.dump(relationships_df, f)
+    with open(f'claims.pkl', 'wb') as f:
+        pickle.dump(claims_df, f)
+    print("Lưu entities, relationships và claims thành công!")
 
