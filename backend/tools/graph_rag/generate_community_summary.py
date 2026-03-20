@@ -13,6 +13,7 @@ import logging
 # --- Cấu hình Logging ---
 # Tạo một logger riêng cho module này
 logger = logging.getLogger(__name__)
+logger.propagate = False
 logger.setLevel(logging.DEBUG)  # Bắt tất cả các level từ DEBUG trở lên
 
 # Tạo handler để ghi ra file
