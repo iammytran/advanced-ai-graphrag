@@ -313,6 +313,13 @@ def main():
     #     },
     # )
     df_results_original = experiment_results_original.to_pandas()
+    # Force casting problematic ID columns to string
+    print("Forcing ID columns to string type...")
+    if 'example_id' in df_results_original.columns:
+        df_results_original['example_id'] = df_results_original['example_id'].astype(str)
+    if 'id' in df_results_original.columns:
+        df_results_original['id'] = df_results_original['id'].astype(str)
+        
     print("\nEvaluations Complete!")
     print(f"Original Question Results: {df_results_original}")
 

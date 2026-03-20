@@ -7,7 +7,12 @@
     "references": [
       "Khoản 2, Điều 28 Nghị định 144/2021/NĐ-CP",
       "Điều 321 Bộ luật Hình sự 2015"
-    ]
+    ],
+    "referenced_chunk_ids": [
+      "chunk-14b8d0b6-9888-4158-8a04-19d5b12207a8",
+      "chunk-7beb209d-2925-4bff-9aa4-3d5f09754bf3"
+    ],
+    "done": "yes"
   },
   {
     "id": 2,
@@ -19,7 +24,12 @@
       "Điều 184 Bộ luật Hình sự 2015",
       "Khoản 6, Điều 91 Bộ luật Hình sự 2015",
       "Điều 91 Bộ luật Hình sự 2015"
-    ]
+    ],
+    "referenced_chunk_ids": [
+      "chunk-f865835c-df4c-4135-ab0e-ffb959774b08",
+      "chunk-5abd0ebc-5392-476a-9c6e-80eb0c90ca08"
+    ],
+    "done": "yes"
   },
   {
     "id": 3,

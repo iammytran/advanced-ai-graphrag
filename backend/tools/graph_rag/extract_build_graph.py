@@ -55,7 +55,7 @@ def parse_graph_output(raw_text, chunk_id):
         return entities, relationships, claims
 
 def extract_info_from_chunk(text_units, folder_path, model_path, llm):    
-    # 2. Cấu hình "Kỷ luật thép" cho vLLM
+    # 2. Cấu hình cho vLLM
     sampling_params = SamplingParams(
         temperature=0.1,
         top_p=0.9,
