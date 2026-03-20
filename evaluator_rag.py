@@ -7,6 +7,7 @@ import json
 import os
 import sys
 from typing import TypedDict
+import ast
 
 from langchain_huggingface import ChatHuggingFace, HuggingFacePipeline
 
@@ -226,6 +227,48 @@ def retrieval_relevance(inputs: dict, outputs: dict) -> bool:
     return grade["relevant"]
 
 
+# 5. Chunk Recall Evaluator
+def retrieval_recall(outputs: dict, reference_outputs: dict) -> dict:
+    """
+    Calculates the recall of retrieved chunks against the ground truth chunks.
+    """
+    # Lấy danh sách chunk IDs tham chiếu từ dataset
+    # Đảm bảo nó luôn là một list
+    referenced_chunks = reference_outputs.get("referenced_chunk_ids", [])
+    if not isinstance(referenced_chunks, list):
+        referenced_chunks = []
+
+    # Lấy danh sách chunk IDs mà RAG đã truy xuất
+    retrieved_chunks_raw = outputs.get("source_chunk_ids", [])
+    retrieved_chunks = []
+    if isinstance(retrieved_chunks_raw, str) and retrieved_chunks_raw.startswith("[") and retrieved_chunks_raw.endswith("]"):
+        try:
+            retrieved_chunks = ast.literal_eval(retrieved_chunks_raw)
+        except (ValueError, SyntaxError):
+            retrieved_chunks = [] # Giữ là list rỗng nếu parse lỗi
+    elif isinstance(retrieved_chunks_raw, list):
+        retrieved_chunks = retrieved_chunks_raw
+
+    print(f"retrieved_chunks: {retrieved_chunks}")
+
+    # Nếu không có chunk tham chiếu, không thể tính recall, trả về 0
+    if not referenced_chunks:
+        return {"score": 0}
+
+    # Chuyển sang dạng set để xử lý tập hợp hiệu quả
+    set_referenced = set(referenced_chunks)
+    set_retrieved = set(retrieved_chunks)
+
+    # Tìm các chunk ID có trong cả hai tập hợp
+    intersecting_chunks = set_referenced.intersection(set_retrieved)
+
+    # Tính recall
+    recall_score = len(intersecting_chunks) / len(set_referenced)
+
+    # LangSmith yêu cầu trả về một dict có key là 'score'
+    return {"score": recall_score}
+
+
 # --- Target Function and Main Execution ---
 
 
@@ -238,6 +281,7 @@ def target(inputs: dict) -> dict:
         "answer": result["answer"],
         # Ensure we pass the list of Document objects
         "documents": result["retrieved_documents"],
+        "source_chunk_ids": result.get("source_chunk_ids", []),
     }
 
 
@@ -263,7 +307,10 @@ def main():
         for item in raw_data:
             client.create_example(
                 inputs={"question": item["original_question"]},
-                outputs={"answer": item["answer"]},
+                outputs={
+                    "answer": item["answer"],
+                    "referenced_chunk_ids": item.get("referenced_chunk_ids", []),
+                },
                 dataset_id=dataset_original.id,
             )
     else:
@@ -293,7 +340,7 @@ def main():
     experiment_results_original = client.evaluate(
         target,
         data=dataset_name_original,
-        evaluators=[correctness, groundedness, relevance, retrieval_relevance],
+        evaluators=[correctness, groundedness, relevance, retrieval_recall],
         experiment_prefix="rag-chatbot-original",
         metadata={
             "description": "RAG Chatbot Evaluation - Original Questions",
@@ -313,6 +360,13 @@ def main():
     #     },
     # )
     df_results_original = experiment_results_original.to_pandas()
+    # Force casting problematic ID columns to string
+    print("Forcing ID columns to string type...")
+    if 'example_id' in df_results_original.columns:
+        df_results_original['example_id'] = df_results_original['example_id'].astype(str)
+    if 'id' in df_results_original.columns:
+        df_results_original['id'] = df_results_original['id'].astype(str)
+        
     print("\nEvaluations Complete!")
     print(f"Original Question Results: {df_results_original}")
 

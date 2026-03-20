@@ -1,9 +1,3 @@
-# # Bước 1: Ép spawn PHẢI là dòng thực thi đầu tiên
-# if __name__ == "__main__":
-#     try:
-#         multiprocessing.set_start_method('spawn', force=True)
-#     except RuntimeError:
-#         pass
 import argparse
 import asyncio
 import json
@@ -23,11 +17,14 @@ from dotenv import load_dotenv
 from langchain.tools import tool
 from sklearn.metrics.pairwise import cosine_similarity
 
-# vLLM import ở đây là ổn vì nó sẽ được quản lý bởi spawn
 from vllm import LLM, SamplingParams
 
-from backend.tools.graph_rag.chunking import chunk_civil_code_markdown
-from backend.tools.graph_rag.chunking import get_law_texts as get_law_texts_external
+from backend.config.config import (
+    ARTIFACT_FOLDER,
+    VLLM_MODEL,
+    EMBEDDING_MODEL
+)
+
 from backend.tools.graph_rag.compute_leiden_communities import (
     _compute_leiden_communities,
 )
@@ -41,9 +38,6 @@ from backend.tools.graph_rag.query_classifier import query_type_classifier
 
 # 1. Nạp các biến từ tệp .env
 load_dotenv()
-
-# # 1. Tắt log của transformers để tránh cái warning gây crash kia
-# transformers.logging.set_verbosity_error()
 
 # 2. Hoặc cấu hình lại logger cơ bản để bỏ qua các tham số thừa
 logging.basicConfig(level=logging.ERROR)
@@ -65,7 +59,7 @@ def get_llm():
                 from vllm import LLM
                 # 3. Khởi tạo vLLM trên GPU 0
                 _llm = LLM(
-                    model="Qwen/Qwen2.5-7B-Instruct",
+                    model=VLLM_MODEL,
                     tensor_parallel_size=num_gpus if num_gpus else 1,
                     gpu_memory_utilization=0.8,
                     trust_remote_code=True,
@@ -77,22 +71,7 @@ def get_llm():
 def get_embedding_model():
     # Chỉ khởi tạo khi tiến trình chính (Main) gọi đến
     from sentence_transformers import SentenceTransformer
-    return SentenceTransformer('keepitreal/vietnamese-sbert', device='cuda:1')
-
-def calculate_similarity(text1, text2):
-    """Tính toán độ tương đồng ngữ nghĩa giữa hai văn bản."""
-    if not text1 or not text2:
-        return 0.0
-    
-    embed_model = get_embedding_model()
-    
-    # 1. Chuyển văn bản thành vector
-    # Chú ý: .encode() của sentence_transformers trả về numpy array
-    embeddings = embed_model.encode([text1, text2])
-    
-    # 2. Tính Cosine Similarity giữa 2 vector
-    sim = cosine_similarity([embeddings[0]], [embeddings[1]])[0][0]
-    return float(sim)
+    return SentenceTransformer(EMBEDDING_MODEL, device='cuda:1')
 
 async def indexing(output_folder):
     llm = get_llm()
@@ -102,21 +81,17 @@ async def indexing(output_folder):
     print("Đọc chunks từ file JSON...")
     final_df = None
     try:
-        final_df = pd.read_json(f"dataset/chunking_result.json", orient="records")
+        final_df = pd.read_json("dataset/chunking_result.json", orient="records")
     except FileNotFoundError:
         print(f"Lỗi: Không tìm thấy file chunking_result.json trong {output_folder}. Vui lòng chạy lại bước chunking trước.")
         return
     
     print("Ready for extracting entities and relationships...")
 
-    # Đường dẫn model (vLLM hỗ trợ load trực tiếp từ HuggingFace hoặc thư mục local)
-    model_path = "Qwen/Qwen2.5-7B-Instruct"
-
     # Gọi hàm xử lý
     entities_df, relationships_df, claims_df = extract_info_from_chunk(
         text_units = final_df,    
         folder_path = new_folder_name,
-        model_path = model_path,
         llm=llm
     )
 
@@ -132,38 +107,11 @@ async def indexing(output_folder):
     # 10. Encode các entities
     print("Embed các entities...")
     entity_embeddings_folder_name = f"{new_folder_name}/entity_embeddings"
-    embedding_model_name="keepitreal/vietnamese-sbert"
     embed_model = get_embedding_model()
     entity_name_embeddings = embed_model.encode(entities_df['name'].tolist(), show_progress_bar=True, convert_to_numpy=True)
     # 4. Lưu lại
     np.save(entity_embeddings_folder_name, entity_name_embeddings)
     logging.info(f"Đã lưu embeddings của entities tại: {entity_embeddings_folder_name}")
-
-    # 10. Vẽ đồ thị
-    # print("creating graphs...")
-    # graph = nx.from_pandas_edgelist(relationships_df, edge_attr=["description", "weight"])
-    # # graphml = "\n".join(nx.generate_graphml(graph))
-    # # nx.write_graphml(graph, "graph.graphml", encoding="utf-8", prettyprint=True)
-    # # Cách 2: Nếu bạn muốn lấy chuỗi string để xử lý tiếp
-    # graphml_string = "\n".join(nx.generate_graphml(graph))
-    # if not graphml_string.startswith("<?xml"):
-    #     header = '<?xml version="1.0" encoding="utf-8"?>\n'
-    #     graphml_string = header + graphml_string
-
-    # with open("graph.graphml", "w", encoding="utf-8") as f:
-    #     f.write(graphml_string)
-    # print("Done creating graphs!")
-
-    # # # Thiết lập kích thước hình vẽ
-    # # plt.figure(figsize=(10, 8))
-    # # pos = nx.spring_layout(graph) # Thuật toán sắp xếp vị trí các nút
-    # # nx.draw(graph, pos, with_labels=True, node_color='lightblue', 
-    # #         edge_color='gray', node_size=2000, font_size=10)
-
-    # # # Vẽ trọng số (weight) lên cạnh
-    # # labels = nx.get_edge_attributes(graph, 'weight')
-    # # nx.draw_networkx_edge_labels(graph, pos, edge_labels=labels)
-    # plt.show()
 
     # 10. Compute leiden communities
     result, hierarchy = _compute_leiden_communities(relationships_df, max_cluster_size=10, use_lcc=False)
@@ -186,7 +134,7 @@ async def indexing(output_folder):
         entities_df=entities_df,
         relationships_df=relationships_df,
         claims_df=claims_df,
-        model_name=model_path,
+        model_name=VLLM_MODEL,
         folder_for_debug=new_folder_name,
         llm=llm
     )
@@ -195,13 +143,6 @@ async def indexing(output_folder):
     with open(summaries_path, "w", encoding="utf-8") as f:
         json.dump(reports, f, ensure_ascii=False, indent=4)
     print("Extract community summaries thành công!")
-    # summaries_path = "outputs_20260312_001744/community_summaries.json"
-
-    # # print("Run global search...\n")
-    # # print(run_global_search("Nội dung chính của điều 182 của bộ luật Hình sự 2015 là gì?", summaries_path, top_k_sources=5))
-
-    # print("Run local search...\n")
-    # print(run_local_search("Đang hưởng án treo có được thay đổi nơi cư trú không?", "outputs_20260312_001744"))
 
 
 def format_graphrag_documents(documents: list[str]) -> str:

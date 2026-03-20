@@ -13,6 +13,7 @@ from transformers import AutoTokenizer
 from backend.config.config import (
     ARTIFACT_FOLDER,
 )
+from backend.config.prompts.prompt_global_query import MAP_PROMPT
 
 # Tải các biến môi trường từ file .env
 load_dotenv()
@@ -305,36 +306,7 @@ def prepare_global_context(query, community_reports, tokenizer, context_window=6
     return chunks
 
 def run_map_step(query, summary_chunks_with_source_ids, max_new_tokens, processor: LLMProcessor):
-    system_prompt = f"""
----Vai trò---
-Bạn là một chuyên gia phân tích pháp luật và trợ lý AI thông minh. 
-Nhiệm vụ: trả lời các câu hỏi dựa trên dữ liệu từ các bảng báo cáo cộng đồng pháp lý được cung cấp.
-
----Mục tiêu---
-Tạo một câu trả lời bao gồm danh sách các điểm chính (key points) để trả lời câu hỏi của người dùng, tóm tắt tất cả các thông tin có liên quan trong các bảng dữ liệu đầu vào.
-Bạn phải sử dụng dữ liệu được cung cấp trong các bảng dưới đây làm ngữ cảnh chính để tạo câu trả lời. 
-Nếu bạn không biết câu trả lời hoặc nếu dữ liệu đầu vào không chứa đủ thông tin, hãy trả lời là bạn không đủ dữ liệu. Tuyệt đối không tự bịa đặt thông tin. 
-Đặc biệt, phải kiểm soát độ dài để tránh lỗi hệ thống, bạn PHẢI viết cực kỳ súc tích, dưới {max_new_tokens} từ, nhưng vẫn nên đảm bảo đủ ý.
-
-
-Mỗi điểm chính trong câu trả lời phải bao gồm các thành phần sau:
-- Description (Mô tả): Một bản mô tả toàn diện về luận điểm pháp lý hoặc thông tin trích xuất được.
-- Importance Score (Điểm quan trọng): Một số nguyên từ 0-100 thể hiện mức độ hữu ích của điểm đó trong việc trả lời câu hỏi. Câu trả lời kiểu "Tôi không biết" phải có điểm là 0.
-
----ĐỊNH DẠNG ĐẦU RA (JSON)---
-Bạn PHẢI trả về JSON duy nhất theo cấu trúc:
-{{
-    "points": [
-        {{"description": "Mô tả về luận điểm 1 [Data: Báo cáo (id báo cáo)]", "score": giá_trị_điểm}},
-        {{"description": "Mô tả về luận điểm 2 [Data: Báo cáo (id báo cáo)]", "score": giá_trị_điểm}}
-    ]
-}}
-
----QUY TẮC PHÁP LÝ---
-1. Sử dụng chính xác trợ động từ: "phải", "được", "có thể", "không được", "chịu trách nhiệm".
-2. Trích dẫn ID báo cáo: "Mô tả nội dung... [Data: Báo cáo (1, 2, 3, 4, 5, +more)]". Không liệt kê quá 5 ID trong một cụm.
-3. Tuyệt đối không tự bịa đặt thông tin ngoài ngữ cảnh.
-4. Độ dài tối đa: {max_new_tokens} từ."""
+    system_prompt = MAP_PROMPT.format(max_new_tokens=max_new_tokens)
 
     prompts = []
     # Tách chunks và chunk_ids để xử lý
@@ -430,7 +402,7 @@ def get_relevant_resources(map_results, top_k_sources):
             
     return final_results
 
-def run_global_search(query, summaries_path, llm=None, top_k_sources=5, provider: str = None):
+def run_global_search(query, summaries_path, llm=None, top_k_sources=2, provider: str = None):
     if isinstance(llm, int) and not isinstance(top_k_sources, int):
         llm, top_k_sources = llm, top_k_sources
 
@@ -460,6 +432,9 @@ def run_global_search(query, summaries_path, llm=None, top_k_sources=5, provider
     flattened_ids = [id for sublist in source_ids_list for id in sublist]
     unique_source_ids = sorted(list(set(flattened_ids)))
 
+    print("\nVăn bản lấy về:")
+    print(descriptions)
+
     return descriptions, unique_source_ids
 
 if __name__ == '__main__':
@@ -468,9 +443,9 @@ if __name__ == '__main__':
     summaries_path = os.path.join(ARTIFACT_FOLDER, "community_summaries.json")
     # Để dùng OpenAI, chúng ta truyền provider="openai" vào hàm
     descriptions, source_ids = run_global_search(query, summaries_path, provider="openai")
-    print("--- DESCRIPTIONS ---")
-    for desc in descriptions:
-        print(f"- {desc}\n")
+    # print("--- DESCRIPTIONS ---")
+    # for desc in descriptions:
+    #     print(f"- {desc}\n")
     
-    print("\n--- FLATTENED & UNIQUE SOURCE CHUNK IDs ---")
-    print(source_ids)
+    # print("\n--- FLATTENED & UNIQUE SOURCE CHUNK IDs ---")
+    # print(source_ids)

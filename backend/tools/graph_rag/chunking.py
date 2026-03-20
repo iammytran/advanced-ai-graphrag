@@ -138,11 +138,11 @@ def chunk_civil_code_markdown(md_text):
 
         # ========================================================
         # 4. XỬ LÝ ĐIỀU (ĐÃ ĐƯỢC CẬP NHẬT REGEX)
-        # Regex mới: ^[\s#\*]*Điều\s+\d+
-        # Ý nghĩa: Bắt đầu dòng (^) có thể chứa các khoảng trắng, dấu #, hoặc dấu * ([\s#\*]*).
-        # Sau đó bắt buộc là chữ "Điều", theo sau là khoảng trắng (\s+) và một con số (\d+)
+        # Regex mới: ^[\s#\*]*Điều\s+\d+\..+
+        # Ý nghĩa: Bắt đầu bằng "Điều + số", bắt buộc có dấu chấm (.), và PHẢI có nội dung theo sau (tên Điều).
+        # Điều này giúp phân biệt với trường hợp "Điều 82" được nhắc đến trong một câu văn.
         # ========================================================
-        if re.match(r"^[\s#\*]*Điều\s+\d+", line_stripped, re.IGNORECASE):
+        if re.match(r"^[\s#\*]*Điều\s+\d+\..+", line_stripped, re.IGNORECASE):
             # Lưu chunk cũ lại
             if current_content:
                 chunks.append(
@@ -213,7 +213,7 @@ if __name__ == "__main__":
     final_df.insert(0, 'id', ids)
     print(f"law_texts_df: {final_df}")
 
-    # Lưu kết quả chunking ra file JSON
-    output_path = "dataset/chunking_result.json"
-    final_df.to_json(output_path, orient="records", lines=False, force_ascii=False, indent=4)
-    print(f"Đã lưu kết quả chunking vào file: {output_path}")
+    # # UNCOMMENT MẤY DÒNG DƯỚI NÀY KHI MUỐN CHUNK LẠI
+    # output_path = "dataset/chunking_result.json"
+    # final_df.to_json(output_path, orient="records", lines=False, force_ascii=False, indent=4)
+    # print(f"Đã lưu kết quả chunking vào file: {output_path}")

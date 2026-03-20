@@ -1,3 +1,6 @@
+import os
+os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
+
 import pandas as pd
 import asyncio
 from tqdm import tqdm
@@ -7,9 +10,13 @@ import re
 from transformers import AutoTokenizer
 import logging
 
+# Import prompt
+from backend.config.prompts.prompt_generate_summary import GENERATE_SUMMARY_PROMPT
+
 # --- Cấu hình Logging ---
 # Tạo một logger riêng cho module này
 logger = logging.getLogger(__name__)
+logger.propagate = False
 logger.setLevel(logging.DEBUG)  # Bắt tất cả các level từ DEBUG trở lên
 
 # Tạo handler để ghi ra file
@@ -18,19 +25,19 @@ file_handler = logging.FileHandler('debug_community_summary.log', mode='w', enco
 file_handler.setLevel(logging.DEBUG)
 
 # Tạo handler để in ra console
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO) # Chỉ in ra console những thông tin INFO trở lên
+# console_handler = logging.StreamHandler()
+# console_handler.setLevel(logging.INFO) # Chỉ in ra console những thông tin INFO trở lên
 
 # Định dạng cho log message
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(formatter)
-console_handler.setFormatter(formatter)
+# console_handler.setFormatter(formatter)
 
 # Thêm handlers vào logger
 # Tránh thêm handler nhiều lần nếu module được import lại
 if not logger.handlers:
     logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
+    # logger.addHandler(console_handler)
 # --- Kết thúc cấu hình Logging ---
 
 
@@ -68,6 +75,11 @@ def generate_hierarchical_community_reports(
     max_new_tokens=15000,
     context_window=32768 # vLLM thường hỗ trợ context lớn hơn
 ):
+    # DEBUG: In ra các cột của DataFrame để kiểm tra sự tồn tại của 'chunk_id'
+    logger.info(f"Các cột trong entities_df: {entities_df.columns.tolist()}")
+    logger.info(f"Các cột trong relationships_df: {relationships_df.columns.tolist()}")
+    logger.info(f"Các cột trong claims_df: {claims_df.columns.tolist()}")
+    
     # 1. Khởi tạo Tokenizer
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     
@@ -94,9 +106,7 @@ def generate_hierarchical_community_reports(
             clusters[cid].append(node)
 
         level_comms = list(clusters.items())
-        
-        # Với vLLM, chúng ta có thể xử lý toàn bộ Level trong 1 Batch nếu VRAM cho phép
-        # Hoặc chia batch lớn (ví dụ 32-64)
+
         batch_size = 16
         
         for i in range(0, len(level_comms), batch_size):
@@ -189,48 +199,9 @@ def generate_hierarchical_community_reports(
                     logger.warning(f"⚠️ Đã cắt bớt prompt cho cụm vì quá dài ({len(tokens)} tokens)")
 
 
-                # --- CHUYỂN SANG CHAT TEMPLATE ---
-                system_msg = f"""
-Bạn là chuyên gia phân tích hệ thống pháp luật Việt Nam. Nhiệm vụ của bạn là trích xuất và đánh giá thông tin từ mạng lưới pháp luật (thực thể, quan hệ, quy định) để viết báo cáo cụm (community report)
-
-### MỤC TIÊU
-Hỗ trợ luật sư và người dân hiểu rõ tác động pháp lý. Báo cáo phải bao quát: thực thể chính, thẩm quyền, trách nhiệm, hành vi bị cấm và chế tài.
-
-### QUY TẮC NỘI DUNG (BẮT BUỘC)
-1. CHI TIẾT ĐỊNH LƯỢNG: Ghi rõ hành vi, mức phạt (tiền, năm tù), và cơ quan thẩm quyền.
-2. TÍNH ĐỘC LẬP: Tuyệt đối không dùng đại từ (đây, đó, ấy). Phải lặp lại tên thực thể/nội dung cụ thể.
-3. KHÔNG BỊA ĐẶT: Chỉ sử dụng dữ liệu được cung cấp. 
-4. KIỂM SOÁT ĐỘ DÀI: Để tránh lỗi hệ thống, bạn PHẢI viết cực kỳ súc tích, dưới 3000 từ, nhưng vẫn nên đảm bảo đủ ý.
-
-### QUY TẮC TRÍCH DẪN
-- Mọi ý phải kèm: "[Data: Thực thể (id1, id2); Quan hệ (id3)]". Tối đa 3 ID mỗi lần trích dẫn.
-
-### ĐỊNH DẠNG ĐẦU RA (JSON DUY NHẤT)
-Bạn PHẢI trả về JSON, không lời dẫn. Giới hạn số lượng mục như sau:
-{{
-    "title": "Tiêu đề ngắn gọn (< 15 từ) về nội dung của cụm",
-    "report": "Tổng hợp thông tin của cụm từ các nguồn thông tin đã cho",
-    "rating": <số từ 0-10>,
-    "rating_explanation": "1 câu giải thích",
-    "findings": [
-        {{
-            "summary": "Ý chính 1 (Tối đa 5 ý quan trọng nhất)",
-            "explanation": "Chi tiết ý 1 trong tối đa 2 câu văn."
-        }}
-    ],
-}}
-
-### CẢNH BÁO KỸ THUẬT:
-- CHỈ TRẢ VỀ JSON. Bắt đầu bằng '{{' và kết thúc bằng '}}'.
-- Nếu dữ liệu quá lớn, chỉ chọn lọc 5 nội dung quan trọng nhất để trình bày. Tuyệt đối không viết lan man dẫn đến bị cắt ngang văn bản.
-"""
-                
-                user_msg = f"""Viết báo cáo cho cụm thực thể sau đây. 
-{input_text}"""
-
                 messages = [
-                    {"role": "system", "content": system_msg},
-                    {"role": "user", "content": user_msg}
+                    {"role": "system", "content": GENERATE_SUMMARY_PROMPT},
+                    {"role": "user", "content": f"Viết báo cáo cho cụm thực thể sau đây. \n{input_text}"}
                 ]
                 
                 full_prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
@@ -259,12 +230,12 @@ Bạn PHẢI trả về JSON, không lời dẫn. Giới hạn số lượng m�
                         except json.JSONDecodeError:
                             repaired_str = repair_truncated_json(potential_json)
                             data_json = json.loads(repaired_str)
-                            print(f"⚠️ Đã cứu thành công dữ liệu bị cắt tại cụm {cid}")
+                            logger.warning(f"⚠️ Đã cứu thành công dữ liệu bị cắt tại cụm {cid}")
                     else:
                         raise ValueError("No JSON found")
                         
                 except Exception as e:
-                    print(f"❌ Lỗi parse JSON tại cụm {cid}: {e}")
+                    logger.error(f"❌ Lỗi parse JSON tại cụm {cid}: {e}")
                     data_json = {
                         "title": f"Báo cáo cụm {cid} (Lỗi định dạng)", 
                         "report": raw_output[:500] + "...",

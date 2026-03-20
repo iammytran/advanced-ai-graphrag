@@ -3,6 +3,9 @@ import json
 import logging
 import os
 
+# Import prompt
+from backend.config.prompts.prompt_query_classifier import QUERY_CLASSIFIER_PROMPT
+
 logger = logging.getLogger(__name__)
 
 
@@ -20,13 +23,7 @@ def query_type_classifier(query: str, llm=None, provider: str = None, get_llm_fu
     3) LLM_PROVIDER
     4) "vllm"
     """
-
-    system_prompt = """Bạn là một chuyên gia điều phối hệ thống GraphRAG. Bạn chỉ được phép trả về định dạng JSON.
-    Nhiệm vụ: Xác định câu hỏi dùng 'local' hay 'global' search.
-- 'local': Hỏi về thực thể cụ thể, người, vật, địa điểm, chi tiết sâu.
-- 'global': Hỏi về chủ đề chung, tóm tắt dữ liệu, xu hướng.
-Trả về JSON: {"search_type": "local" | "global", "reason": "giải thích"}
-"""
+    system_prompt = QUERY_CLASSIFIER_PROMPT
     user_prompt = f'Câu hỏi người dùng: "{query}"'
 
     provider_name = (
@@ -36,7 +33,7 @@ Trả về JSON: {"search_type": "local" | "global", "reason": "giải thích"}
         or "vllm"
     ).strip().lower()
 
-    def _extract_decision(raw_text: str):
+    def _extract_decision(raw_text: str):        
         # 1. Làm sạch text và tìm phạm vi JSON
         clean_text = (raw_text or "").replace("```json", "").replace("```", "").strip()
         start_idx = clean_text.find("{")
