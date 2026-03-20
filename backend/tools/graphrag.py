@@ -19,6 +19,12 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from vllm import LLM, SamplingParams
 
+from backend.config.config import (
+    ARTIFACT_FOLDER,
+    VLLM_MODEL,
+    EMBEDDING_MODEL
+)
+
 from backend.tools.graph_rag.compute_leiden_communities import (
     _compute_leiden_communities,
 )
@@ -53,7 +59,7 @@ def get_llm():
                 from vllm import LLM
                 # 3. Khởi tạo vLLM trên GPU 0
                 _llm = LLM(
-                    model="Qwen/Qwen2.5-7B-Instruct",
+                    model=VLLM_MODEL,
                     tensor_parallel_size=num_gpus if num_gpus else 1,
                     gpu_memory_utilization=0.8,
                     trust_remote_code=True,
@@ -65,22 +71,7 @@ def get_llm():
 def get_embedding_model():
     # Chỉ khởi tạo khi tiến trình chính (Main) gọi đến
     from sentence_transformers import SentenceTransformer
-    return SentenceTransformer('keepitreal/vietnamese-sbert', device='cuda:1')
-
-def calculate_similarity(text1, text2):
-    """Tính toán độ tương đồng ngữ nghĩa giữa hai văn bản."""
-    if not text1 or not text2:
-        return 0.0
-    
-    embed_model = get_embedding_model()
-    
-    # 1. Chuyển văn bản thành vector
-    # Chú ý: .encode() của sentence_transformers trả về numpy array
-    embeddings = embed_model.encode([text1, text2])
-    
-    # 2. Tính Cosine Similarity giữa 2 vector
-    sim = cosine_similarity([embeddings[0]], [embeddings[1]])[0][0]
-    return float(sim)
+    return SentenceTransformer(EMBEDDING_MODEL, device='cuda:1')
 
 async def indexing(output_folder):
     llm = get_llm()
@@ -90,21 +81,17 @@ async def indexing(output_folder):
     print("Đọc chunks từ file JSON...")
     final_df = None
     try:
-        final_df = pd.read_json(f"dataset/chunking_result.json", orient="records")
+        final_df = pd.read_json("dataset/chunking_result.json", orient="records")
     except FileNotFoundError:
         print(f"Lỗi: Không tìm thấy file chunking_result.json trong {output_folder}. Vui lòng chạy lại bước chunking trước.")
         return
     
     print("Ready for extracting entities and relationships...")
 
-    # Đường dẫn model (vLLM hỗ trợ load trực tiếp từ HuggingFace hoặc thư mục local)
-    model_path = "Qwen/Qwen2.5-7B-Instruct"
-
     # Gọi hàm xử lý
     entities_df, relationships_df, claims_df = extract_info_from_chunk(
         text_units = final_df,    
         folder_path = new_folder_name,
-        model_path = model_path,
         llm=llm
     )
 
@@ -147,7 +134,7 @@ async def indexing(output_folder):
         entities_df=entities_df,
         relationships_df=relationships_df,
         claims_df=claims_df,
-        model_name=model_path,
+        model_name=VLLM_MODEL,
         folder_for_debug=new_folder_name,
         llm=llm
     )

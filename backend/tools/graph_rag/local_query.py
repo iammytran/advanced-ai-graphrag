@@ -16,7 +16,9 @@ from transformers import AutoTokenizer
 
 from backend.config.config import (
     ARTIFACT_FOLDER,
+    EMBEDDING_MODEL
 )
+from backend.config.prompts.prompt_local_query import ENTITY_EXTRACTION_PROMPT
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -326,9 +328,7 @@ class AdvancedLocalSearch:
 
     def extract_entities_from_query(self, query: str) -> List[str]:
         """Bước 1: Dùng LLM trích xuất các thực thể quan trọng có trong câu hỏi"""
-        system_prompt = """Bạn là trợ lý ngôn ngữ học pháp luật. 
-        Nhiệm vụ: Trích xuất các danh từ riêng, thuật ngữ pháp lý hoặc đối tượng quan trọng từ câu hỏi của người dùng.
-        Trả về kết quả dưới dạng JSON: {"entities": ["THỰC THỂ 1", "THỰC THỂ 2"]}"""
+        system_prompt = ENTITY_EXTRACTION_PROMPT
         
         user_content = f"Câu hỏi: {query}"
         prompt = self.processor.apply_template(system_prompt, user_content)
@@ -463,7 +463,7 @@ def run_local_search(query: str, artifacts_path: str, llm=None, provider: str = 
     """
     # Khởi tạo các model names
     model_name = "Qwen/Qwen2.5-7B-Instruct"
-    embedding_model = "keepitreal/vietnamese-sbert"
+    embedding_model = EMBEDDING_MODEL
 
     # Khởi tạo searcher
     search_engine = AdvancedLocalSearch(
