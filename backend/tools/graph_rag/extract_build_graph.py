@@ -90,10 +90,10 @@ def extract_info_from_chunk(text_units, folder_path, model_path, llm):
                                     - "bo_luat_hinh_su_2015" thành "Bộ Luật Hình Sự 2015" 
                                     - "bo_luat_lao_dong_2019" thành "Bộ Luật Lao Động 2019"
                                     - "bo_luat_to_tung_hinh_su_2015" thành "Bộ Luật Tố Tụng Hình Sự 2015" 
-                                    - "nghi_dinh_04-2025-NQ-HĐTP_2025" thành "Nghị Định 04/2025/NQ-HĐTP"
-                                    - "nghi_dinh_144-2021-NĐ-CP_2021" thành "Nghị Định 144/2021/NĐ-CP"
+                                    - "nghi_quyet_04_2025_NQ_HDTP_2025" thành "Nghị Quyết 04/2025/NQ-HĐTP"
+                                    - "nghi_dinh_144_2021_ND_CP_2021" thành "Nghị Định 144/2021/NĐ-CP"
                                     - "phap_lenh_phong_chong_mai_dam_2003" thành "Pháp Lệnh Phòng Chống Mại Dâm"
-                                    - "thong_tu_64-2019-TT-BCA_2019" thành "Thông Tư 64/2019/TT-BCA"
+                                    - "thong_tu_64_2019_TT_BCA_2019" thành "Thông Tư 64/2019/TT-BCA"
                                 + Vậy nên, các thực thể nên có tên theo format như sau: "ĐIỀU 1 của Bộ Luật Hình Sự 2015", "Điều 82 của Bộ Luật Tố Tụng Hình Sự 2015"   
                         ## QUY TẮC TRÍCH XUẤT QUAN HỆ (RELATIONSHIPS)
                             Xác định các mối liên kết giữa các thực thể đã trích xuất. Cho phần này, hãy trả về:
