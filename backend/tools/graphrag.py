@@ -2,11 +2,9 @@ import argparse
 import asyncio
 import json
 import logging
-import multiprocessing
 import os
 import pickle
 import shutil
-import sys
 from pathlib import Path
 from threading import Lock
 import torch
@@ -15,12 +13,8 @@ import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
 from langchain.tools import tool
-from sklearn.metrics.pairwise import cosine_similarity
-
-from vllm import LLM, SamplingParams
 
 from backend.config.config import (
-    ARTIFACT_FOLDER,
     VLLM_MODEL,
     EMBEDDING_MODEL
 )
@@ -47,6 +41,32 @@ _lock = Lock()
 # Tự động lấy số GPU khả dụng
 num_gpus = torch.cuda.device_count()
 
+
+def _get_embedding_device_candidates() -> list[str]:
+    configured_device = os.getenv("EMBEDDING_DEVICE")
+    if configured_device:
+        return [configured_device]
+
+    if not torch.cuda.is_available() or num_gpus == 0:
+        return ["cpu"]
+
+    min_free_gb = float(os.getenv("EMBEDDING_MIN_FREE_GB", "4"))
+    min_free_bytes = min_free_gb * 1024**3
+    gpu_candidates: list[tuple[int, int]] = []
+
+    for gpu_idx in range(num_gpus):
+        try:
+            free_bytes, _ = torch.cuda.mem_get_info(gpu_idx)
+        except Exception:
+            continue
+        if free_bytes >= min_free_bytes:
+            gpu_candidates.append((gpu_idx, free_bytes))
+
+    gpu_candidates.sort(key=lambda item: item[1], reverse=True)
+    devices = [f"cuda:{gpu_idx}" for gpu_idx, _ in gpu_candidates]
+    devices.append("cpu")
+    return devices
+
 def get_llm():
     global _llm
     if _llm is None:
@@ -54,13 +74,15 @@ def get_llm():
             if _llm is None:
                 # 1. Ép sử dụng kiến trúc V0 (Vô cùng quan trọng)
                 os.environ["VLLM_USE_V1"] = "0"
-                # 2. Đảm bảo biến môi trường chỉ định rõ 2 GPU
-                os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+                # 2. Tôn trọng cấu hình môi trường hiện có
+                if not os.getenv("CUDA_VISIBLE_DEVICES") and num_gpus > 0:
+                    os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(str(i) for i in range(num_gpus))
                 from vllm import LLM
+                tensor_parallel_size = int(os.getenv("VLLM_TENSOR_PARALLEL_SIZE", "1"))
                 # 3. Khởi tạo vLLM trên GPU 0
                 _llm = LLM(
                     model=VLLM_MODEL,
-                    tensor_parallel_size=num_gpus if num_gpus else 1,
+                    tensor_parallel_size=tensor_parallel_size,
                     gpu_memory_utilization=0.8,
                     trust_remote_code=True,
                     distributed_executor_backend="mp",
@@ -71,7 +93,25 @@ def get_llm():
 def get_embedding_model():
     # Chỉ khởi tạo khi tiến trình chính (Main) gọi đến
     from sentence_transformers import SentenceTransformer
-    return SentenceTransformer(EMBEDDING_MODEL, device='cuda:1')
+
+    candidates = _get_embedding_device_candidates()
+    last_error = None
+
+    for device in candidates:
+        try:
+            print(f"Embedding device: {device}")
+            return SentenceTransformer(EMBEDDING_MODEL, device=device)
+        except RuntimeError as exc:
+            is_cuda_error = "CUDA" in str(exc).upper()
+            if device.startswith("cuda") and is_cuda_error:
+                print(f"{device} không đủ bộ nhớ hoặc đang bận, thử device khác...")
+                last_error = exc
+                continue
+            raise
+
+    if last_error is not None:
+        raise last_error
+    raise RuntimeError("Không thể khởi tạo embedding model trên bất kỳ device nào.")
 
 async def indexing(output_folder):
     llm = get_llm()
