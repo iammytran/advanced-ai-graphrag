@@ -48,7 +48,7 @@ Bạn PHẢI trả về JSON, không lời dẫn. Giới hạn số lượng m�
             "summary": "Ý chính 1 (Tối đa 5 ý quan trọng nhất)",
             "explanation": "Chi tiết ý 1 trong tối đa 2 câu văn."
         }}
-    ],
+    ]
 }}
 
 ### CẢNH BÁO KỸ THUẬT:
