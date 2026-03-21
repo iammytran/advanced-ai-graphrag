@@ -116,7 +116,6 @@ def get_embedding_model():
 async def indexing(output_folder):
     llm = get_llm()
 
-    new_folder_name = output_folder
     # 5. Chunking
     print("Đọc chunks từ file JSON...")
     final_df = None
@@ -131,22 +130,22 @@ async def indexing(output_folder):
     # Gọi hàm xử lý
     entities_df, relationships_df, claims_df = extract_info_from_chunk(
         text_units = final_df,    
-        folder_path = new_folder_name,
+        folder_path = output_folder,
         llm=llm
     )
 
     # 9. Lưu entities và relations sang pickle file
-    with open(f'{new_folder_name}/entities.pkl', 'wb') as f:
+    with open(f'{output_folder}/entities.pkl', 'wb') as f:
         pickle.dump(entities_df, f)
-    with open(f'{new_folder_name}/relationships.pkl', 'wb') as f:
+    with open(f'{output_folder}/relationships.pkl', 'wb') as f:
         pickle.dump(relationships_df, f)
-    with open(f'{new_folder_name}/claims.pkl', 'wb') as f:
+    with open(f'{output_folder}/claims.pkl', 'wb') as f:
         pickle.dump(claims_df, f)
     print("Lưu entities, relationships và claims thành công!")
 
     # 10. Encode các entities
     print("Embed các entities...")
-    entity_embeddings_folder_name = f"{new_folder_name}/entity_embeddings"
+    entity_embeddings_folder_name = f"{output_folder}/entity_embeddings"
     embed_model = get_embedding_model()
     entity_name_embeddings = embed_model.encode(entities_df['name'].tolist(), show_progress_bar=True, convert_to_numpy=True)
     # 4. Lưu lại
@@ -163,7 +162,7 @@ async def indexing(output_folder):
         "community_hierarchy": hierarchy # {cluster_id: parent_id}
     }
 
-    communities_file_name = f"{new_folder_name}/communities.json"
+    communities_file_name = f"{output_folder}/communities.json"
     with open(communities_file_name, 'w', encoding='utf-8') as f:
         json.dump(full_context, f, ensure_ascii=False, indent=4)
 
@@ -175,10 +174,11 @@ async def indexing(output_folder):
         relationships_df=relationships_df,
         claims_df=claims_df,
         model_name=VLLM_MODEL,
+        folder_for_debug=output_folder,
         llm=llm
     )
 
-    summaries_path = f"{new_folder_name}/community_summaries.json"
+    summaries_path = f"{output_folder}/community_summaries.json"
     with open(summaries_path, "w", encoding="utf-8") as f:
         json.dump(reports, f, ensure_ascii=False, indent=4)
     print("Extract community summaries thành công!")

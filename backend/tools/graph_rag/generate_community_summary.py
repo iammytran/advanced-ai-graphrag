@@ -13,36 +13,41 @@ import logging
 # Import prompt
 from backend.config.prompts.prompt_generate_summary import GENERATE_SUMMARY_PROMPT
 
-from backend.config.config import (
-    ARTIFACT_FOLDER,
-)
-
-# --- Cấu hình Logging ---
-# Tạo một logger riêng cho module này
 logger = logging.getLogger(__name__)
-logger.propagate = False
-logger.setLevel(logging.DEBUG)  # Bắt tất cả các level từ DEBUG trở lên
 
-# Tạo handler để ghi ra file
-# 'w' để ghi đè file mỗi lần chạy, 'a' để ghi tiếp
-file_handler = logging.FileHandler(f'{ARTIFACT_FOLDER}/debug_community_summary.log', mode='w', encoding='utf-8')
-file_handler.setLevel(logging.DEBUG)
 
-# Tạo handler để in ra console
-# console_handler = logging.StreamHandler()
-# console_handler.setLevel(logging.INFO) # Chỉ in ra console những thông tin INFO trở lên
+def _configure_summary_logger(folder_for_debug: str) -> logging.Logger:
+    """Configure module logger to write debug log into the given output folder."""
+    os.makedirs(folder_for_debug, exist_ok=True)
+    logger.propagate = False
+    logger.setLevel(logging.DEBUG)
 
-# Định dạng cho log message
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(formatter)
-# console_handler.setFormatter(formatter)
+    log_path = os.path.abspath(
+        os.path.join(folder_for_debug, "debug_community_summary.log")
+    )
 
-# Thêm handlers vào logger
-# Tránh thêm handler nhiều lần nếu module được import lại
-if not logger.handlers:
-    logger.addHandler(file_handler)
-    # logger.addHandler(console_handler)
-# --- Kết thúc cấu hình Logging ---
+    # Keep only the file handler for current output folder.
+    for handler in list(logger.handlers):
+        if isinstance(handler, logging.FileHandler):
+            current_path = os.path.abspath(getattr(handler, "baseFilename", ""))
+            if current_path != log_path:
+                logger.removeHandler(handler)
+                handler.close()
+
+    has_target_handler = any(
+        isinstance(handler, logging.FileHandler)
+        and os.path.abspath(getattr(handler, "baseFilename", "")) == log_path
+        for handler in logger.handlers
+    )
+
+    if not has_target_handler:
+        file_handler = logging.FileHandler(log_path, mode="w", encoding="utf-8")
+        file_handler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+
+    return logger
 
 
 def repair_truncated_json(json_str):
@@ -142,9 +147,11 @@ def generate_hierarchical_community_reports(
     claims_df: pd.DataFrame,
     model_name: str, # Tên model hoặc path
     llm,
+    folder_for_debug,
     max_new_tokens=15000,
     context_window=32768 # vLLM thường hỗ trợ context lớn hơn
 ):
+    logger = _configure_summary_logger(folder_for_debug)
     # DEBUG: In ra các cột của DataFrame để kiểm tra sự tồn tại của 'chunk_id'
     logger.info(f"Các cột trong entities_df: {entities_df.columns.tolist()}")
     logger.info(f"Các cột trong relationships_df: {relationships_df.columns.tolist()}")
