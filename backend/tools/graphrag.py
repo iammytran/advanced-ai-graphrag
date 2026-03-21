@@ -185,7 +185,12 @@ async def indexing(output_folder):
     print("Extract community summaries thành công!")
 
 
-def format_graphrag_documents(documents: list[str]) -> str:
+def format_graphrag_documents(documents) -> str:
+    if not documents:
+        return ""
+    if isinstance(documents, str):
+        return documents
+
     formatted_context = ""
     for i, doc in enumerate(documents):
         formatted_context += f"--- Tài liệu {i+1} ---\n{doc}\n\n"
@@ -193,7 +198,7 @@ def format_graphrag_documents(documents: list[str]) -> str:
 
 
 @tool
-def graphrag_retrieval(query: str, output_folder: str) -> list[str]:
+def graphrag_retrieval(query: str, output_folder: str) -> tuple[list[str], list]:
     """Retrieves information using the GraphRAG system."""
     result = {}
     with open(f'{ARTIFACT_FOLDER}/entities.pkl', 'rb') as f:
@@ -208,17 +213,20 @@ def graphrag_retrieval(query: str, output_folder: str) -> list[str]:
     print(f"Quyết định: {result['search_type'].upper()}")
     print(f"Lý do: {result['reason']}")
 
+    documents = []
+    source_chunk_ids = []
     if result['search_type'] == "local":
-        response = run_local_search(query, output_folder)
+        documents, source_chunk_ids = run_local_search(query, output_folder)
     else:
         summaries_path = f"{output_folder}/community_summaries.json"
-        response = run_global_search(
+        documents, source_chunk_ids = run_global_search(
             query,
             summaries_path,
             top_k_sources=10,
         )
 
-    return [str(doc) for doc in response]
+    normalized_documents = [str(doc) for doc in (documents or [])]
+    return normalized_documents, list(source_chunk_ids or [])
     
 def is_indexing_complete(folder: str) -> bool:
     """Kiểm tra xem các file artifacts cần thiết đã tồn tại hay chưa."""

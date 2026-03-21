@@ -13,18 +13,9 @@ logger = logging.getLogger(__name__)
 def classify_query_mode(query: str, entity_list: list[str] | None = None) -> str | None:
     """Rule-based classifier: return 'local' when strong local signals appear, else None."""
     # Rule 1: Nhận diện mẫu điều/khoản/điểm/văn bản luật kèm số hiệu
-    law_pattern = r'(Điều|Khoản|Điểm|Nghị\s*quyết|Luật)\s+\d+'
+    law_pattern = r'(Điều|Khoản)\s+\d+'
     if re.search(law_pattern, query, re.IGNORECASE):
         return "local"
-
-    # Rule 2: Nếu query chứa tên thực thể đã index thì ưu tiên local
-    if entity_list:
-        normalized_query = query.lower()
-        for entity in entity_list:
-            if not entity:
-                continue
-            if str(entity).lower() in normalized_query:
-                return "local"
 
     return None
 
