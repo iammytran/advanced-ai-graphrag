@@ -16,7 +16,8 @@ from langchain.tools import tool
 
 from backend.config.config import (
     VLLM_MODEL,
-    EMBEDDING_MODEL
+    EMBEDDING_MODEL,
+    ARTIFACT_FOLDER
 )
 
 from backend.tools.graph_rag.compute_leiden_communities import (
@@ -194,7 +195,14 @@ def format_graphrag_documents(documents: list[str]) -> str:
 @tool
 def graphrag_retrieval(query: str, output_folder: str) -> list[str]:
     """Retrieves information using the GraphRAG system."""
-    result = query_type_classifier(query)
+    result = {}
+    with open(f'{ARTIFACT_FOLDER}/entities.pkl', 'rb') as f:
+        entities_df = pickle.load(f)
+    if entities_df is not None:
+        entity_name_list = entities_df['name']
+        result = query_type_classifier(query, entity_name_list)
+    else:
+        result = query_type_classifier(query)
 
     print(f"Query: {query}")
     print(f"Quyết định: {result['search_type'].upper()}")

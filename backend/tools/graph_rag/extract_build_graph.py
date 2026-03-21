@@ -6,9 +6,7 @@ from vllm import SamplingParams
 # Import prompt từ file config
 from backend.config.prompts.prompt_extract_build_graph import EXTRACT_PROMPT
 from backend.config.config import (
-    ARTIFACT_FOLDER,
     VLLM_MODEL,
-    EMBEDDING_MODEL
 )
 
 # Định nghĩa danh sách các loại thực thể phù hợp với Luật
@@ -119,7 +117,7 @@ def extract_info_from_chunk(text_units, folder_path, llm):
         chunk_id = chunk_ids_for_prompts[i] # Get the corresponding chunk_id
         # print(f"\nCho dòng {i}, chunk_id is {chunk_id}")
         with open(f"{folder_path}/debug_extract_entities.log", "a", encoding="utf-8") as f:
-            f.print(f"\nCho dòng {i}, chunk_id is {chunk_id}")
+            f.write(f"\nCho dòng {i}, chunk_id is {chunk_id}")
         prompt_sent = output.prompt # Lấy lại prompt đã gửi cho vLLM
         
         # Parse kết quả
