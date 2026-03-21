@@ -13,6 +13,6 @@ HUGGINGFACE_MODEL = os.getenv(
     "HUGGINGFACE_MODEL", "unsloth/Qwen2.5-3B-Instruct-bnb-4bit"
 )
 EMBEDDING_MODEL = os.getenv("VN_EMBEDDING_MODEL", "AITeamVN/Vietnamese_Embedding")
-VLLM_MODEL = os.getenv("VLLM_MODEL", "Qwen/Qwen2.5-7B-Instruct")
+VLLM_MODEL = os.getenv("VLLM_MODEL", "Qwen/Qwen2.5-14B-Instruct")
 LANGSMITH_API_KEY = os.getenv("LANGSMITH_API_KEY")
 ARTIFACT_FOLDER = os.getenv("ARTIFACT_FOLDER", "artifacts")

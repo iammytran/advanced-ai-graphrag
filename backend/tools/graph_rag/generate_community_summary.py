@@ -13,32 +13,41 @@ import logging
 # Import prompt
 from backend.config.prompts.prompt_generate_summary import GENERATE_SUMMARY_PROMPT
 
-# --- Cấu hình Logging ---
-# Tạo một logger riêng cho module này
 logger = logging.getLogger(__name__)
-logger.propagate = False
-logger.setLevel(logging.DEBUG)  # Bắt tất cả các level từ DEBUG trở lên
 
-# Tạo handler để ghi ra file
-# 'w' để ghi đè file mỗi lần chạy, 'a' để ghi tiếp
-file_handler = logging.FileHandler('debug_community_summary.log', mode='w', encoding='utf-8')
-file_handler.setLevel(logging.DEBUG)
 
-# Tạo handler để in ra console
-# console_handler = logging.StreamHandler()
-# console_handler.setLevel(logging.INFO) # Chỉ in ra console những thông tin INFO trở lên
+def _configure_summary_logger(folder_for_debug: str) -> logging.Logger:
+    """Configure module logger to write debug log into the given output folder."""
+    os.makedirs(folder_for_debug, exist_ok=True)
+    logger.propagate = False
+    logger.setLevel(logging.DEBUG)
 
-# Định dạng cho log message
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(formatter)
-# console_handler.setFormatter(formatter)
+    log_path = os.path.abspath(
+        os.path.join(folder_for_debug, "debug_community_summary.log")
+    )
 
-# Thêm handlers vào logger
-# Tránh thêm handler nhiều lần nếu module được import lại
-if not logger.handlers:
-    logger.addHandler(file_handler)
-    # logger.addHandler(console_handler)
-# --- Kết thúc cấu hình Logging ---
+    # Keep only the file handler for current output folder.
+    for handler in list(logger.handlers):
+        if isinstance(handler, logging.FileHandler):
+            current_path = os.path.abspath(getattr(handler, "baseFilename", ""))
+            if current_path != log_path:
+                logger.removeHandler(handler)
+                handler.close()
+
+    has_target_handler = any(
+        isinstance(handler, logging.FileHandler)
+        and os.path.abspath(getattr(handler, "baseFilename", "")) == log_path
+        for handler in logger.handlers
+    )
+
+    if not has_target_handler:
+        file_handler = logging.FileHandler(log_path, mode="w", encoding="utf-8")
+        file_handler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+
+    return logger
 
 
 def repair_truncated_json(json_str):
@@ -63,6 +72,73 @@ def repair_truncated_json(json_str):
             
     return json_str
 
+
+def _build_capped_prompt(tokenizer, input_text: str, context_window: int) -> str:
+    """Build chat prompt and cap it to leave space for model output."""
+    safety_margin = int(os.getenv("SUMMARY_PROMPT_SAFETY_MARGIN", "256"))
+    reserved_output_tokens = int(os.getenv("SUMMARY_RESERVED_OUTPUT_TOKENS", "2048"))
+    max_prompt_tokens = max(1024, context_window - safety_margin)
+
+    messages = [
+        {"role": "system", "content": GENERATE_SUMMARY_PROMPT},
+        {"role": "user", "content": f"Viết báo cáo cho cụm thực thể sau đây.\n{input_text}"},
+    ]
+    full_prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    prompt_tokens = len(tokenizer.encode(full_prompt))
+
+    while prompt_tokens > max_prompt_tokens and len(input_text) > 0:
+        trim_ratio = max_prompt_tokens / prompt_tokens
+        new_len = int(len(input_text) * max(0.6, min(0.95, trim_ratio)))
+        if new_len >= len(input_text):
+            new_len = len(input_text) - 1
+        input_text = input_text[:max(0, new_len)]
+        messages[1]["content"] = f"Viết báo cáo cho cụm thực thể sau đây.\n{input_text}"
+        full_prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        prompt_tokens = len(tokenizer.encode(full_prompt))
+
+    if prompt_tokens > max_prompt_tokens:
+        logger.warning(
+            f"⚠️ Prompt vẫn dài ({prompt_tokens}), ép cắt token còn {max_prompt_tokens}."
+        )
+        prompt_ids = tokenizer.encode(full_prompt)[:max_prompt_tokens]
+        full_prompt = tokenizer.decode(prompt_ids, skip_special_tokens=True)
+
+    return full_prompt
+
+
+def _continue_if_truncated(llm, sampling_params, raw_output: str, finish_reason: str | None) -> str:
+    """If model stopped due to token limit, ask it to continue a few rounds."""
+    if finish_reason != "length":
+        return raw_output
+
+    if os.getenv("SUMMARY_CONTINUE_ON_TRUNCATION", "1") != "1":
+        return raw_output
+
+    max_rounds = int(os.getenv("SUMMARY_MAX_CONTINUATION_ROUNDS", "2"))
+    tail_chars = int(os.getenv("SUMMARY_CONTINUATION_TAIL_CHARS", "5000"))
+    combined = raw_output
+
+    for round_idx in range(max_rounds):
+        tail = combined[-tail_chars:]
+        continuation_prompt = (
+            "Bạn đang viết dở báo cáo JSON vì hết token. "
+            "Hãy tiếp tục NGAY SAU phần cuối dưới đây, không lặp lại nội dung đã viết, "
+            "không bắt đầu lại từ đầu.\n\n"
+            f"PHẦN CUỐI HIỆN CÓ:\n{tail}\n\n"
+            "Hãy tiếp tục chính xác phần còn thiếu:"
+        )
+        continuation_output = llm.generate([continuation_prompt], sampling_params)[0].outputs[0]
+        continuation_text = continuation_output.text
+        if not continuation_text.strip():
+            break
+        combined += continuation_text
+        next_finish_reason = getattr(continuation_output, "finish_reason", None)
+        if next_finish_reason != "length":
+            break
+        logger.warning(f"⚠️ Summary vẫn bị cắt, tiếp tục round {round_idx + 1}/{max_rounds}")
+
+    return combined
+
 def generate_hierarchical_community_reports(
     community_results: dict,
     community_hierarchy: dict, 
@@ -70,11 +146,12 @@ def generate_hierarchical_community_reports(
     relationships_df: pd.DataFrame,
     claims_df: pd.DataFrame,
     model_name: str, # Tên model hoặc path
-    folder_for_debug: str,
     llm,
+    folder_for_debug,
     max_new_tokens=15000,
     context_window=32768 # vLLM thường hỗ trợ context lớn hơn
 ):
+    logger = _configure_summary_logger(folder_for_debug)
     # DEBUG: In ra các cột của DataFrame để kiểm tra sự tồn tại của 'chunk_id'
     logger.info(f"Các cột trong entities_df: {entities_df.columns.tolist()}")
     logger.info(f"Các cột trong relationships_df: {relationships_df.columns.tolist()}")
@@ -122,22 +199,34 @@ def generate_hierarchical_community_reports(
                 if current_level == max(sorted_levels):
                     # Level Lá: Lấy chunk_id trực tiếp từ các DataFrame
                     logger.debug(f"\n[Cụm lá ID: {cid} (Level {current_level})]")
-                    relevant_entities = entities_df[entities_df['name'].isin(nodes)]
-                    input_text = "THỰC THỂ (Ưu tiên theo độ quan trọng):\n"
-                    input_text += "\n".join([f"ID:{idx}, {r['name']}: {r['description']}" for idx, r in relevant_entities.iterrows()])
-                    
-                    relevant_rel = relationships_df[relationships_df['source'].isin(nodes) | relationships_df['target'].isin(nodes)]
-                    sort_col = 'rank' if 'rank' in relevant_rel.columns else 'weight'
-                    relevant_rel = relevant_rel.sort_values(by=sort_col, ascending=False)
-                    
-                    input_text += "\n\nQUAN HỆ:\n"
-                    input_text += "\n".join([f"ID:{idx}, {r['source']} -> {r['target']}: {r['description']}" for idx, r in relevant_rel.iterrows()])
 
+                    input_text = ""
                     relevant_claims = claims_df[
                         claims_df['subject'].isin(nodes) | 
                         claims_df['object'].isin(nodes)
                     ]
 
+                    if not relevant_claims.empty:
+                        input_text += "\n\n### 1. CHI TIẾT QUY ĐỊNH:\n"
+                        claim_entries = []
+                        for idx, r in relevant_claims.iterrows():
+                            entry = (f"ID:C{idx}, Chủ thể: {r['subject']}, Loại: {r['claim_type']}, "
+                                     f"   - Nội dung: {r['description']}\n"
+                                     f"   - Trích dẫn gốc: {r['source_text']}")
+                            claim_entries.append(entry)
+                        input_text += "\n".join(claim_entries)
+
+                    relevant_rel = relationships_df[relationships_df['source'].isin(nodes) | relationships_df['target'].isin(nodes)]
+                    sort_col = 'rank' if 'rank' in relevant_rel.columns else 'weight'
+                    relevant_rel = relevant_rel.sort_values(by=sort_col, ascending=False)
+                    
+                    input_text = "\n\n ### 2. QUAN HỆ:\n"
+                    input_text += "\n".join([f"ID:{idx}, {r['source']} có quan hệ với {r['target']} với mô tả: {r['description']}" for idx, r in relevant_rel.iterrows()])
+
+                    relevant_entities = entities_df[entities_df['name'].isin(nodes)]
+                    input_text += "\n\n### 3. THỰC THỂ:\n"
+                    input_text += "\n".join([f"ID:{idx}, {r['name']} với mô tả: {r['description']}" for idx, r in relevant_entities.iterrows()])
+                    
                     # Thu thập chunk_ids một cách an toàn
                     if 'chunk_id' in relevant_entities.columns:
                         entity_chunks = relevant_entities['chunk_id'].dropna().unique()
@@ -153,17 +242,6 @@ def generate_hierarchical_community_reports(
                         logger.debug(f"  -> Tìm thấy {len(claim_chunks)} chunk_ids từ Claims.")
                     
                     logger.debug(f"  -> Tổng số chunk_ids cho cụm lá {cid}: {len(source_chunk_ids)}. IDs: {source_chunk_ids}")
-
-                    if not relevant_claims.empty:
-                        input_text += "\n\n### 3. CHI TIẾT QUY ĐỊNH & CHẾ TÀI (CLAIMS):\n"
-                        claim_entries = []
-                        for idx, r in relevant_claims.iterrows():
-                            entry = (f"ID:C{idx}, Chủ thể: {r['subject']}, Loại: {r['claim_type']}, "
-                                     f"Trạng thái: {r['status']}\n"
-                                     f"   - Nội dung: {r['description']}\n"
-                                     f"   - Trích dẫn gốc: {r['source_text']}")
-                            claim_entries.append(entry)
-                        input_text += "\n".join(claim_entries)
                 else:
                     # Level Cha: Tổng hợp từ Summary và chunk_ids của con
                     logger.debug(f"\n[Cụm cha ID: {cid} (Level {current_level})]")
@@ -190,21 +268,7 @@ def generate_hierarchical_community_reports(
                     input_text = f"BÁO CÁO TỔNG HỢP CHO CỤM CHA ID: {cid}\n\n"
                     input_text += "DỮ LIỆU TỪ CÁC CỤM CON:\n" + "\n---\n".join(sub_reports_content)
 
-                # Kiểm soát Context Window
-                safe_input_limit = 28000 
-                tokens = tokenizer.encode(input_text)
-
-                if len(tokens) > safe_input_limit:
-                    full_prompt = tokenizer.decode(tokens[:safe_input_limit])
-                    logger.warning(f"⚠️ Đã cắt bớt prompt cho cụm vì quá dài ({len(tokens)} tokens)")
-
-
-                messages = [
-                    {"role": "system", "content": GENERATE_SUMMARY_PROMPT},
-                    {"role": "user", "content": f"Viết báo cáo cho cụm thực thể sau đây. \n{input_text}"}
-                ]
-                
-                full_prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+                full_prompt = _build_capped_prompt(tokenizer, input_text, context_window)
                 prompts_to_generate.append(full_prompt)
                 batch_cids.append(cid)
                 batch_nodes.append(nodes)
@@ -217,7 +281,10 @@ def generate_hierarchical_community_reports(
                 cid = batch_cids[idx]
                 nodes = batch_nodes[idx]
                 final_source_chunk_ids = batch_chunk_ids[idx] # Lấy chunk_ids cho mục này
-                raw_output = output.outputs[0].text
+                first_output = output.outputs[0]
+                raw_output = first_output.text
+                finish_reason = getattr(first_output, "finish_reason", None)
+                raw_output = _continue_if_truncated(llm, sampling_params, raw_output, finish_reason)
                 
                 # --- XỬ LÝ JSON ---
                 try:

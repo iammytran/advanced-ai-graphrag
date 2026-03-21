@@ -1,4 +1,5 @@
 from typing import Annotated, TypedDict
+import json
 
 from langchain.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.messages import BaseMessage
@@ -75,6 +76,59 @@ class Chatbot:
         
         self.model_with_tools = self.llm.bind_tools(tools)
 
+    @staticmethod
+    def _normalize_content(content) -> str:
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            chunks = []
+            for item in content:
+                if isinstance(item, dict):
+                    text = item.get("text") or item.get("content")
+                    if text is not None:
+                        chunks.append(str(text))
+                    else:
+                        chunks.append(json.dumps(item, ensure_ascii=False))
+                else:
+                    chunks.append(str(item))
+            return "\n".join(chunks)
+        if isinstance(content, dict):
+            return json.dumps(content, ensure_ascii=False, indent=2)
+        return str(content)
+
+    @staticmethod
+    def _serialize_message(message: BaseMessage) -> dict:
+        payload = {
+            "type": message.__class__.__name__,
+            "content": Chatbot._normalize_content(message.content),
+        }
+        tool_calls = getattr(message, "tool_calls", None)
+        if tool_calls:
+            payload["tool_calls"] = tool_calls
+        tool_call_id = getattr(message, "tool_call_id", None)
+        if tool_call_id:
+            payload["tool_call_id"] = tool_call_id
+        name = getattr(message, "name", None)
+        if name:
+            payload["name"] = name
+        return payload
+
+    def _print_prompt_messages(self, messages: list[BaseMessage], stage: str) -> None:
+        print(f"\n=== DEBUG LLM PROMPT PAYLOAD | {stage} | total={len(messages)} ===")
+        for idx, msg in enumerate(messages, start=1):
+            payload = self._serialize_message(msg)
+            print(f"\n--- Message #{idx} | {payload['type']} ---")
+            if payload.get("name"):
+                print(f"name: {payload['name']}")
+            if payload.get("tool_call_id"):
+                print(f"tool_call_id: {payload['tool_call_id']}")
+            if payload.get("tool_calls"):
+                print("tool_calls:")
+                print(json.dumps(payload["tool_calls"], ensure_ascii=False, indent=2))
+            print("content:")
+            print(payload["content"])
+        print("\n=== END DEBUG LLM PROMPT PAYLOAD ===\n")
+
     # GRAPH NODES
     ## LOGIC NODE
     def LogicNode(self, state: State) -> State:
@@ -91,6 +145,7 @@ class Chatbot:
         if not isinstance(messages[0], SystemMessage):
             messages = [SystemMessage(content=AGENT_SYSTEM_PROMPT)] + messages
 
+        # self._print_prompt_messages(messages, "before_first_invoke")
         response = self.model_with_tools.invoke(messages)
 
         if hasattr(response, "tool_calls") and response.tool_calls:
@@ -137,6 +192,7 @@ class Chatbot:
                     )
                     state["messages"].append(tool_message)
 
+            # self._print_prompt_messages(state["messages"], "before_final_invoke")
             final_response = self.model_with_tools.invoke(state["messages"])
             state["messages"].append(final_response)
         else:

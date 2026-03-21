@@ -341,7 +341,7 @@ class AdvancedLocalSearch:
             logger.warning("Lỗi trích xuất thực thể: %s", e)
             return []
 
-    def find_best_matches(self, extracted_entities: List[str], top_k: int = 2) -> pd.DataFrame:
+    def find_best_matches(self, extracted_entities: List[str], top_k: int = 5) -> pd.DataFrame:
         """Bước 2 & 3: Encode thực thể trích xuất và so sánh similarity với entity_df để lấy top_k tổng thể."""
         if not extracted_entities or self.entity_name_embeddings is None:
             return pd.DataFrame()

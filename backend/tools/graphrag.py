@@ -2,11 +2,9 @@ import argparse
 import asyncio
 import json
 import logging
-import multiprocessing
 import os
 import pickle
 import shutil
-import sys
 from pathlib import Path
 from threading import Lock
 import torch
@@ -15,14 +13,11 @@ import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
 from langchain.tools import tool
-from sklearn.metrics.pairwise import cosine_similarity
-
-from vllm import LLM, SamplingParams
 
 from backend.config.config import (
-    ARTIFACT_FOLDER,
     VLLM_MODEL,
-    EMBEDDING_MODEL
+    EMBEDDING_MODEL,
+    ARTIFACT_FOLDER
 )
 
 from backend.tools.graph_rag.compute_leiden_communities import (
@@ -47,6 +42,32 @@ _lock = Lock()
 # Tự động lấy số GPU khả dụng
 num_gpus = torch.cuda.device_count()
 
+
+def _get_embedding_device_candidates() -> list[str]:
+    configured_device = os.getenv("EMBEDDING_DEVICE")
+    if configured_device:
+        return [configured_device]
+
+    if not torch.cuda.is_available() or num_gpus == 0:
+        return ["cpu"]
+
+    min_free_gb = float(os.getenv("EMBEDDING_MIN_FREE_GB", "4"))
+    min_free_bytes = min_free_gb * 1024**3
+    gpu_candidates: list[tuple[int, int]] = []
+
+    for gpu_idx in range(num_gpus):
+        try:
+            free_bytes, _ = torch.cuda.mem_get_info(gpu_idx)
+        except Exception:
+            continue
+        if free_bytes >= min_free_bytes:
+            gpu_candidates.append((gpu_idx, free_bytes))
+
+    gpu_candidates.sort(key=lambda item: item[1], reverse=True)
+    devices = [f"cuda:{gpu_idx}" for gpu_idx, _ in gpu_candidates]
+    devices.append("cpu")
+    return devices
+
 def get_llm():
     global _llm
     if _llm is None:
@@ -54,13 +75,15 @@ def get_llm():
             if _llm is None:
                 # 1. Ép sử dụng kiến trúc V0 (Vô cùng quan trọng)
                 os.environ["VLLM_USE_V1"] = "0"
-                # 2. Đảm bảo biến môi trường chỉ định rõ 2 GPU
-                os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+                # 2. Tôn trọng cấu hình môi trường hiện có
+                if not os.getenv("CUDA_VISIBLE_DEVICES") and num_gpus > 0:
+                    os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(str(i) for i in range(num_gpus))
                 from vllm import LLM
+                tensor_parallel_size = int(os.getenv("VLLM_TENSOR_PARALLEL_SIZE", "1"))
                 # 3. Khởi tạo vLLM trên GPU 0
                 _llm = LLM(
                     model=VLLM_MODEL,
-                    tensor_parallel_size=num_gpus if num_gpus else 1,
+                    tensor_parallel_size=tensor_parallel_size,
                     gpu_memory_utilization=0.8,
                     trust_remote_code=True,
                     distributed_executor_backend="mp",
@@ -71,12 +94,29 @@ def get_llm():
 def get_embedding_model():
     # Chỉ khởi tạo khi tiến trình chính (Main) gọi đến
     from sentence_transformers import SentenceTransformer
-    return SentenceTransformer(EMBEDDING_MODEL, device='cuda:1')
+
+    candidates = _get_embedding_device_candidates()
+    last_error = None
+
+    for device in candidates:
+        try:
+            print(f"Embedding device: {device}")
+            return SentenceTransformer(EMBEDDING_MODEL, device=device)
+        except RuntimeError as exc:
+            is_cuda_error = "CUDA" in str(exc).upper()
+            if device.startswith("cuda") and is_cuda_error:
+                print(f"{device} không đủ bộ nhớ hoặc đang bận, thử device khác...")
+                last_error = exc
+                continue
+            raise
+
+    if last_error is not None:
+        raise last_error
+    raise RuntimeError("Không thể khởi tạo embedding model trên bất kỳ device nào.")
 
 async def indexing(output_folder):
     llm = get_llm()
 
-    new_folder_name = output_folder
     # 5. Chunking
     print("Đọc chunks từ file JSON...")
     final_df = None
@@ -91,22 +131,22 @@ async def indexing(output_folder):
     # Gọi hàm xử lý
     entities_df, relationships_df, claims_df = extract_info_from_chunk(
         text_units = final_df,    
-        folder_path = new_folder_name,
+        folder_path = output_folder,
         llm=llm
     )
 
     # 9. Lưu entities và relations sang pickle file
-    with open(f'{new_folder_name}/entities.pkl', 'wb') as f:
+    with open(f'{output_folder}/entities.pkl', 'wb') as f:
         pickle.dump(entities_df, f)
-    with open(f'{new_folder_name}/relationships.pkl', 'wb') as f:
+    with open(f'{output_folder}/relationships.pkl', 'wb') as f:
         pickle.dump(relationships_df, f)
-    with open(f'{new_folder_name}/claims.pkl', 'wb') as f:
+    with open(f'{output_folder}/claims.pkl', 'wb') as f:
         pickle.dump(claims_df, f)
     print("Lưu entities, relationships và claims thành công!")
 
     # 10. Encode các entities
     print("Embed các entities...")
-    entity_embeddings_folder_name = f"{new_folder_name}/entity_embeddings"
+    entity_embeddings_folder_name = f"{output_folder}/entity_embeddings"
     embed_model = get_embedding_model()
     entity_name_embeddings = embed_model.encode(entities_df['name'].tolist(), show_progress_bar=True, convert_to_numpy=True)
     # 4. Lưu lại
@@ -123,7 +163,7 @@ async def indexing(output_folder):
         "community_hierarchy": hierarchy # {cluster_id: parent_id}
     }
 
-    communities_file_name = f"{new_folder_name}/communities.json"
+    communities_file_name = f"{output_folder}/communities.json"
     with open(communities_file_name, 'w', encoding='utf-8') as f:
         json.dump(full_context, f, ensure_ascii=False, indent=4)
 
@@ -135,17 +175,22 @@ async def indexing(output_folder):
         relationships_df=relationships_df,
         claims_df=claims_df,
         model_name=VLLM_MODEL,
-        folder_for_debug=new_folder_name,
+        folder_for_debug=output_folder,
         llm=llm
     )
 
-    summaries_path = f"{new_folder_name}/community_summaries.json"
+    summaries_path = f"{output_folder}/community_summaries.json"
     with open(summaries_path, "w", encoding="utf-8") as f:
         json.dump(reports, f, ensure_ascii=False, indent=4)
     print("Extract community summaries thành công!")
 
 
-def format_graphrag_documents(documents: list[str]) -> str:
+def format_graphrag_documents(documents) -> str:
+    if not documents:
+        return ""
+    if isinstance(documents, str):
+        return documents
+
     formatted_context = ""
     for i, doc in enumerate(documents):
         formatted_context += f"--- Tài liệu {i+1} ---\n{doc}\n\n"
@@ -153,25 +198,35 @@ def format_graphrag_documents(documents: list[str]) -> str:
 
 
 @tool
-def graphrag_retrieval(query: str, output_folder: str) -> list[str]:
+def graphrag_retrieval(query: str, output_folder: str) -> tuple[list[str], list]:
     """Retrieves information using the GraphRAG system."""
-    result = query_type_classifier(query)
+    result = {}
+    with open(f'{ARTIFACT_FOLDER}/entities.pkl', 'rb') as f:
+        entities_df = pickle.load(f)
+    if entities_df is not None:
+        entity_name_list = entities_df['name']
+        result = query_type_classifier(query, entity_name_list)
+    else:
+        result = query_type_classifier(query)
 
     print(f"Query: {query}")
     print(f"Quyết định: {result['search_type'].upper()}")
     print(f"Lý do: {result['reason']}")
 
+    documents = []
+    source_chunk_ids = []
     if result['search_type'] == "local":
-        response = run_local_search(query, output_folder)
+        documents, source_chunk_ids = run_local_search(query, output_folder)
     else:
         summaries_path = f"{output_folder}/community_summaries.json"
-        response = run_global_search(
+        documents, source_chunk_ids = run_global_search(
             query,
             summaries_path,
             top_k_sources=10,
         )
 
-    return [str(doc) for doc in response]
+    normalized_documents = [str(doc) for doc in (documents or [])]
+    return normalized_documents, list(source_chunk_ids or [])
     
 def is_indexing_complete(folder: str) -> bool:
     """Kiểm tra xem các file artifacts cần thiết đã tồn tại hay chưa."""
