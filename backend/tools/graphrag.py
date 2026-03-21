@@ -175,7 +175,6 @@ async def indexing(output_folder):
         relationships_df=relationships_df,
         claims_df=claims_df,
         model_name=VLLM_MODEL,
-        folder_for_debug=new_folder_name,
         llm=llm
     )
 
