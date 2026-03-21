@@ -2,6 +2,7 @@ import importlib
 import json
 import logging
 import os
+import re
 
 # Import prompt
 from backend.config.prompts.prompt_query_classifier import QUERY_CLASSIFIER_PROMPT
@@ -9,7 +10,32 @@ from backend.config.prompts.prompt_query_classifier import QUERY_CLASSIFIER_PROM
 logger = logging.getLogger(__name__)
 
 
-def query_type_classifier(query: str, llm=None, provider: str = None, get_llm_func=None):
+def classify_query_mode(query: str, entity_list: list[str] | None = None) -> str | None:
+    """Rule-based classifier: return 'local' when strong local signals appear, else None."""
+    # Rule 1: Nhận diện mẫu điều/khoản/điểm/văn bản luật kèm số hiệu
+    law_pattern = r'(Điều|Khoản|Điểm|Nghị\s*quyết|Luật)\s+\d+'
+    if re.search(law_pattern, query, re.IGNORECASE):
+        return "local"
+
+    # Rule 2: Nếu query chứa tên thực thể đã index thì ưu tiên local
+    if entity_list:
+        normalized_query = query.lower()
+        for entity in entity_list:
+            if not entity:
+                continue
+            if str(entity).lower() in normalized_query:
+                return "local"
+
+    return None
+
+
+def query_type_classifier(
+    query: str,
+    entity_list: list[str] | None = None,
+    llm=None,
+    provider: str = None,
+    get_llm_func=None,
+):
     """
     Phân loại query type cho GraphRAG với 4 lựa chọn provider:
     - vllm (mặc định, tương thích ngược)
@@ -23,6 +49,14 @@ def query_type_classifier(query: str, llm=None, provider: str = None, get_llm_fu
     3) LLM_PROVIDER
     4) "vllm"
     """
+    # Ưu tiên lớp luật nhanh trước khi gọi LLM để giảm chi phí và độ trễ.
+    rule_based_mode = classify_query_mode(query=query, entity_list=entity_list)
+    if rule_based_mode is not None:
+        return {
+            "search_type": rule_based_mode,
+            "reason": "được phân loại theo luật (pattern điều luật hoặc khớp thực thể)",
+        }
+
     system_prompt = QUERY_CLASSIFIER_PROMPT
     user_prompt = f'Câu hỏi người dùng: "{query}"'
 
