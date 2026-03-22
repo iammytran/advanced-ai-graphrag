@@ -33,9 +33,6 @@ Lưu ý: Có thể một số phần vắng mặt hoặc ít dữ liệu. Bạn 
 3. KHÔNG BỊA ĐẶT: Chỉ sử dụng dữ liệu được cung cấp. 
 4. KIỂM SOÁT ĐỘ DÀI: Để tránh lỗi hệ thống, bạn PHẢI viết cực kỳ súc tích, dưới 3000 từ, nhưng vẫn nên đảm bảo đủ ý.
 
-### QUY TẮC TRÍCH DẪN
-- Mọi ý phải kèm: "[Data: Thực thể (id1, id2); Quan hệ (id3)]". Tối đa 3 ID mỗi lần trích dẫn.
-
 ### ĐỊNH DẠNG ĐẦU RA (JSON DUY NHẤT)
 Bạn PHẢI trả về JSON, không lời dẫn. Giới hạn số lượng mục như sau:
 {{

@@ -200,7 +200,7 @@ num_gpus = torch.cuda.device_count()
 if __name__ == '__main__':
     
     final_df = None
-    output_folder = "artifacts_v7"
+    output_folder = "artifacts"
     try:
         final_df = pd.read_json("dataset/chunking_result.json", orient="records")
     except FileNotFoundError:
