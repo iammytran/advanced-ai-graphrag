@@ -16,8 +16,8 @@ from langchain.tools import tool
 
 from backend.config.config import (
     VLLM_MODEL,
-    EMBEDDING_MODEL,
-    ARTIFACT_FOLDER
+    VN_EMBEDDING_MODEL,
+    ARTIFACT_FOLDER,
 )
 
 from backend.tools.graph_rag.compute_leiden_communities import (
@@ -101,7 +101,7 @@ def get_embedding_model():
     for device in candidates:
         try:
             print(f"Embedding device: {device}")
-            return SentenceTransformer(EMBEDDING_MODEL, device=device)
+            return SentenceTransformer(VN_EMBEDDING_MODEL, device=device)
         except RuntimeError as exc:
             is_cuda_error = "CUDA" in str(exc).upper()
             if device.startswith("cuda") and is_cuda_error:
@@ -221,8 +221,7 @@ def graphrag_retrieval(query: str, output_folder: str) -> tuple[list[str], list]
         summaries_path = f"{output_folder}/community_summaries.json"
         documents, source_chunk_ids = run_global_search(
             query,
-            summaries_path,
-            top_k_sources=10,
+            summaries_path
         )
 
     normalized_documents = [str(doc) for doc in (documents or [])]

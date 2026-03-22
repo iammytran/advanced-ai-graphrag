@@ -77,7 +77,7 @@ def _build_capped_prompt(tokenizer, input_text: str, context_window: int) -> str
     """Build chat prompt and cap it to leave space for model output."""
     safety_margin = int(os.getenv("SUMMARY_PROMPT_SAFETY_MARGIN", "256"))
     reserved_output_tokens = int(os.getenv("SUMMARY_RESERVED_OUTPUT_TOKENS", "2048"))
-    max_prompt_tokens = max(1024, context_window - safety_margin)
+    max_prompt_tokens = max(1024, context_window - reserved_output_tokens - safety_margin)
 
     messages = [
         {"role": "system", "content": GENERATE_SUMMARY_PROMPT},
@@ -220,7 +220,7 @@ def generate_hierarchical_community_reports(
                     sort_col = 'rank' if 'rank' in relevant_rel.columns else 'weight'
                     relevant_rel = relevant_rel.sort_values(by=sort_col, ascending=False)
                     
-                    input_text = "\n\n ### 2. QUAN HỆ:\n"
+                    input_text += "\n\n ### 2. QUAN HỆ:\n"
                     input_text += "\n".join([f"ID:{idx}, {r['source']} có quan hệ với {r['target']} với mô tả: {r['description']}" for idx, r in relevant_rel.iterrows()])
 
                     relevant_entities = entities_df[entities_df['name'].isin(nodes)]

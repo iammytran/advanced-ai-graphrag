@@ -16,7 +16,8 @@ from transformers import AutoTokenizer
 
 from backend.config.config import (
     ARTIFACT_FOLDER,
-    EMBEDDING_MODEL
+    VN_EMBEDDING_MODEL,
+    TOP_K_RETRIEVED
 )
 from backend.config.prompts.prompt_local_query import ENTITY_EXTRACTION_PROMPT
 
@@ -341,7 +342,7 @@ class AdvancedLocalSearch:
             logger.warning("Lỗi trích xuất thực thể: %s", e)
             return []
 
-    def find_best_matches(self, extracted_entities: List[str], top_k: int = 5) -> pd.DataFrame:
+    def find_best_matches(self, extracted_entities: List[str], top_k: int = TOP_K_RETRIEVED) -> pd.DataFrame:
         """Bước 2 & 3: Encode thực thể trích xuất và so sánh similarity với entity_df để lấy top_k tổng thể."""
         if not extracted_entities or self.entity_name_embeddings is None:
             return pd.DataFrame()
@@ -464,7 +465,7 @@ def run_local_search(query: str, artifacts_path: str, llm=None, provider: str = 
     """
     # Khởi tạo các model names
     model_name = "Qwen/Qwen2.5-7B-Instruct"
-    embedding_model = EMBEDDING_MODEL
+    embedding_model = VN_EMBEDDING_MODEL
 
     # Khởi tạo searcher
     search_engine = AdvancedLocalSearch(
