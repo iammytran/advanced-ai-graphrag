@@ -1,60 +1,66 @@
-# advanced-ai-graphrag
-Final Project for class Advanced AI - Class 35(2026)
+# Advanced AI: GraphRAG Legal Project
+**Final Project | Class 35 (2026) - Advanced AI**
 
-## General Technical Introduction
-To run this project, indexing must be done first, as that will create materials needed for retrieving steps. Indexing is the offline step, whereas retrieving is the online.
-For this project, you can run these things:
-- Run Indexing
-- Run Indexing + Retrieving
-- Run Retrieving
-- Run Evaluate GraphRAG
-- 
-This document is the guideline to run 
-## Setup Environments
-**1. Install Dependencies**: Install the necessary requirements:
+This project implements a **GraphRAG** (Graph Retrieval-Augmented Generation) system. The workflow is divided into two main phases: **Indexing** (offline knowledge graph construction) and **Retrieving** (online query processing).
+
+---
+
+## 🛠 1. Environment Setup
+
+Ensure you have `conda` and `uv` installed for faster dependency management.
+
+### Install Dependencies
 ```bash
+# Create and activate environment
 conda create -n graphrag python=3.10 -y
 conda activate graphrag
-```
-```bash
+
+# Install requirements using uv
 pip install uv
 uv pip install -r ./backend/requirement.txt
 ```
-**2. Configuration**: Create a `.env` file with the required environment variables.
-This is needed for step 
+**2. Configuration**: 
+1. Create a .env file in the root directory and add your required environment variables (API keys, endpoints, etc.).
+2. Model Settings: By default, the system uses Qwen/Qwen2.5-7B-Instruct via vLLM. You can modify this in config.py.
 
-## Run Guide for Each Component
-**Run Retrieving**: 
-Since Indexing has already been done, you can start  
-If you want to run test retrieve for a specific query, execute the command below using the following command:
+## Execution Guide
+**A. Run Retrieving**: 
+If you already have indexing outputs in the artifacts folder, you can run the chatbot immediately:
+1. Open backend/src/chatbot.py.
+2. Locate the main() function and input your question.
+3. Execute the following command:
 ```bash
 python -m backend.src.chatbot
 ```
-Please come to main() of file chatbot.py and input your question.
-Also note that, currently 
 
-### **Run Indexing**: Run the following command to create chunks, extract Entities & Relationships & Claims, create graph, perform community detection, and create community summaries:
-Indexing has been done by default as we set up this project. You can check the outputs of the Indexing in folder artifacts. Folder artifacts is the default folder for storing Indexing outputs.
+Also note that, currently we use the 
 
-However, if you want to re-run indexing (e.g. you have changed Indexing flow, new config), follow the commands below under these scenarios:
-1. If you want all of the new indexing's outputs to be replaced, run:
+### **B. Run Indexing**: 
+The indexing process creates chunks, extracts Entities, Relationships, and Claims, performs community detection, and generates community summaries.
+
+By default, indexing outputs are stored in the artifacts/ folder. You can re-run the process using the following scenarios:
+1. Force re-index from scratch (Overwrite default):
 ```bash
 python -m backend.tools.graphrag --force-index-from-scratch
 ```
-Without tag "--force-index-from-scratch", since folder artifacts has enough materials needed for retrieving steps then Indexing step will be skipped.
 
-2. If you want the Indexing's output to be in a new folder aside from artifacts (e.g. artifacts_v2), run:
+2. Index to a specific folder:
 ```bash
 python -m backend.tools.graphrag --output-folder artifacts_v2
 ```
-Note that if folder artifacts_v2 has already existed and has enough materials needed for retrieving steps then Indexing step will be skipped.
-Which also means if folder artifacts_v2 has already existed and you want to replace its contents, use tag "--force-index-from-scratch"
+hoặc 
 ```bash
-python -m backend.tools.graphrag --output-folder artifacts_v2 --force-index-from-scratch
+python -m backend.tools.graphrag -o artifacts_v2
 ```
 
-3. Note:
-Currently, indexing is done mainly by using vllm of model Qwen/Qwen2.5-7B-Instruct. To change it, please go to config.py file.
+3. Overwrite a specific folder:
+```bash
+python -m backend.tools.graphrag -o artifacts_v2 --force-index-from-scratch
+```
+Note: The system will skip the indexing step if the target folder already contains sufficient materials, unless the --force-index-from-scratch flag is used.
+
+### **C. Run evaluator**: 
+The project also includes a module for performance analysis which assess the quality and accuracy of the retrieved answers of GraphRAG.
 
 
 ## Run the whole application
