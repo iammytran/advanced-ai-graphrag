@@ -12,6 +12,7 @@ from tqdm.auto import tqdm
 from transformers import AutoTokenizer
 from backend.config.config import (
     ARTIFACT_FOLDER,
+    TOP_K_RETRIEVED
 )
 from backend.config.prompts.prompt_global_query import MAP_PROMPT
 
@@ -402,7 +403,7 @@ def get_relevant_resources(map_results, top_k_sources):
             
     return final_results
 
-def run_global_search(query, summaries_path, llm=None, top_k_sources=3, provider: str = None):
+def run_global_search(query, summaries_path, llm=None, top_k_sources=TOP_K_RETRIEVED, provider: str = None):
     if isinstance(llm, int) and not isinstance(top_k_sources, int):
         llm, top_k_sources = llm, top_k_sources
 
