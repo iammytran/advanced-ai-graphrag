@@ -60,45 +60,38 @@ python -m backend.tools.graphrag -o artifacts_v2 --force-index-from-scratch
 Note: The system will skip the indexing step if the target folder already contains sufficient materials, unless the --force-index-from-scratch flag is used.
 
 ### **C. Run evaluator**: 
-The project also includes a module for performance analysis which assess the quality and accuracy of the retrieved answers of GraphRAG.
-
-
+The project also includes a module for performance analysis, which assesses the quality and accuracy of the retrieved answers of GraphRAG on our own dataset.
+To run the evaluation, execute the command below:
+```bash
+python -m evaluator_rag
+```
 ## Run the whole application
 
-### Run Example
-2. **Indexing RAG**: Run the following command to create chunks, extract Entities & Relationships & Claims, create graph, perform community detection, and create community summaries:
-```bash
-python -m backend.tools.graphrag
-```
-
-4. **Run LangGraph Example**: Execute the chatbot flow using the following command:
-```bash
-python -m backend.src.chatbot
-```
-## Run 
-
-
 ### Run Backend
-
-1. Follow the setup and indexing steps from the **Run Example** section above.
+1. Follow the setup and indexing steps from the **Run Indexing** section above.
 2. Start the backend server by running:
 ```bash
 python -m backend.main
 ```
 
+### Run Frontend
+1. Go to folder frontend using:
+```bash
+cd frontend
+```
+2. Read file README in the folder and follow the guide there to run frontend.
+
+### Access the System with API
+If there is no frontend, you can test the backend directly by calling the API at `http://localhost:8000/chat` with the following JSON payload:
+
 
 3. **Interact with the System**:
 * **Frontend**: If the frontend is already running, you can interact with the chat normally.
 * **API**: If there is no frontend, you can test the backend directly by calling the API at `http://localhost:8000/chat` with the following JSON payload:
-
-
-
 ```json
 {
   "question": "đánh bài phạt bao nhiêu tiền?",
-  "options": {
-    "toneValue": 3
-  }
+  
 }
-
 ```
+## 
