@@ -20,8 +20,8 @@ pip install uv
 uv pip install -r ./backend/requirement.txt
 ```
 **2. Configuration**: 
-1. Create a .env file in the root directory and add your required environment variables (API keys, endpoints, etc.).
-2. Model Settings: By default, the system uses Qwen/Qwen2.5-7B-Instruct via vLLM. You can modify this in config.py.
+1. Create a .env file in the root directory and add your required environment variables for backend. You can follow the format HERE([https://example.gov.vn/144-2021](https://github.com/iammytran/advanced-ai-graphrag/blob/main/backend/.env.example)) for .env file.
+2. Create a .env file in the 'frontend' directory and add your required environment variables for frontend. You can follow the format HERE() for .env file.
 
 ## Execution Guide
 **A. Run Retrieving**: 
@@ -33,7 +33,7 @@ If you already have indexing outputs in the artifacts folder, you can run the ch
 python -m backend.src.chatbot
 ```
 
-Also note that, currently we use the 
+Also note that, currently we use  
 
 ### **B. Run Indexing**: 
 The indexing process creates chunks, extracts Entities, Relationships, and Claims, performs community detection, and generates community summaries.
@@ -48,7 +48,7 @@ python -m backend.tools.graphrag --force-index-from-scratch
 ```bash
 python -m backend.tools.graphrag --output-folder artifacts_v2
 ```
-hoặc 
+or 
 ```bash
 python -m backend.tools.graphrag -o artifacts_v2
 ```
@@ -65,7 +65,7 @@ To run the evaluation, execute the command below:
 ```bash
 python -m evaluator_rag
 ```
-## Run the whole application
+## Run chatbot application
 
 ### Run Backend
 1. Follow the setup and indexing steps from the **Run Indexing** section above.
@@ -93,5 +93,4 @@ If there is no frontend, you can test the backend directly by calling the API at
   "question": "đánh bài phạt bao nhiêu tiền?",
   
 }
-```
-## 
+``` 
