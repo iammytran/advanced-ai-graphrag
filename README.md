@@ -5,7 +5,7 @@ This project implements a **GraphRAG** (Graph Retrieval-Augmented Generation) sy
 
 ---
 
-## 🛠 1. Environment Setup
+## 1. Environment Setup
 
 Ensure you have `conda` and `uv` installed for faster dependency management.
 
@@ -20,8 +20,9 @@ pip install uv
 uv pip install -r ./backend/requirement.txt
 ```
 **2. Configuration**: 
-1. Create a .env file in the root directory and add your required environment variables for backend. You can follow the format HERE([https://example.gov.vn/144-2021](https://github.com/iammytran/advanced-ai-graphrag/blob/main/backend/.env.example)) for .env file.
-2. Create a .env file in the 'frontend' directory and add your required environment variables for frontend. You can follow the format HERE() for .env file.
+1. Create a .env file in the **root directory** and add your required environment variables for backend. You can follow the format (HERE)[https://github.com/iammytran/advanced-ai-graphrag/blob/main/backend/.env.example] for .env file.
+2. Create a .env file in the 'frontend' directory and add your required environment variables for frontend. You can follow the format (HERE)[https://github.com/iammytran/advanced-ai-graphrag/blob/main/frontend/.env.example] for .env file.
+3. SPECIAL NOTE: Since the project uses vLLM for indexing, OpenAI for queries, and a custom embedding model for local search, please ensure that the VLLM_MODEL, OPENAI_API_KEY, and VN_EMBEDDING_MODEL fields are defined in your .env file. If these are not provided, the system will fallback to the default values in config.py.
 
 ## Execution Guide
 **A. Run Retrieving**: 
@@ -32,8 +33,6 @@ If you already have indexing outputs in the artifacts folder, you can run the ch
 ```bash
 python -m backend.src.chatbot
 ```
-
-Also note that, currently we use  
 
 ### **B. Run Indexing**: 
 The indexing process creates chunks, extracts Entities, Relationships, and Claims, performs community detection, and generates community summaries.
@@ -65,7 +64,7 @@ To run the evaluation, execute the command below:
 ```bash
 python -m evaluator_rag
 ```
-## Run chatbot application
+## 2. Run Chatbot Application
 
 ### Run Backend
 1. Follow the setup and indexing steps from the **Run Indexing** section above.
@@ -94,3 +93,11 @@ If there is no frontend, you can test the backend directly by calling the API at
   
 }
 ``` 
+### What is in folder artifacts?
+After the indexing process, the artifacts folder is populated with the essential data structures required for the querying step. Key files include:
+- entities.pkl: Contains a DataFrame of all entities extracted from the text chunks, including their types, descriptions, and chunks they are from.
+- relationships.pkl: Stores the extracted connections between entities, representing the edges of your knowledge graph and the strength/description of those connections. You can use this file to visualize graph using library networkx
+- claims.pkl: Contains "covariates" or statements of fact (claims) extracted from the text, linked to specific entities and documented with source citations.
+- entity_embeddings.npy: Stores the high-dimensional vector representations of all entity names. This is crucial for Local Search, allowing the system to perform similarity mapping between your query and the entities in the graph.
+- communities.json: Contains the output of the Leiden community detection algorithm. It defines the hierarchical structure of the knowledge graph, grouping related entities into clusters.
+- community_summaries.json: Holds the AI-generated summaries for each community at different levels of the hierarchy. This is the core resource for both Global and Local Search, enabling the model to answer questions by synthesizing these summaries.
